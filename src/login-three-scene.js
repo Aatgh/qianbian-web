@@ -902,6 +902,11 @@ if (canvas) {
           else if (mode == 41.0) color = iridescentBlob(p);
           else if (mode == 42.0) color = holoCard(p);
           else if (mode == 43.0) color = liquidChrome(p);
+          float globalDrift =
+            0.5 + 0.5 * sin(uTime * uSpeed * 0.35 + p.x * 1.7 - p.y * 1.2);
+          float driftTexture = fbm(p * 1.4 + uTime * uSpeed * 0.045);
+          color += mix(uColorB, uColorC, globalDrift) *
+            (0.008 + driftTexture * 0.018);
           color *= 0.92;
           color = pow(max(color, 0.0), vec3(0.92));
           gl_FragColor = vec4(color, 1.0);
@@ -1009,7 +1014,10 @@ if (canvas) {
         return { painted, maxChannel, width, height };
       },
       signature() {
-        render(1234);
+        return this.signatureAt(1234);
+      },
+      signatureAt(time) {
+        render(time);
         const gl = renderer.getContext();
         const width = renderer.domElement.width;
         const height = renderer.domElement.height;

@@ -41,17 +41,33 @@ body.login-locked {
 .login-starfield-preview .login-layout {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   padding: 84px clamp(24px, 3.3vw, 64px) 76px;
 }
 
 .login-starfield-preview .login-panel-wrap {
   display: none;
+  width: min(560px, 100%);
+  opacity: 1;
+  transform: none;
 }
 
 .login-starfield-preview.login-box-open .login-panel-wrap {
   display: flex;
-  animation: login-panel-in 520ms var(--login-spring) both;
+  animation: login-preview-panel-in 420ms var(--login-spring) both;
+}
+
+@keyframes login-preview-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 .login-theme-toggle,
@@ -104,8 +120,10 @@ body.login-locked {
 .login-box-toggle {
   position: fixed;
   z-index: 8;
-  right: 22px;
+  right: auto;
   bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .login-theme-toggle:hover,
@@ -113,7 +131,27 @@ body.login-locked {
 .login-box-toggle:hover {
   border-color: rgba(255, 255, 255, 0.26);
   background: rgba(28, 25, 32, 0.82);
+}
+
+.login-theme-toggle:hover,
+.login-tuning-toggle:hover {
   transform: translateY(-1px);
+}
+
+.login-box-toggle:hover {
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.login-box-toggle:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
+.login-box-toggle[aria-expanded="true"] {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 0 0 7px rgba(255, 255, 255, 0.035),
+    0 14px 40px rgba(0, 0, 0, 0.32);
 }
 
 .login-theme-toggle svg,
@@ -425,6 +463,8 @@ body.login-locked {
 }
 
 .login-starfield-preview .login-panel {
+  max-width: 560px;
+  padding: 40px 38px 32px;
   border-color: rgba(255, 255, 255, 0.15);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.09), transparent 34%),
@@ -1133,6 +1173,10 @@ body.login-locked {
 
 .login-gate.is-ready .login-panel-wrap {
   animation: login-panel-in 900ms var(--login-spring) 180ms both;
+}
+
+.login-gate.login-starfield-preview.login-box-open .login-panel-wrap {
+  animation: login-preview-panel-in 420ms var(--login-spring) both;
 }
 
 .login-panel {
@@ -2342,14 +2386,20 @@ body.login-locked {
     padding: 76px 18px 82px;
   }
 
+  .login-starfield-preview .login-panel {
+    max-width: none;
+    padding: 24px 20px 22px;
+  }
+
   .login-toolbar {
     top: 14px;
     left: 12px;
   }
 
   .login-box-toggle {
-    right: 12px;
+    right: auto;
     bottom: 14px;
+    left: 50%;
   }
 
   .login-theme-panel {

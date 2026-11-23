@@ -248,7 +248,7 @@
     const label = open ? "收起登录框" : "打开登录框";
     loginBoxToggle.setAttribute("aria-label", label);
     loginBoxToggle.title = label;
-    loginBoxToggle.innerHTML = `<i data-lucide="${open ? "x" : "log-in"}"></i><span class="sr-only">${label}</span>`;
+    loginBoxToggle.innerHTML = `<i data-lucide="power"></i><span class="sr-only">${label}</span>`;
     updateIcons(loginBoxToggle);
     if (open) {
       window.requestAnimationFrame(() => {
@@ -617,6 +617,40 @@
     if (tuningPanel && !tuningPanel.hidden) {
       event.preventDefault();
       toggleTuningPanel(false);
+      return;
+    }
+    if (gate.classList.contains("login-box-open")) {
+      event.preventDefault();
+      toggleLoginBox(false);
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!body.classList.contains("login-locked")) return;
+    const path = event.composedPath();
+    if (
+      themePanel &&
+      !themePanel.hidden &&
+      !path.includes(themePanel) &&
+      !path.includes(themeToggle)
+    ) {
+      toggleThemePanel(false);
+    }
+    if (
+      tuningPanel &&
+      !tuningPanel.hidden &&
+      !path.includes(tuningPanel) &&
+      !path.includes(tuningToggle)
+    ) {
+      toggleTuningPanel(false);
+    }
+    if (
+      gate.classList.contains("login-box-open") &&
+      loginPanelWrap &&
+      !path.includes(loginPanelWrap) &&
+      !path.includes(loginBoxToggle)
+    ) {
+      toggleLoginBox(false);
     }
   });
 
