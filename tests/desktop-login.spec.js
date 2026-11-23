@@ -190,18 +190,7 @@ test("login preview exposes all local themes and a floating login toggle", async
   await expect(page.locator(".login-panel-wrap")).toBeVisible();
   await expect(page.locator("#login-theme-toggle")).toBeVisible();
   await expect(page.locator("#login-tuning-toggle")).toBeVisible();
-  await expect(page.locator("#login-box-toggle")).toBeVisible();
-  await expect(
-    page.locator("#login-box-toggle .lucide-user-round"),
-  ).toHaveCount(1);
-  await expect(page.locator("#login-box-toggle")).toHaveAttribute(
-    "aria-expanded",
-    "true",
-  );
-  const toggleBox = await page.locator("#login-box-toggle").boundingBox();
-  expect(
-    Math.abs(toggleBox.x + toggleBox.width / 2 - 1920 / 2),
-  ).toBeLessThan(3);
+  await expect(page.locator("#login-box-toggle")).toHaveCount(0);
   expect(
     (await page.locator("#login-theme-toggle").textContent()).trim(),
   ).toBe("");
@@ -219,7 +208,7 @@ test("login preview exposes all local themes and a floating login toggle", async
     Math.abs(initialPanelBox.x + initialPanelBox.width / 2 - 1920 / 2),
   ).toBeLessThan(3);
   await page.locator("#login-gate").click({ position: { x: 500, y: 820 } });
-  await expect(page.locator(".login-panel-wrap")).toBeHidden();
+  await expect(page.locator(".login-panel-wrap")).toBeVisible();
 
   await page.locator("#login-theme-toggle").click();
   await expect(page.locator("#login-theme-panel")).toBeVisible();
@@ -274,19 +263,36 @@ test("login preview exposes all local themes and a floating login toggle", async
   await page.locator("#login-gate").click({ position: { x: 1500, y: 820 } });
   await expect(page.locator("#login-tuning-panel")).toBeHidden();
 
-  await page.locator("#login-box-toggle").click();
-  await expect(page.locator(".login-panel-wrap")).toBeVisible();
-  await expect(page.locator("#login-box-toggle")).toHaveAttribute(
-    "aria-expanded",
-    "true",
+  const headBox = await page.locator(".login-panel-head").boundingBox();
+  await page.mouse.move(
+    headBox.x + headBox.width / 2,
+    headBox.y + headBox.height / 2,
   );
-  const panelBox = await page.locator(".login-panel").boundingBox();
-  expect(panelBox.width).toBeGreaterThanOrEqual(500);
+  await page.mouse.down();
+  await page.waitForTimeout(340);
+  await page.mouse.move(
+    headBox.x + headBox.width / 2 + 260,
+    headBox.y + headBox.height / 2 + 140,
+    { steps: 5 },
+  );
+  const draggedBox = await page.locator(".login-panel").boundingBox();
   expect(
-    Math.abs(panelBox.x + panelBox.width / 2 - 1920 / 2),
+    Math.abs(draggedBox.x + draggedBox.width / 2 - 1920 / 2),
+  ).toBeGreaterThan(120);
+  await page.mouse.up();
+  await page.waitForTimeout(700);
+  const snappedBox = await page.locator(".login-panel").boundingBox();
+  expect(snappedBox.width).toBeGreaterThanOrEqual(500);
+  expect(
+    Math.abs(snappedBox.x + snappedBox.width / 2 - 1920 / 2),
   ).toBeLessThan(3);
-  await page.locator("#login-gate").click({ position: { x: 500, y: 820 } });
-  await expect(page.locator(".login-panel-wrap")).toBeHidden();
+  expect(
+    Math.abs(
+      snappedBox.y +
+        snappedBox.height / 2 -
+        (initialPanelBox.y + initialPanelBox.height / 2),
+    ),
+  ).toBeLessThan(3);
 });
 
 test("theme structures differ beyond color", async ({ page }) => {
