@@ -5,6 +5,7 @@
   "scripts": {
     "build:login-scene": "esbuild src/login-three-scene.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/login-three-scene.min.js",
     "build:logo3d": "esbuild src/logo-3d-demo.js --bundle --minify --format=iife --target=chrome110 --outfile=logo-3d/app.js",
+    "build:markdown": "esbuild src/markdown-renderer.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/markdown.min.js",
     "test:e2e": "playwright test",
     "test:server": "npm test --prefix muse-desktop/server"
   },
@@ -13,6 +14,8 @@
     "esbuild": "^0.28.2"
   },
   "dependencies": {
+    "dompurify": "^3.5.0",
+    "marked": "^18.2.1",
     "three": "^0.187.0"
   }
 }

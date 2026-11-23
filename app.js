@@ -1684,8 +1684,11 @@
     `;
   }
 
-  function renderBackendText(text) {
-    return escapeHtml(text || "").replaceAll("\n", "<br>");
+  function renderBackendMarkdown(text) {
+    if (window.QianbianMarkdown?.render) {
+      return window.QianbianMarkdown.render(text);
+    }
+    return `<p>${escapeHtml(text || "").replaceAll("\n", "<br>")}</p>`;
   }
 
   function renderMobileBackendApprovals() {
@@ -1759,7 +1762,7 @@
         message.role === "user"
           ? renderChatMessageUser(message.text)
           : renderChatMessageAssistant(null, {
-              content: `<p>${renderBackendText(message.text)}</p>`,
+              content: renderBackendMarkdown(message.text),
               time: message.status === "inProgress" ? "生成中" : "刚刚",
             }),
       )
