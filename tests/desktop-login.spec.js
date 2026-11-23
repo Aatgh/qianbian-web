@@ -157,6 +157,8 @@ test("three.js login scene renders on desktop and mobile", async ({ page }) => {
   const canvas = page.locator("#login-three-canvas");
   await expect(canvas).toBeVisible();
   await expect(canvas).toHaveAttribute("data-scene-ready", "true");
+  await expect(canvas).toHaveAttribute("data-scene-style", "gravity-planet");
+  await expect(page.locator("#login-gate")).toHaveClass(/login-three-active/);
   const desktopBox = await canvas.boundingBox();
   expect(desktopBox.width).toBeGreaterThan(180);
   expect(desktopBox.height).toBeGreaterThan(180);
