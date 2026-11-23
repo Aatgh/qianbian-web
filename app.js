@@ -2,6 +2,7 @@
   "use strict";
 
   const D = window.APP_DATA;
+  const api = window.QianbianApi || null;
   const pages = D.pages;
   const HIDDEN_GROUP_IDS = new Set([
     "workspace",
@@ -140,6 +141,19 @@
     segments: {},
     chatMessages: [],
     chatDraft: "",
+    backendChatActive: false,
+    backendReady: false,
+    backendConnected: false,
+    backendSessions: [],
+    backendSessionsLoaded: false,
+    backendMessages: [],
+    backendActivities: [],
+    backendApprovals: [],
+    backendInputs: [],
+    backendSessionId: null,
+    backendTurnId: null,
+    backendTyping: false,
+    backendModelId: null,
     terminalCommandCount: 0,
     catalogOpen: false,
     inspectorOpen: false,
@@ -228,6 +242,527 @@
   function getPage(id) {
     return pages[id] || pages.chat;
   }
+
+  function getFallbackMobileSessions() {
+    return [
+      {
+        id: "demo-ui",
+        name: "千变界面复刻",
+        time: "09:41",
+        icon: "message-circle",
+        kind: "chat",
+      },
+      {
+        id: "demo-theme",
+        name: "主题与图标检查",
+        time: "昨天",
+        icon: "palette",
+        kind: "chat",
+      },
+      {
+        id: "demo-pages",
+        name: "页面交互检查",
+        time: "08:26",
+        icon: "scan-search",
+        kind: "chat",
+      },
+    ];
+  }
+
+  function formatBackendTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "刚刚";
+    const today = new Date();
+    if (date.toDateString() === today.toDateString()) {
+      return date.toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    return date.toLocaleDateString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+    });
+  }
+
+  function mapBackendSession(session) {
+    const id = String(session?.sessionId ?? session?.id ?? "");
+    return {
+      id,
+      name: session?.title || "未命名会话",
+      time: formatBackendTime(session?.updatedAt || session?.createdAt),
+      icon: "message-circle",
+      kind: "chat",
+      active: Boolean(id && id === state.backendSessionId),
+    };
+  }
+
+  function getMobileSessions() {
+    if (!state.backendSessionsLoaded) {
+      return getFallbackMobileSessions();
+    }
+    return state.backendSessions.map((session) => ({
+      ...session,
+      active: session.id === state.backendSessionId,
+    }));
+  }
+
+  function resetBackendChat() {
+    state.backendChatActive = false;
+    state.backendSessionId = null;
+    state.backendTurnId = null;
+    state.backendMessages = [];
+    state.backendActivities = [];
+    state.backendApprovals = [];
+    state.backendInputs = [];
+    state.backendTyping = false;
+  }
+
+  function mapBackendChatItem(item) {
+    if (!item || !["userMessage", "agentMessage"].includes(item.kind)) {
+      return null;
+    }
+    return {
+      itemId: item.itemId ? String(item.itemId) : "",
+      role: item.kind === "userMessage" ? "user" : "assistant",
+      text: item.text || "",
+      status: item.status || "completed",
+      done: item.done !== false,
+    };
+  }
+
+  function mapBackendChatItems(payload) {
+    const items = payload?.history?.items || payload?.items || [];
+    return items.map(mapBackendChatItem).filter(Boolean);
+  }
+
+  function mapBackendActivities(payload) {
+    const items = payload?.history?.items || payload?.items || [];
+    return items.filter((item) =>
+      ["reasoning", "toolCall"].includes(item?.kind),
+    );
+  }
+
+  function mergeOptimisticBackendMessages(persisted) {
+    const optimistic = state.backendMessages.filter((message) => !message.itemId);
+    const merged = [...persisted];
+    for (const message of optimistic) {
+      if (
+        !merged.some(
+          (candidate) =>
+            candidate.role === message.role && candidate.text === message.text,
+        )
+      ) {
+        merged.push(message);
+      }
+    }
+    return merged;
+  }
+
+  function mobileSkillIcon(skill) {
+    const text = `${skill?.name || ""} ${skill?.displayName || ""} ${skill?.category || ""}`;
+    if (/天气|出行|旅行/.test(text)) return "cloud-sun";
+    if (/餐|食|菜|营养/.test(text)) return "utensils";
+    if (/睡眠|健康|运动/.test(text)) return "moon-star";
+    if (/办公|文档|表格/.test(text)) return "briefcase";
+    if (/代码|开发|自动化/.test(text)) return "code-2";
+    return "puzzle";
+  }
+
+  function mapMobileSkill(skill, scope = "market") {
+    const title = skill?.displayName || skill?.name || "未命名技能";
+    return {
+      name: title,
+      title,
+      description: skill?.description || "暂无技能说明。",
+      icon: mobileSkillIcon(skill),
+      badge: skill?.badge || skill?.category || (scope === "market" ? "技能" : "已安装"),
+      group: "backend-skills",
+      subcategory: skill?.category || "",
+      value: skill?.enabled === false ? "停用" : "启用",
+      nav: "plugin-detail",
+      raw: skill,
+    };
+  }
+
+  function applyMobileSkills({ market, installed, mine }) {
+    if (market && Array.isArray(market.skills)) {
+      const items = market.skills.map((skill) => mapMobileSkill(skill, "market"));
+      if (pages["plugin-market"]) pages["plugin-market"].marketItems = items;
+    }
+    if (installed && Array.isArray(installed.skills)) {
+      const items = installed.skills.map((skill) =>
+        mapMobileSkill(skill, "installed"),
+      );
+      if (pages.plugins) pages.plugins.pluginList = items;
+      items.forEach((item) => {
+        state.installedSkillEnabled.set(item.name, item.raw?.enabled !== false);
+      });
+    }
+    if (mine && Array.isArray(mine.skills) && pages.plugins) {
+      pages.plugins.mySkills = mine.skills.map((skill) => ({
+        name: skill.displayName || skill.name || "未命名技能",
+        description: skill.description || "暂无技能说明。",
+        icon: mobileSkillIcon(skill),
+        badge:
+          skill.status === "published" || skill.reviewStatus === "approved"
+            ? "已发布"
+            : "待审核",
+        group: "backend-skills",
+        subcategory: skill.category || "",
+        raw: skill,
+      }));
+    }
+  }
+
+  function upsertBackendMessage(item) {
+    const mapped = mapBackendChatItem(item);
+    if (!mapped) return;
+    let index = mapped.itemId
+      ? state.backendMessages.findIndex(
+          (message) => message.itemId === mapped.itemId,
+        )
+      : -1;
+    if (
+      index < 0 &&
+      mapped.role === "user" &&
+      state.backendMessages.at(-1)?.role === "user" &&
+      !state.backendMessages.at(-1)?.itemId &&
+      state.backendMessages.at(-1)?.text === mapped.text
+    ) {
+      index = state.backendMessages.length - 1;
+    }
+    if (index >= 0) state.backendMessages[index] = mapped;
+    else state.backendMessages.push(mapped);
+    state.backendTyping = false;
+    renderPhone();
+    updateIcons();
+  }
+
+  function upsertBackendActivity(item) {
+    if (!item) return;
+    const itemId = String(item.itemId || `${item.kind}-${Date.now()}`);
+    const next = { ...item, itemId };
+    const index = state.backendActivities.findIndex(
+      (activity) => activity.itemId === itemId,
+    );
+    if (index >= 0) state.backendActivities[index] = next;
+    else state.backendActivities.push(next);
+    renderPhone();
+    updateIcons();
+  }
+
+  function handleMobileBackendEvent(method, params = {}) {
+    if (method === "turn/started") {
+      state.backendTurnId = params.turnId || null;
+      state.backendTyping = true;
+      renderPhone();
+      return;
+    }
+    if (method === "item/started" || method === "item/completed") {
+      if (["reasoning", "toolCall"].includes(params.item?.kind)) {
+        upsertBackendActivity(params.item);
+      } else {
+        upsertBackendMessage(params.item);
+      }
+      return;
+    }
+    if (method === "item/delta") {
+      const itemId = String(params.itemId || "");
+      if (params.field !== "text") {
+        const activity = state.backendActivities.find(
+          (item) => item.itemId === itemId,
+        );
+        if (activity) {
+          activity.summary = `${activity.summary || ""}${params.delta || ""}`;
+          renderPhone();
+        }
+        return;
+      }
+      let message = state.backendMessages.find(
+        (item) => item.itemId && item.itemId === itemId,
+      );
+      if (!message) {
+        message = {
+          itemId,
+          role: "assistant",
+          text: "",
+          status: "inProgress",
+          done: false,
+        };
+        state.backendMessages.push(message);
+      }
+      message.text += params.delta || "";
+      message.status = "inProgress";
+      state.backendTyping = false;
+      renderPhone();
+      return;
+    }
+    if (method === "approval/requested") {
+      state.backendApprovals = [
+        ...state.backendApprovals.filter(
+          (item) => String(item.approvalId) !== String(params.approvalId),
+        ),
+        params,
+      ];
+      renderPhone();
+      updateIcons();
+      return;
+    }
+    if (method === "approval/resolved") {
+      state.backendApprovals = state.backendApprovals.filter(
+        (item) => String(item.approvalId) !== String(params.approvalId),
+      );
+      renderPhone();
+      updateIcons();
+      return;
+    }
+    if (method === "userInput/requested") {
+      state.backendInputs = [
+        ...state.backendInputs.filter(
+          (item) => String(item.userInputId) !== String(params.userInputId),
+        ),
+        params,
+      ];
+      renderPhone();
+      updateIcons();
+      return;
+    }
+    if (method === "userInput/settled") {
+      state.backendInputs = state.backendInputs.filter(
+        (item) => String(item.userInputId) !== String(params.userInputId),
+      );
+      renderPhone();
+      updateIcons();
+      return;
+    }
+    if (method === "turn/completed") {
+      state.backendTyping = false;
+      state.backendTurnId = null;
+      renderPhone();
+      updateIcons();
+      refreshMobileSessions();
+    }
+  }
+
+  async function refreshMobileSessions() {
+    if (!api || !state.backendConnected) return;
+    try {
+      const payload = await api.sessions();
+      if (Array.isArray(payload?.sessions)) {
+        state.backendSessions = payload.sessions.map(mapBackendSession);
+        state.backendSessionsLoaded = true;
+        renderPhone();
+        updateIcons();
+      }
+    } catch {}
+  }
+
+  async function initializeMobileBackend() {
+    if (!api) {
+      state.backendReady = true;
+      return;
+    }
+    if (location.protocol === "file:" && !api.explicit) {
+      state.backendReady = true;
+      return;
+    }
+    try {
+      await api.health();
+      state.backendConnected = true;
+      state.network = "online";
+      const [sessions, models, market, installed, mine] =
+        await Promise.allSettled([
+          api.sessions(),
+          api.models(),
+          api.skills({ scope: "market" }),
+          api.skills({ scope: "installed" }),
+          api.mineSkills(),
+        ]);
+      if (sessions.status === "fulfilled") {
+        state.backendSessions = (sessions.value?.sessions || []).map(
+          mapBackendSession,
+        );
+        state.backendSessionsLoaded = true;
+      }
+      if (models.status === "fulfilled") {
+        const modelList = models.value?.models || [];
+        const selected =
+          modelList.find((model) => model.isDefault) || modelList[0];
+        state.backendModelId = selected
+          ? String(selected.modelId ?? selected.id)
+          : null;
+      }
+      applyMobileSkills({
+        market: market.status === "fulfilled" ? market.value : undefined,
+        installed:
+          installed.status === "fulfilled" ? installed.value : undefined,
+        mine: mine.status === "fulfilled" ? mine.value : undefined,
+      });
+      api.connectEvents({
+        onStatus(status) {
+          state.network = status?.connected ? "online" : "reconnecting";
+          renderPhone();
+        },
+        onEvent: handleMobileBackendEvent,
+        onError() {
+          state.network = "reconnecting";
+          renderPhone();
+        },
+      });
+    } catch {
+      state.backendConnected = false;
+      state.network = "offline";
+    } finally {
+      state.backendReady = true;
+      renderPhone();
+      updateIcons();
+    }
+  }
+
+  async function selectMobileSession(sessionId) {
+    const session = state.backendSessions.find(
+      (item) => item.id === String(sessionId),
+    );
+    if (!session) return;
+    state.backendChatActive = true;
+    state.backendSessionId = session.id;
+    state.backendMessages = [];
+    state.backendActivities = [];
+    state.backendApprovals = [];
+    state.backendInputs = [];
+    state.backendTyping = Boolean(api && state.backendConnected);
+    state.historyOpen = false;
+    navigate("chat");
+    if (api && state.backendConnected) {
+      try {
+        const payload = await api.resumeSession(session.id);
+        state.backendMessages = mapBackendChatItems(payload);
+        state.backendActivities = mapBackendActivities(payload);
+        const pending = Array.isArray(payload?.pendingRequests)
+          ? payload.pendingRequests
+          : [];
+        state.backendApprovals = pending.filter((item) => item.approvalId);
+        state.backendInputs = pending.filter((item) => item.userInputId);
+      } catch (error) {
+        showToast(error.message || "会话打开失败", "circle-alert");
+      } finally {
+        state.backendTyping = false;
+        renderPhone();
+        updateIcons();
+      }
+    }
+  }
+
+  async function startMobileBackendSession() {
+    const payload = await api.startSession({
+      modelId: state.backendModelId || undefined,
+      approvalMode: "onRequest",
+    });
+    const session = payload?.session;
+    if (!session?.sessionId) throw new Error("后端未返回会话 ID");
+    state.backendSessionId = String(session.sessionId);
+    state.backendModelId = payload.modelId || state.backendModelId;
+    const mapped = mapBackendSession(session);
+    state.backendSessions = [
+      mapped,
+      ...state.backendSessions.filter((item) => item.id !== mapped.id),
+    ];
+    state.backendSessionsLoaded = true;
+    state.backendMessages = mergeOptimisticBackendMessages(
+      mapBackendChatItems(payload),
+    );
+    state.backendActivities = mapBackendActivities(payload);
+    state.backendApprovals = [];
+    state.backendInputs = [];
+    return mapped;
+  }
+
+  async function decideMobileApproval(approvalId, choiceId) {
+    if (!api || !state.backendSessionId) return;
+    const approval = state.backendApprovals.find(
+      (item) => String(item.approvalId) === String(approvalId),
+    );
+    if (!approval) return;
+    const choice = (approval.availableChoices || []).find(
+      (item) => String(item.choiceId) === String(choiceId),
+    );
+    try {
+      await api.decideApproval({
+        sessionId: state.backendSessionId,
+        approvalId: String(approvalId),
+        choiceId: String(choiceId),
+        ...(approval.requirementId
+          ? { requirementId: approval.requirementId }
+          : choice
+            ? { requirementId: choice.requirementId }
+            : {}),
+      });
+      state.backendApprovals = state.backendApprovals.filter(
+        (item) => String(item.approvalId) !== String(approvalId),
+      );
+      renderPhone();
+      updateIcons();
+      showToast("审批已提交", "shield-check");
+    } catch (error) {
+      showToast(error.message || "审批提交失败", "circle-alert");
+    }
+  }
+
+  async function submitMobileInput(userInputId) {
+    if (!api || !state.backendSessionId) return;
+    const request = state.backendInputs.find(
+      (item) => String(item.userInputId) === String(userInputId),
+    );
+    if (!request) return;
+    const answers = (request.questions || []).map((question) => ({
+      id: String(question.id),
+      answer:
+        document.querySelector(
+          `[data-mobile-input-question="${CSS.escape(String(question.id))}"]`,
+        )?.value || "",
+    }));
+    try {
+      await api.answerInput({
+        sessionId: state.backendSessionId,
+        userInputId: String(userInputId),
+        answers,
+      });
+      state.backendInputs = state.backendInputs.filter(
+        (item) => String(item.userInputId) !== String(userInputId),
+      );
+      renderPhone();
+      updateIcons();
+      showToast("回答已提交", "message-circle-check");
+    } catch (error) {
+      showToast(error.message || "回答提交失败", "circle-alert");
+    }
+  }
+
+  async function cancelMobileInput(userInputId) {
+    if (!api || !state.backendSessionId) return;
+    try {
+      await api.cancelInput({
+        sessionId: state.backendSessionId,
+        userInputId: String(userInputId),
+      });
+      state.backendInputs = state.backendInputs.filter(
+        (item) => String(item.userInputId) !== String(userInputId),
+      );
+      renderPhone();
+      updateIcons();
+    } catch (error) {
+      showToast(error.message || "取消提问失败", "circle-alert");
+    }
+  }
+
+  window.__qianbianMobileBackend = {
+    get ready() {
+      return state.backendReady;
+    },
+    initialize: initializeMobileBackend,
+    handleEvent: handleMobileBackendEvent,
+  };
 
   function isConversationSurface() {
     return state.page?.kind === "chat";
@@ -1145,7 +1680,121 @@
     `;
   }
 
+  function renderBackendText(text) {
+    return escapeHtml(text || "").replaceAll("\n", "<br>");
+  }
+
+  function renderMobileBackendApprovals() {
+    return state.backendApprovals
+      .map((approval) => {
+        const subject =
+          typeof approval.subject === "string"
+            ? approval.subject
+            : approval.subject?.summary ||
+              JSON.stringify(approval.subject || {});
+        return `
+          <div class="approval-card mobile-backend-approval">
+            <div class="approval-head">${icon("shield-alert")}需要确认</div>
+            <p>${escapeHtml(subject)}</p>
+            <div class="approval-actions">
+              ${(approval.availableChoices || [])
+                .map(
+                  (choice) => `
+                    <button
+                      class="${choice.decision === "approved" ? "allow" : "reject"}"
+                      data-action="mobile-approval"
+                      data-mobile-approval-choice="${escapeHtml(String(choice.choiceId))}"
+                      data-approval-id="${escapeHtml(String(approval.approvalId))}"
+                      data-approval-choice="${escapeHtml(String(choice.choiceId))}"
+                      type="button"
+                    >${escapeHtml(choice.label || choice.choiceId)}</button>
+                  `,
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  function renderMobileBackendQuestions() {
+    return state.backendInputs
+      .map(
+        (request) => `
+          <div class="question-card mobile-backend-question">
+            <strong>千变需要补充信息</strong>
+            ${(request.questions || [])
+              .map(
+                (question) => `
+                  <p>${escapeHtml(question.question || question.header || "请选择")}</p>
+                  <select data-mobile-input-question="${escapeHtml(String(question.id))}">
+                    ${(question.options || [])
+                      .map(
+                        (option) =>
+                          `<option value="${escapeHtml(String(option.label))}">${escapeHtml(String(option.label))}</option>`,
+                      )
+                      .join("")}
+                  </select>
+                `,
+              )
+              .join("")}
+            <div class="approval-actions">
+              <button class="reject" data-action="mobile-input-cancel" data-mobile-input-cancel="${escapeHtml(String(request.userInputId))}" data-input-id="${escapeHtml(String(request.userInputId))}" type="button">取消</button>
+              <button class="allow" data-action="mobile-input-answer" data-mobile-input-answer="${escapeHtml(String(request.userInputId))}" data-input-id="${escapeHtml(String(request.userInputId))}" type="button">提交回答</button>
+            </div>
+          </div>
+        `,
+      )
+      .join("");
+  }
+
+  function renderBackendConversation() {
+    const messages = state.backendMessages
+      .map((message) =>
+        message.role === "user"
+          ? renderChatMessageUser(message.text)
+          : renderChatMessageAssistant(null, {
+              content: `<p>${renderBackendText(message.text)}</p>`,
+              time: message.status === "inProgress" ? "生成中" : "刚刚",
+            }),
+      )
+      .join("");
+    const activities = state.backendActivities
+      .map((activity) => {
+        const lines = [
+          activity.summary || activity.text || "",
+          activity.visibleOutput || "",
+        ].filter(Boolean);
+        return renderToolCard(
+          activity.tool || (activity.kind === "reasoning" ? "思考过程" : "工具调用"),
+          activity.status || (activity.done ? "完成" : "进行中"),
+          lines,
+        );
+      })
+      .join("");
+    const thinking =
+      state.backendTyping && !state.backendMessages.at(-1)?.itemId
+        ? `
+          <div class="thinking-pill">
+            <span class="thinking-dots"><span></span><span></span><span></span></span>
+            正在生成
+          </div>
+        `
+        : "";
+    return `
+      ${messages}
+      ${activities}
+      ${thinking}
+      ${renderMobileBackendApprovals()}
+      ${renderMobileBackendQuestions()}
+    `;
+  }
+
   function renderChatMessages(page) {
+    if (state.backendChatActive) {
+      return renderBackendConversation();
+    }
     const mode = page.mode || "active";
     let messages = "";
 
@@ -1477,6 +2126,7 @@
   }
 
   function renderDrawer(page) {
+    const drawerSessions = getMobileSessions();
     return `
       <div class="phone-page">
         ${statusBar()}
@@ -1502,44 +2152,28 @@
                   <strong>千变</strong>
                 </div>
               </div>
-              <button class="drawer-new-chat" data-nav="home" type="button">${icon("square-pen")}新对话</button>
+              <button class="drawer-new-chat" data-action="new-chat" type="button">${icon("square-pen")}新对话</button>
             </div>
             <button class="drawer-search" data-nav="session-search" type="button">${icon("search")}搜索对话</button>
-            <div class="drawer-workspace">${icon("folder")}工作区 <span style="margin-left:auto">8 个会话</span></div>
+            <div class="drawer-workspace">${icon("folder")}工作区 <span style="margin-left:auto">${drawerSessions.length} 个会话</span></div>
             <div class="drawer-session-list">
-              <div class="drawer-list-label">置顶</div>
-              <button class="drawer-session is-active" data-nav="chat" type="button">
-                <span class="drawer-session-icon">${icon("message-circle")}</span>
-                <span class="drawer-session-name">千变 界面复刻</span>
-                <time>09:41</time>
-              </button>
-              <button class="drawer-session" data-nav="chat" type="button">
-                <span class="drawer-session-icon">${icon("palette")}</span>
-                <span class="drawer-session-name">主题与图标检查</span>
-                <time>昨天</time>
-              </button>
-              <div class="drawer-list-label">今天</div>
-              <button class="drawer-session" data-nav="chat" type="button">
-                <span class="drawer-session-icon">${icon("terminal")}</span>
-                <span class="drawer-session-name">Playwright 页面检查</span>
-                <time>08:26</time>
-              </button>
-              <button class="drawer-session" data-nav="chat" type="button">
-                <span class="drawer-session-icon">${icon("puzzle")}</span>
-                <span class="drawer-session-name">技能页面适配</span>
-                <time>昨天</time>
-              </button>
-              <div class="drawer-list-label">更早</div>
-              <button class="drawer-session" data-nav="chat" type="button">
-                <span class="drawer-session-icon">${icon("server")}</span>
-                <span class="drawer-session-name">设置偏好调整</span>
-                <time>11/14</time>
-              </button>
-              <button class="drawer-session" data-nav="chat" type="button">
-                <span class="drawer-session-icon">${icon("bot")}</span>
-                <span class="drawer-session-name">Bot 群聊整理</span>
-                <time>11/12</time>
-              </button>
+              <div class="drawer-list-label">最近对话</div>
+              ${drawerSessions
+                .map(
+                  (session) => `
+                    <button
+                      class="drawer-session ${session.active ? "is-active" : ""}"
+                      data-action="select-session"
+                      data-session-id="${escapeHtml(session.id)}"
+                      type="button"
+                    >
+                      <span class="drawer-session-icon">${icon(session.icon || "message-circle")}</span>
+                      <span class="drawer-session-name">${escapeHtml(session.name)}</span>
+                      <time>${escapeHtml(session.time)}</time>
+                    </button>
+                  `,
+                )
+                .join("")}
             </div>
             <div class="drawer-footer">
               <span style="flex:1"></span>
@@ -2470,14 +3104,7 @@ export async function review(target) {
   }
 
   function renderHistoryOverlay() {
-    const sessions = [
-      { name: "千变界面复刻", time: "09:41", icon: "message-circle", active: true, kind: "chat" },
-      { name: "主题与图标检查", time: "昨天", icon: "palette", kind: "chat" },
-      { name: "页面交互检查", time: "08:26", icon: "scan-search", kind: "chat" },
-      { name: "技能页面适配", time: "昨天", icon: "puzzle", kind: "work" },
-      { name: "远程连接记录", time: "11/14", icon: "server", kind: "work" },
-      { name: "社群消息整理", time: "11/12", icon: "bot", kind: "work" },
-    ];
+    const sessions = getMobileSessions();
     return `
       <button class="history-scrim" data-action="close-history" type="button" aria-label="关闭历史记录"></button>
       <section class="history-screen" role="dialog" aria-modal="true" aria-label="历史记录">
@@ -2524,7 +3151,8 @@ export async function review(target) {
               (session) => `
                 <button
                   class="history-session ${session.active ? "is-active" : ""}"
-                  data-nav="chat"
+                  data-action="select-session"
+                  data-session-id="${escapeHtml(session.id)}"
                   data-history-name="${escapeHtml(session.name)}"
                   data-history-kind="${session.kind}"
                   type="button"
@@ -5532,7 +6160,7 @@ export async function run(input, context) {
     }
   }
 
-  function handleSendMessage() {
+  async function handleSendMessage() {
     const input = document.getElementById("chat-input");
     const text = input?.value.trim();
     if (!text) {
@@ -5542,18 +6170,46 @@ export async function run(input, context) {
     const wasNewChat =
       state.current === "home" ||
       (state.page?.kind === "chat" && state.page?.mode === "empty");
-    state.chatMessages.push(text);
     state.chatDraft = "";
     const previousTraining = state.agentTraining;
     state.agentTraining = Math.min(100, state.agentTraining + 4);
     localStorage.setItem("dshgo-agent-training", String(state.agentTraining));
-    if (wasNewChat) navigate("chat");
     showToast(
       previousTraining < 100 && state.agentTraining >= 100
         ? "用户与 Agent 已达到高度契合"
         : `消息已发送 · 契合度 ${state.agentTraining}%`,
       state.agentTraining >= 100 ? "badge-check" : "send",
     );
+    if (api && state.backendConnected) {
+      if (wasNewChat) resetBackendChat();
+      state.backendChatActive = true;
+      state.backendMessages.push({
+        role: "user",
+        text,
+        status: "inProgress",
+        done: false,
+      });
+      state.backendTyping = true;
+      if (wasNewChat) navigate("chat");
+      else renderPhone();
+      try {
+        if (!state.backendSessionId) await startMobileBackendSession();
+        const payload = await api.sendTurn({
+          sessionId: state.backendSessionId,
+          text,
+          modelId: state.backendModelId,
+          images: [],
+        });
+        state.backendTurnId = payload?.turnId || null;
+      } catch (error) {
+        state.backendTyping = false;
+        renderPhone();
+        showToast(error.message || "消息发送失败", "circle-alert");
+      }
+      return;
+    }
+    state.chatMessages.push(text);
+    if (wasNewChat) navigate("chat");
   }
 
   function handleTerminalCommand() {
@@ -5943,7 +6599,26 @@ export async function run(input, context) {
       else if (action === "close-sheet") closeSheet();
       else if (action === "open-affinity") showAffinityDialog();
       else if (action === "close-dialog") closeDialog();
-      else if (action === "new-chat") navigate("home", { replace: true });
+      else if (action === "new-chat") {
+        resetBackendChat();
+        state.chatMessages = [];
+        navigate("home", { replace: true });
+      }
+      else if (action === "select-session") {
+        selectMobileSession(actionTarget.dataset.sessionId);
+      }
+      else if (action === "mobile-approval") {
+        decideMobileApproval(
+          actionTarget.dataset.approvalId,
+          actionTarget.dataset.approvalChoice,
+        );
+      }
+      else if (action === "mobile-input-answer") {
+        submitMobileInput(actionTarget.dataset.inputId);
+      }
+      else if (action === "mobile-input-cancel") {
+        cancelMobileInput(actionTarget.dataset.inputId);
+      }
       else if (action === "open-main-nav") {
         openMainNavOverlay();
       } else if (action === "close-main-nav") {
@@ -5996,6 +6671,21 @@ export async function run(input, context) {
         if (name) {
           const enabled = !isInstalledSkillEnabled(name);
           state.installedSkillEnabled.set(name, enabled);
+          const skill = (pages.plugins?.pluginList || []).find(
+            (item) => item.name === name,
+          );
+          const skillId = skill?.raw?.id;
+          if (api && state.backendConnected && skillId != null) {
+            const request = enabled
+              ? api.enableSkill(skillId)
+              : api.disableSkill(skillId);
+            request.catch((error) => {
+              state.installedSkillEnabled.set(name, !enabled);
+              renderPhone();
+              updateIcons();
+              showToast(error.message || "技能状态更新失败", "circle-alert");
+            });
+          }
           renderPhone();
           updateIcons();
           showToast(
@@ -6008,6 +6698,23 @@ export async function run(input, context) {
         names.forEach((name) =>
           state.installedSkillEnabled.set(name, false),
         );
+        if (api && state.backendConnected) {
+          const ids = names
+            .map(
+              (name) =>
+                (pages.plugins?.pluginList || []).find(
+                  (item) => item.name === name,
+                )?.raw?.id,
+            )
+            .filter((id) => id != null);
+          Promise.allSettled(ids.map((id) => api.disableSkill(id))).then(
+            (results) => {
+              if (results.some((result) => result.status === "rejected")) {
+                showToast("部分技能停用失败", "circle-alert");
+              }
+            },
+          );
+        }
         state.installedSkillSelection.clear();
         renderPhone();
         updateIcons();
@@ -6018,6 +6725,23 @@ export async function run(input, context) {
       } else if (action === "enable-selected-installed") {
         const names = [...state.installedSkillSelection];
         names.forEach((name) => state.installedSkillEnabled.set(name, true));
+        if (api && state.backendConnected) {
+          const ids = names
+            .map(
+              (name) =>
+                (pages.plugins?.pluginList || []).find(
+                  (item) => item.name === name,
+                )?.raw?.id,
+            )
+            .filter((id) => id != null);
+          Promise.allSettled(ids.map((id) => api.enableSkill(id))).then(
+            (results) => {
+              if (results.some((result) => result.status === "rejected")) {
+                showToast("部分技能启用失败", "circle-alert");
+              }
+            },
+          );
+        }
         state.installedSkillSelection.clear();
         renderPhone();
         updateIcons();
@@ -6409,6 +7133,7 @@ export async function run(input, context) {
     renderControls();
     renderAll();
     commitHash(state.current, true);
+    initializeMobileBackend();
     if (window.lucide) {
       window.lucide.createIcons({
         attrs: {

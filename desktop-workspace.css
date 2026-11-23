@@ -3428,6 +3428,12 @@ body.settings-sheet-open {
 .skill-config-grid .right-feature-card > p {
   flex: 1;
   font-size: clamp(8px, 0.15vw + 7px, 10px);
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .skill-card-footer {

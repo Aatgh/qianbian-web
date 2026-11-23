@@ -12,7 +12,14 @@ const corsHeaders = {
   "access-control-allow-headers": "content-type",
 };
 
-async function mockBackend(page, calls) {
+async function mockBackend(page, calls, options = {}) {
+  const sessions = options.sessions || [
+    {
+      sessionId: "23",
+      title: "今天的天气",
+      updatedAt: "2026-11-23T11:13:55.000+08:00",
+    },
+  ];
   await page.route("http://backend.test/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -38,15 +45,7 @@ async function mockBackend(page, calls) {
     if (pathname === "/sessions") {
       return route.fulfill({
         headers,
-        json: {
-          sessions: [
-            {
-              sessionId: "23",
-              title: "今天的天气",
-              updatedAt: "2026-11-23T11:13:55.000+08:00",
-            },
-          ],
-        },
+        json: { sessions },
       });
     }
     if (pathname === "/models") {
@@ -202,7 +201,10 @@ test("mobile hydrates backend sessions, skills and streamed replies", async ({
   await expect(page.locator(".history-session").first()).toContainText(
     "今天的天气",
   );
-  await page.locator('[data-action="close-history"]').click();
+  await page
+    .locator('[data-action="close-history"]')
+    .dispatchEvent("click");
+  await expect(page.locator(".history-screen")).toHaveCount(0);
 
   await page.locator("#chat-input").fill("今天日照天气怎么样？");
   await page.locator('[data-action="send-message"]').click();
@@ -262,6 +264,15 @@ test("mobile renders backend approvals and user questions", async ({ page }) => 
   await mockBackend(page, calls);
   await page.goto(mobileUrl);
   await waitForMobileBackend(page);
+
+  await page.locator('[data-action="open-history"]').click();
+  await page.locator('[data-session-id="23"]').click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/session/resume"))
+    .toBeTruthy();
+  await expect(
+    page.locator(".mobile-backend-approval"),
+  ).toHaveCount(0);
 
   await page.evaluate(() => {
     window.__qianbianMobileBackend.handleEvent("approval/requested", {
@@ -325,4 +336,17 @@ test("mobile renders backend approvals and user questions", async ({ page }) => 
     sessionId: "23",
     userInputId: "12",
   });
+});
+
+test("mobile does not show demo sessions when backend returns none", async ({
+  page,
+}) => {
+  const calls = [];
+  await mockBackend(page, calls, { sessions: [] });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+
+  await page.locator('[data-action="open-history"]').click();
+  await expect(page.locator(".history-session")).toHaveCount(0);
+  await expect(page.locator("#history-empty")).toBeVisible();
 });
