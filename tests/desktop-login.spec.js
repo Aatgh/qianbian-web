@@ -213,22 +213,48 @@ test("login preview exposes all local themes and a floating login toggle", async
   await page.locator("#login-theme-toggle").click();
   await expect(page.locator("#login-theme-panel")).toBeVisible();
   await expect(page.locator(".login-theme-option")).toHaveCount(44);
-  await expect(page.locator(".login-theme-group-title")).toHaveCount(7);
+  await expect(page.locator(".login-theme-group-title")).toHaveCount(8);
   await expect(page.locator(".login-theme-group-title").first()).toHaveText(
-    "星场",
+    "精选主题",
   );
-  const defaultPalettes = await page.evaluate(() =>
-    window.QianbianLoginBackground.themes.map((theme) =>
-      theme.colors.map((color) => color.toLowerCase()),
+  const themePalettes = await page.evaluate(() =>
+    Object.fromEntries(
+      window.QianbianLoginBackground.themes.map((theme) => [
+        theme.id,
+        theme.colors.map((color) => color.toLowerCase()),
+      ]),
     ),
   );
-  expect(
-    defaultPalettes.every(
-      (palette) =>
-        JSON.stringify(palette) ===
-        JSON.stringify(["#09040a", "#a62466", "#f6e9ff"]),
-    ),
-  ).toBe(true);
+  expect(themePalettes["holo-foil"]).toEqual([
+    "#07070b",
+    "#69f1d3",
+    "#ed82ff",
+  ]);
+  expect(themePalettes["silk-waves"]).toEqual([
+    "#05080d",
+    "#93a6b7",
+    "#edf3f7",
+  ]);
+  expect(themePalettes["liquid-metal"]).toEqual([
+    "#050608",
+    "#c2ccd5",
+    "#ad93ff",
+  ]);
+  expect(themePalettes["liquid-glass"]).toEqual([
+    "#ffb45b",
+    "#67e4ff",
+    "#ef6db1",
+  ]);
+  expect(themePalettes.starfield).toEqual([
+    "#01040d",
+    "#ffffff",
+    "#8da9ff",
+  ]);
+  expect(themePalettes["aurora-flow"]).toEqual([
+    "#09040a",
+    "#a62466",
+    "#f6e9ff",
+  ]);
   await page.locator("#login-gate").click({ position: { x: 1500, y: 820 } });
   await expect(page.locator("#login-theme-panel")).toBeHidden();
   await page.locator("#login-theme-toggle").click();
@@ -239,7 +265,7 @@ test("login preview exposes all local themes and a floating login toggle", async
     page.locator(
       '[data-login-theme="holo-foil"] .login-theme-swatch',
     ),
-  ).toHaveAttribute("data-category", "玻璃金属");
+  ).toHaveAttribute("data-category", "精选主题");
 
   await page.locator('[data-login-theme="aurora-flow"]').click();
   await expect(canvas).toHaveAttribute("data-theme", "aurora-flow");
@@ -257,12 +283,12 @@ test("login preview exposes all local themes and a floating login toggle", async
 
   await page.locator("#login-tuning-toggle").click();
   await expect(page.locator("#login-tuning-panel")).toBeVisible();
-  await expect(page.locator("#login-tuning-controls input")).toHaveCount(9);
+  await expect(page.locator("#login-tuning-controls input")).toHaveCount(13);
   await page.locator("#login-tuning-controls input[type='range']").first().fill("1.4");
   await page.locator("#login-tuning-controls input[type='color']").first().fill("#112233");
   const tuning = await page.evaluate(() =>
     JSON.parse(
-      localStorage.getItem("qianbian-login-background-tuning-v2") || "{}",
+      localStorage.getItem("qianbian-login-background-tuning-v3") || "{}",
     ),
   );
   expect(tuning["aurora-flow"].speed).toBe(1.4);
