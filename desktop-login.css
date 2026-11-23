@@ -265,6 +265,65 @@ body.login-locked {
   background: linear-gradient(125deg, rgba(255, 255, 255, 0.22), transparent 45%);
 }
 
+.login-theme-swatch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.7;
+}
+
+.login-theme-swatch[data-category="星场"]::before {
+  background-image:
+    radial-gradient(circle, #fff 0 0.8px, transparent 1.2px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.7) 0 0.6px, transparent 1px);
+  background-position: 0 0, 11px 7px;
+  background-size: 17px 17px, 23px 23px;
+}
+
+.login-theme-swatch[data-category="极光云气"]::before {
+  background:
+    linear-gradient(100deg, transparent 12%, rgba(255, 255, 255, 0.48) 22%, transparent 32%),
+    linear-gradient(80deg, transparent 48%, rgba(255, 255, 255, 0.28) 58%, transparent 68%);
+}
+
+.login-theme-swatch[data-category="光影渐变"]::before {
+  background: linear-gradient(145deg, transparent 20%, rgba(255, 255, 255, 0.35), transparent 76%);
+}
+
+.login-theme-swatch[data-category="玻璃金属"]::before {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 5px,
+    rgba(255, 255, 255, 0.24) 5px 6px
+  );
+}
+
+.login-theme-swatch[data-category="焦散水面"]::before {
+  background: repeating-radial-gradient(
+    ellipse at 50% 100%,
+    transparent 0 4px,
+    rgba(255, 255, 255, 0.3) 5px,
+    transparent 6px 10px
+  );
+}
+
+.login-theme-swatch[data-category="网格线框"]::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.24) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+
+.login-theme-swatch[data-category="印刷故障"]::before {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 4px,
+      rgba(255, 255, 255, 0.22) 4px 5px
+    ),
+    radial-gradient(circle at 35% 40%, #fff 0 1.5px, transparent 2px);
+}
+
 .login-theme-option span:last-child {
   min-width: 0;
   overflow: hidden;

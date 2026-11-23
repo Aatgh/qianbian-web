@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+const LOGO_THEME_PALETTE = ["#09040a", "#a62466", "#f6e9ff"];
+
 const sourceGroups = [
   {
     id: "aidesigner",
@@ -64,7 +66,7 @@ const sourceGroups = [
       id,
       name,
       mode,
-      colors: [colorA, colorB, colorC],
+      colors: [...LOGO_THEME_PALETTE],
       variant,
       speed: 0.72 + (mode % 4) * 0.11,
       density: 0.52 + (variant % 0.5),
@@ -145,7 +147,7 @@ const themeGroups = categoryOrder
   .filter((group) => group.themes.length);
 const themeMap = new Map(themes.map((theme) => [theme.id, theme]));
 const storageKey = "qianbian-login-background-theme";
-const tuningKey = "qianbian-login-background-tuning";
+const tuningKey = "qianbian-login-background-tuning-v2";
 let tuningOverrides = {};
 
 try {

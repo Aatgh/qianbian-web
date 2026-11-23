@@ -100,8 +100,10 @@
         button.type = "button";
         button.className = "login-theme-option";
         button.dataset.loginTheme = theme.id;
+        button.dataset.category = theme.category || "";
         const swatch = document.createElement("span");
         swatch.className = "login-theme-swatch";
+        swatch.dataset.category = theme.category || "";
         swatch.style.setProperty("--theme-a", theme.colors[0]);
         swatch.style.setProperty("--theme-b", theme.colors[1]);
         swatch.style.setProperty("--theme-c", theme.colors[2]);
