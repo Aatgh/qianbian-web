@@ -94,3 +94,59 @@ test("login gate remains usable on a narrow desktop viewport", async ({
   expect(overflow.horizontal).toBeLessThanOrEqual(1);
   expect(overflow.vertical).toBeLessThanOrEqual(1);
 });
+
+test("login gate fills wide desktop viewports", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openFreshDesktop(page);
+
+  const coverage = await page.evaluate(() => {
+    const gate = document.querySelector("#login-gate").getBoundingClientRect();
+    const layout = document
+      .querySelector(".login-layout")
+      .getBoundingClientRect();
+    const panel = document
+      .querySelector(".login-panel")
+      .getBoundingClientRect();
+    return {
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      gate: [gate.left, gate.top, gate.width, gate.height],
+      layoutWidth: layout.width,
+      panelTop: panel.top,
+      panelBottom: panel.bottom,
+    };
+  });
+
+  expect(coverage.gate).toEqual([
+    0,
+    0,
+    coverage.viewportWidth,
+    coverage.viewportHeight,
+  ]);
+  expect(coverage.layoutWidth).toBeGreaterThanOrEqual(
+    coverage.viewportWidth - 2,
+  );
+  expect(coverage.panelTop).toBeGreaterThanOrEqual(0);
+  expect(coverage.panelBottom).toBeLessThanOrEqual(coverage.viewportHeight);
+});
+
+test("login gate stays inside a short desktop viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 600 });
+  await openFreshDesktop(page);
+
+  const metrics = await page.evaluate(() => {
+    const panel = document
+      .querySelector(".login-panel")
+      .getBoundingClientRect();
+    return {
+      viewportHeight: window.innerHeight,
+      panelTop: panel.top,
+      panelBottom: panel.bottom,
+      scrollHeight: document.documentElement.scrollHeight,
+    };
+  });
+
+  expect(metrics.panelTop).toBeGreaterThanOrEqual(0);
+  expect(metrics.panelBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+  expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.viewportHeight);
+});
