@@ -233,6 +233,14 @@ test("login preview exposes all local themes and a floating login toggle", async
   await expect(page.locator("#login-theme-panel")).toBeHidden();
   await page.locator("#login-theme-toggle").click();
 
+  await page.locator('[data-login-theme="holo-foil"]').click();
+  await expect(canvas).toHaveAttribute("data-theme", "holo-foil");
+  await expect(
+    page.locator(
+      '[data-login-theme="holo-foil"] .login-theme-swatch',
+    ),
+  ).toHaveAttribute("data-category", "玻璃金属");
+
   await page.locator('[data-login-theme="aurora-flow"]').click();
   await expect(canvas).toHaveAttribute("data-theme", "aurora-flow");
   expect(
