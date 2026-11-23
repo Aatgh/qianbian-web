@@ -47,6 +47,7 @@
   let countdownTimer = 0;
   let countdown = 0;
   let longPressTimer = 0;
+  let dragPending = false;
   let draggingLogin = false;
   let dragStartX = 0;
   let dragStartY = 0;
@@ -85,6 +86,7 @@
   function clearLongPress() {
     window.clearTimeout(longPressTimer);
     longPressTimer = 0;
+    dragPending = false;
   }
 
   function finishLoginDrag() {
@@ -119,6 +121,7 @@
     if (event.button !== 0 || !loginPanelWrap) return;
     event.preventDefault();
     clearLongPress();
+    dragPending = true;
     dragStartX = event.clientX;
     dragStartY = event.clientY;
     dragPointerId = event.pointerId;
@@ -428,7 +431,7 @@
   }
 
   function syncPointer(event) {
-    if (reduceMotion.matches) return;
+    if (reduceMotion.matches || dragPending || draggingLogin) return;
     const x = event.clientX / window.innerWidth - 0.5;
     const y = event.clientY / window.innerHeight - 0.5;
     root.style.setProperty("--login-pointer-x", `${x * 24}px`);
@@ -450,6 +453,7 @@
   window.addEventListener("blur", finishLoginDrag);
   gate.addEventListener("pointermove", syncPointer, { passive: true });
   gate.addEventListener("pointerleave", () => {
+    if (dragPending || draggingLogin) return;
     root.style.setProperty("--login-pointer-x", "0px");
     root.style.setProperty("--login-pointer-y", "0px");
   });

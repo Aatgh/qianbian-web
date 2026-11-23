@@ -357,15 +357,15 @@ test("rounded glass panel keeps its tint stable while dragging", async ({
       };
     });
 
+  const panelBox = await page.locator(".login-panel").boundingBox();
+  const startX = panelBox.x + 36;
+  const startY = panelBox.y + 16;
+  await page.mouse.move(startX, startY);
   const before = await readPanelState();
   expect(before.radius).toBeGreaterThanOrEqual(32);
   expect(before.alpha).toBeGreaterThanOrEqual(0.76);
   expect(before.backdrop).toContain("blur");
 
-  const panelBox = await page.locator(".login-panel").boundingBox();
-  const startX = panelBox.x + 36;
-  const startY = panelBox.y + 16;
-  await page.mouse.move(startX, startY);
   await page.mouse.down();
   await page.waitForTimeout(260);
   await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
