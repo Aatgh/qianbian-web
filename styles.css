@@ -188,9 +188,11 @@ svg {
 }
 
 .brand-tile {
+  display: block;
   width: 34px;
   height: 34px;
   border-radius: 8px;
+  object-fit: cover;
   box-shadow: var(--shadow-sm);
 }
 
@@ -1615,6 +1617,7 @@ button.phone-row:hover {
   width: 46px;
   height: 46px;
   border-radius: 12px;
+  object-fit: cover;
 }
 
 .welcome-brand strong {
@@ -1653,10 +1656,10 @@ button.phone-row:hover {
   position: relative;
   z-index: 1;
   align-self: flex-end;
-  width: 160px;
+  width: 72px;
+  height: auto;
   margin: auto 0 18px;
-  border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   filter: drop-shadow(0 18px 24px rgba(20, 40, 35, 0.12));
   animation: pet-float 3.6s ease-in-out infinite;
 }
@@ -1870,6 +1873,7 @@ button.phone-row:hover {
   width: 30px;
   height: 30px;
   border-radius: 8px;
+  object-fit: cover;
 }
 
 .drawer-lockup strong {
@@ -5194,8 +5198,8 @@ button.phone-row:hover {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  transform-origin: center 52%;
-  animation: logo-blink 6.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  transform-origin: center;
+  animation: none;
 }
 
 @keyframes logo-blink {
@@ -7562,9 +7566,9 @@ button.phone-row:hover {
   position: relative;
   z-index: 1;
   width: 185px;
+  height: auto;
   margin: 48px auto 18px;
-  border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   filter: drop-shadow(0 20px 26px rgba(25, 47, 40, 0.15));
   animation: pet-float 3.8s ease-in-out infinite;
 }
@@ -9324,4 +9328,26 @@ button.phone-row:hover {
     left: 10px;
     width: auto;
   }
+}
+
+/* The mobile preview is presented as a standalone simulator. */
+.app-shell {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.topbar,
+.stage-caption,
+.stage-toolbar,
+.catalog-panel,
+.inspector-panel,
+#toggle-catalog,
+#toggle-inspector,
+#close-catalog,
+#close-inspector,
+#mobile-scrim {
+  display: none !important;
 }

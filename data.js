@@ -3089,7 +3089,7 @@
           title: "默认 Logo",
           description: "千变品牌图标",
           icon: "panels-top-left",
-          image: "assets/brand/lingjing-logo.png",
+          image: "assets/brand/qianbian-tile.png",
           active: true,
         },
       ],

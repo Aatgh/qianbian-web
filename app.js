@@ -917,7 +917,7 @@
         <div class="phone-scroll">
           <section class="account-profile-hero">
             <div class="account-avatar">
-              <img src="assets/brand/lingjing-logo.png" alt="个人头像" />
+              <img src="assets/brand/qianbian-tile.png" alt="个人头像" />
             </div>
             <h2 class="account-profile-name">${escapeHtml(profile.nickname || "千变用户")}</h2>
             <p>个人账号 · 已登录</p>
@@ -989,7 +989,7 @@
         <div class="phone-scroll">
           <div class="welcome-page">
             <div class="welcome-brand">
-              <img src="assets/brand/lingjing-logo.png" alt="千变" />
+              <img src="assets/brand/qianbian-tile.png" alt="千变" />
               <div>
                 <strong>千变</strong>
                 <span>AI Agent · 装在口袋里</span>
@@ -999,7 +999,7 @@
               <h1>一念千变，万种可能。</h1>
               <p>把想法交给千变，让它不断生长，直到成为你想要的样子。</p>
             </div>
-            <img class="welcome-pet" src="assets/brand/lingjing-logo.png" alt="千变" />
+            <img class="welcome-pet" src="assets/brand/qianbian-mark.png" alt="千变" />
             <div class="welcome-actions">
               <button class="phone-secondary-button" data-nav="home" type="button">
                 ${icon("compass")}进入千变空间
@@ -1087,7 +1087,7 @@
     return `
       <div class="phone-page launch-page" style="background:#0c1714;color:#f2f6f3">
         <div class="welcome-page" style="min-height:100%;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,rgba(45,109,246,.3),transparent 34%),#0c1714">
-          <img src="assets/brand/lingjing-logo.png" alt="千变" style="width:74px;height:74px;border-radius:50%;object-fit:cover;margin-bottom:22px" />
+          <img src="assets/brand/qianbian-tile.png" alt="千变" style="width:74px;height:74px;border-radius:20px;object-fit:cover;margin-bottom:22px" />
           <strong style="font-size:30px;font-weight:300">${escapeHtml(page.heroTitle || "千变")}</strong>
           <span style="margin-top:8px;color:rgba(242,246,243,.56);font-size:10px">AI Agent</span>
           <button class="phone-secondary-button" data-nav="home" type="button" style="margin-top:48px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.14);color:#fff">
@@ -1403,7 +1403,7 @@
             aria-valuenow="${progress}"
           >
             <div class="top-progress-logo">
-              <img src="assets/brand/lingjing-logo.png" alt="千变 Logo" />
+              <img src="assets/brand/qianbian-tile.png" alt="千变 Logo" />
             </div>
           </div>
         </button>
@@ -1497,7 +1497,7 @@
           <aside class="drawer-panel">
             <div class="drawer-head">
               <div class="drawer-lockup">
-                <img src="assets/brand/lingjing-logo.png" alt="千变" />
+                <img src="assets/brand/qianbian-tile.png" alt="千变" />
                 <div>
                   <strong>千变</strong>
                 </div>
@@ -1698,7 +1698,7 @@
           aria-label="打开空间设置"
         >
           <div class="main-nav-logo">
-            <img src="assets/brand/lingjing-logo.png" alt="千变 Logo" />
+            <img src="assets/brand/qianbian-tile.png" alt="千变 Logo" />
           </div>
           <div
             class="main-nav-affinity"
@@ -2096,7 +2096,7 @@ export async function review(target) {
         <div class="skill-settings-body">
           <section class="skill-settings-affinity">
             <div class="skill-settings-avatar">
-              <img src="assets/brand/lingjing-logo.png" alt="千变 Logo" />
+              <img src="assets/brand/qianbian-tile.png" alt="千变 Logo" />
             </div>
             <div>
               <span>当前契合度</span>
@@ -3092,7 +3092,7 @@ export async function review(target) {
   }
 
   function renderCompanion(page) {
-    const petSrc = "assets/brand/lingjing-logo.png";
+    const petSrc = "assets/brand/qianbian-mark.png";
     return `
       <div class="phone-page">
         ${statusBar()}
@@ -3696,7 +3696,7 @@ export async function review(target) {
         })}
         <div class="phone-scroll">
           <div class="phone-profile-card" style="margin:0 14px 14px;text-align:center;padding:22px">
-            <img src="assets/brand/lingjing-logo.png" alt="千变" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin:0 auto 13px" />
+            <img src="assets/brand/qianbian-tile.png" alt="千变" style="width:56px;height:56px;border-radius:16px;object-fit:cover;margin:0 auto 13px" />
             <h2 style="margin:0;font-size:18px">${escapeHtml(page.artifactTitle || page.title)}</h2>
             <p style="margin:6px 0 0;color:var(--phone-muted);font-size:10px">${escapeHtml(
               page.artifactSubtitle || ""
@@ -3836,7 +3836,7 @@ export async function review(target) {
         <div class="phone-scroll">
           <div class="share-card">
             <div class="share-card-cover">
-              <img class="brand-tile" src="assets/brand/lingjing-logo.png" alt="千变" />
+              <img class="brand-tile" src="assets/brand/qianbian-tile.png" alt="千变" />
               <p class="eyebrow">千变 · SHARE</p>
               <h2>${escapeHtml(page.shareTitle || "分享")}</h2>
               <p>${escapeHtml(page.shareDescription || "")}</p>
