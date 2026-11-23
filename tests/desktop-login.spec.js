@@ -191,6 +191,11 @@ test("login preview exposes all local themes and a floating login toggle", async
   await expect(page.locator("#login-theme-toggle")).toBeVisible();
   await expect(page.locator("#login-tuning-toggle")).toBeVisible();
   await expect(page.locator("#login-box-toggle")).toBeVisible();
+  await expect(page.locator("#login-box-toggle .lucide-power")).toHaveCount(1);
+  const toggleBox = await page.locator("#login-box-toggle").boundingBox();
+  expect(
+    Math.abs(toggleBox.x + toggleBox.width / 2 - 1920 / 2),
+  ).toBeLessThan(3);
   expect(
     (await page.locator("#login-theme-toggle").textContent()).trim(),
   ).toBe("");
@@ -222,6 +227,9 @@ test("login preview exposes all local themes and a floating login toggle", async
         JSON.stringify(["#09040a", "#a62466", "#f6e9ff"]),
     ),
   ).toBe(true);
+  await page.locator("#login-gate").click({ position: { x: 1500, y: 820 } });
+  await expect(page.locator("#login-theme-panel")).toBeHidden();
+  await page.locator("#login-theme-toggle").click();
 
   await page.locator('[data-login-theme="aurora-flow"]').click();
   await expect(canvas).toHaveAttribute("data-theme", "aurora-flow");
@@ -247,7 +255,8 @@ test("login preview exposes all local themes and a floating login toggle", async
   expect(tuning["aurora-flow"].speed).toBe(1.4);
   expect(tuning["aurora-flow"].colors[0]).toBe("#112233");
   await page.locator("#login-tuning-reset").click();
-  await page.locator("#login-tuning-close").click();
+  await page.locator("#login-gate").click({ position: { x: 1500, y: 820 } });
+  await expect(page.locator("#login-tuning-panel")).toBeHidden();
 
   await page.locator("#login-box-toggle").click();
   await expect(page.locator(".login-panel-wrap")).toBeVisible();
@@ -255,7 +264,12 @@ test("login preview exposes all local themes and a floating login toggle", async
     "aria-expanded",
     "true",
   );
-  await page.locator("#login-box-toggle").click();
+  const panelBox = await page.locator(".login-panel").boundingBox();
+  expect(panelBox.width).toBeGreaterThanOrEqual(500);
+  expect(
+    Math.abs(panelBox.x + panelBox.width / 2 - 1920 / 2),
+  ).toBeLessThan(3);
+  await page.locator("#login-gate").click({ position: { x: 500, y: 820 } });
   await expect(page.locator(".login-panel-wrap")).toBeHidden();
 });
 
@@ -271,20 +285,26 @@ test("theme structures differ beyond color", async ({ page }) => {
     const api = window.QianbianLoginBackground;
     const scene = window.__qianbianLoginScene;
     const signatures = [];
+    let moving = 0;
     api.themes.forEach((theme) => {
       api.setTheme(theme.id);
       api.tune({
         colors: ["#111111", "#888888", "#eeeeee"],
       });
       const signature = scene.signature();
+      const start = scene.signatureAt(1000);
+      const later = scene.signatureAt(9000);
       signatures.push(signature);
+      if (start !== later) moving += 1;
     });
     return {
       total: signatures.length,
       unique: new Set(signatures).size,
+      moving,
     };
   });
 
   expect(result.total).toBe(44);
   expect(result.unique).toBe(44);
+  expect(result.moving).toBe(44);
 });
