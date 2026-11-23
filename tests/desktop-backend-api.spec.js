@@ -707,6 +707,38 @@ test("long skill copy is clamped and unsupported image input is disabled", async
     return value;
   });
   expect(lineClamp).toBe("3");
+  const configCardClamp = await page.evaluate(() => {
+    const host = document.createElement("div");
+    host.className = "skill-config-grid";
+    host.style.width = "360px";
+    host.innerHTML = `
+      <article class="right-feature-card">
+        <div class="right-feature-head">
+          <strong>育儿大师</strong>
+          <small>成长</small>
+        </div>
+        <p>${"这是一段很长的真实技能描述，用来验证右侧技能配置卡片不会因为文本过长而被撑开。".repeat(12)}</p>
+      </article>
+    `;
+    document.body.append(host);
+    const paragraph = host.querySelector(".right-feature-card > p");
+    const style = getComputedStyle(paragraph);
+    const result = {
+      clamp: style.webkitLineClamp,
+      clientHeight: paragraph.clientHeight,
+      scrollHeight: paragraph.scrollHeight,
+      lineHeight: Number.parseFloat(style.lineHeight),
+    };
+    host.remove();
+    return result;
+  });
+  expect(configCardClamp.clamp).toBe("3");
+  expect(configCardClamp.clientHeight).toBeLessThan(
+    configCardClamp.scrollHeight,
+  );
+  expect(configCardClamp.clientHeight).toBeLessThanOrEqual(
+    configCardClamp.lineHeight * 3 + 1,
+  );
   expect(apiCalls).toContain("/automations");
 
   await page.locator('[data-action-detail="more-actions"]').click();
