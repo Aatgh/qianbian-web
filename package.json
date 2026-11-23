@@ -3,9 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "build:login-scene": "esbuild src/login-three-scene.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/login-three-scene.min.js",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.1"
+    "@playwright/test": "^1.65.1",
+    "esbuild": "^0.28.2"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
   }
 }

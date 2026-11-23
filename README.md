@@ -24,6 +24,7 @@ python -m http.server 8080
 
 - `desktop.html`、`desktop.css`、`desktop-refresh.css`、`desktop-workspace.css`：电脑端界面
 - `desktop-login.css`、`desktop-login.js`：电脑端登录界面、动画和本地登录状态
+- `src/login-three-scene.js`、`assets/login-three-scene.min.js`：Three.js 登录场景源码与离线构建产物
 - `desktop-app.js`、`data.js`：电脑端工作区交互和演示数据
 - `index.html`、`styles.css`、`app.js`：手机端界面
 - `assets/`：品牌、图标、字体和演示素材
@@ -35,6 +36,12 @@ python -m http.server 8080
 ```powershell
 npm install
 npm run test:e2e
+```
+
+修改 Three.js 登录场景后重新构建：
+
+```powershell
+npm run build:login-scene
 ```
 
 ## 说明

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#a62466" />
+    <meta name="theme-color" content="#9b246b" />
     <meta
       name="description"
       content="千变电脑端工作区：对话、技能、自动化与上下文协作。"
@@ -16,7 +16,7 @@
         }
       } catch {}
     </script>
-    <link rel="icon" type="image/png" href="assets/brand/lingjing-logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/icon-32.png" />
     <link rel="stylesheet" href="desktop.css?v=20261118h" />
     <link rel="stylesheet" href="desktop-refresh.css?v=20261120a" />
     <link rel="stylesheet" href="desktop-workspace.css?v=20261120k" />
@@ -34,7 +34,7 @@
       <header class="login-masthead">
         <div class="login-wordmark" aria-label="千变">
           <span class="login-wordmark-mark">
-            <img src="assets/brand/lingjing-logo.png" alt="" />
+            <img src="assets/brand/qianbian-tile.png" alt="" />
           </span>
           <span class="login-wordmark-copy">
             <strong>千变</strong>
@@ -51,13 +51,14 @@
       <main class="login-layout">
         <section class="login-visual" aria-label="千变品牌展示">
           <div class="login-orbit" aria-hidden="true">
+            <canvas id="login-three-canvas" class="login-three-canvas"></canvas>
             <span class="login-orbit-ring login-orbit-ring-a"></span>
             <span class="login-orbit-ring login-orbit-ring-b"></span>
             <span class="login-orbit-ring login-orbit-ring-c"></span>
             <span class="login-orbit-scan"></span>
             <span class="login-prism">
               <span class="login-prism-glass">
-                <img src="assets/brand/lingjing-logo.png" alt="" />
+                <img src="assets/brand/qianbian-tile.png" alt="" />
               </span>
             </span>
             <span class="login-orbit-label login-orbit-label-a">理解</span>
@@ -395,7 +396,7 @@
             aria-valuenow="30"
           >
             <button class="desktop-affinity-logo" id="account-menu-button" type="button" aria-label="打开账号设置">
-              <img src="assets/brand/lingjing-logo.png" alt="千变 Logo" />
+              <img src="assets/brand/qianbian-tile.png" alt="千变 Logo" />
             </button>
           </div>
           <strong class="desktop-brand-name">千变</strong>
@@ -444,6 +445,7 @@
     <div class="sr-only" id="sr-status" aria-live="assertive"></div>
 
     <script src="assets/lucide.min.js"></script>
+    <script src="assets/login-three-scene.min.js?v=20261123a"></script>
     <script src="data.js?v=20261118a"></script>
     <script src="desktop-app.js?v=20261120g"></script>
     <script src="desktop-login.js?v=20261123a"></script>

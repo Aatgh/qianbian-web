@@ -173,39 +173,25 @@ body.login-locked {
 .login-wordmark-mark {
   position: relative;
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   place-items: center;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
-    #121215;
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
 }
 
 .login-wordmark-mark::after {
-  content: "";
-  position: absolute;
-  inset: -45%;
-  background: conic-gradient(
-    transparent 0 68%,
-    rgba(240, 181, 106, 0.5) 76%,
-    rgba(233, 77, 115, 0.52) 84%,
-    transparent 92%
-  );
-  animation: login-ring-spin 8s linear infinite;
+  display: none;
 }
 
 .login-wordmark-mark img {
-  position: relative;
-  z-index: 1;
-  width: 30px;
-  height: 30px;
-  object-fit: contain;
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.09);
 }
 
 .login-wordmark-copy {
@@ -225,7 +211,7 @@ body.login-locked {
   font-family: var(--font-mono, "JetBrains Mono", monospace);
   font-size: 7px;
   font-weight: 500;
-  letter-spacing: 0.28em;
+  letter-spacing: 0;
 }
 
 .login-secure-status {
@@ -296,6 +282,21 @@ body.login-locked {
   transform: scale(0.78);
 }
 
+.login-three-canvas {
+  position: absolute;
+  inset: 7%;
+  z-index: 1;
+  width: 86%;
+  height: 86%;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.88);
+}
+
+.login-gate.is-ready .login-three-canvas {
+  animation: login-canvas-in 1200ms var(--login-spring) 280ms both;
+}
+
 .login-gate.is-ready .login-orbit {
   animation: login-orbit-in 1100ms var(--login-spring) 160ms both;
 }
@@ -323,6 +324,7 @@ body.login-locked {
 }
 
 .login-orbit-ring {
+  z-index: 2;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -378,6 +380,7 @@ body.login-locked {
 
 .login-orbit-scan {
   inset: 11%;
+  z-index: 2;
   overflow: hidden;
   mask: radial-gradient(circle, transparent 64%, black 65%, black 69%, transparent 70%);
 }
@@ -400,15 +403,11 @@ body.login-locked {
   display: grid;
   width: 31%;
   aspect-ratio: 1;
+  z-index: 3;
   place-items: center;
-  border-radius: 34%;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.025)),
-    rgba(17, 17, 20, 0.92);
-  box-shadow:
-    0 28px 90px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   transform:
     translate3d(
       calc(var(--login-pointer-x) * 0.44),
@@ -438,25 +437,30 @@ body.login-locked {
 
 .login-prism-glass {
   display: grid;
-  width: 72%;
-  height: 72%;
+  width: 100%;
+  height: 100%;
   place-items: center;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 29%;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  overflow: visible;
+  border: 0;
+  border-radius: 28%;
+  background: transparent;
+  box-shadow: none;
 }
 
 .login-prism-glass img {
-  width: 82%;
-  height: 82%;
-  object-fit: contain;
-  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.3));
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 28%;
+  object-fit: cover;
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.09);
 }
 
 .login-orbit-label {
   position: absolute;
+  z-index: 4;
   display: inline-flex;
   min-height: 26px;
   align-items: center;
@@ -1408,6 +1412,19 @@ body.login-locked {
   from {
     opacity: 0;
     transform: scale(0.78);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes login-canvas-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
     filter: blur(8px);
   }
   to {

@@ -31,7 +31,7 @@
     name: "千变用户",
     email: "demo@qianbian.ai",
     bio: "关注产品设计、工程实践与长期成长。",
-    avatar: "assets/brand/lingjing-logo.png",
+    avatar: "assets/brand/qianbian-tile.png",
     phone: "",
     role: "产品与设计",
     company: "千变实验室",
