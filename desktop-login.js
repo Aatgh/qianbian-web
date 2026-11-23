@@ -248,7 +248,7 @@
     const label = open ? "收起登录框" : "打开登录框";
     loginBoxToggle.setAttribute("aria-label", label);
     loginBoxToggle.title = label;
-    loginBoxToggle.innerHTML = `<i data-lucide="power"></i><span class="sr-only">${label}</span>`;
+    loginBoxToggle.innerHTML = `<i data-lucide="user-round"></i><span class="sr-only">${label}</span>`;
     updateIcons(loginBoxToggle);
     if (open) {
       window.requestAnimationFrame(() => {
@@ -294,12 +294,12 @@
     submitLabel.textContent = "登录 / 注册";
     codeButton.disabled = false;
     codeButton.textContent = "获取验证码";
-    gate.classList.remove("login-box-open");
+    gate.classList.add("login-box-open");
     themePanel.hidden = true;
     tuningPanel.hidden = true;
     themeToggle?.setAttribute("aria-expanded", "false");
     tuningToggle?.setAttribute("aria-expanded", "false");
-    syncLoginBoxToggle(false);
+    syncLoginBoxToggle(true);
     setAccountType("phone");
     hideError();
   }
@@ -669,5 +669,5 @@
 
   renderThemeOptions();
   renderTuningControls();
-  syncLoginBoxToggle(false);
+  syncLoginBoxToggle(true);
 })();
