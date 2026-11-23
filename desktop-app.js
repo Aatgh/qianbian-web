@@ -1743,6 +1743,12 @@
   async function initializeBackend() {
     if (!api) return;
     if (location.protocol === "file:" && !api.explicit) return;
+    if (
+      ["localhost", "127.0.0.1"].includes(location.hostname) &&
+      !api.explicit
+    ) {
+      return;
+    }
     try {
       await api.health();
       state.apiAvailable = true;
@@ -6674,6 +6680,7 @@ export const skill = {
     state.accountDialogOpen = false;
     state.accountSwitchOpen = false;
     if (detail.email) state.accountEmail = detail.email;
+    if (detail.phone) state.accountPhone = detail.phone;
     if (detail.name) state.accountName = detail.name;
     persistAccountProfile();
     renderAccountDialog();

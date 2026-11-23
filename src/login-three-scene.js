@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-const themeGroups = [
+const sourceGroups = [
   {
     id: "aidesigner",
     label: "AIDesigner",
@@ -40,6 +40,21 @@ const themeGroups = [
       ["liquid-chrome", "液态铬", 7, "#0d1117", "#d9ecff", "#9b8cff", 0.86],
       ["rain-glass", "雨玻璃", 6, "#07111b", "#a6dcff", "#d2a6ff", 0.9],
       ["warp-starfield", "曲速星场", 0, "#020510", "#ffffff", "#8f6bff", 1.35],
+      ["audio-sphere", "音频星球", 0, "#050817", "#b8c8ff", "#ff8dde", 0.78],
+      ["chrome-logo", "铬金属标志", 7, "#0a0d13", "#eef6ff", "#8e8dff", 0.76],
+      ["click-ripple", "点击涟漪", 4, "#031018", "#7aeeff", "#c6a6ff", 0.84],
+      ["curved-gallery", "曲面画廊", 7, "#0d1018", "#ffd5b7", "#9fc9ff", 0.52],
+      ["data-globe", "数据地球", 8, "#03101a", "#6ee7ff", "#8d9dff", 0.86],
+      ["depth-photo", "景深照片", 3, "#11141b", "#f3e9da", "#90a8ff", 0.68],
+      ["dissolve-transition", "溶解转场", 2, "#080a10", "#f4f5ff", "#8b7dff", 0.94],
+      ["exploded-view", "爆炸视图", 8, "#08101d", "#79c5ff", "#e4b0ff", 0.46],
+      ["extruded-text", "立体文字", 8, "#0f1118", "#ffffff", "#9f8aff", 0.73],
+      ["galaxy", "星系", 0, "#020511", "#fff3df", "#b470ff", 0.58],
+      ["holo-card", "全息卡片", 7, "#0a1018", "#80f4ff", "#ff9cd8", 0.69],
+      ["iridescent-blob", "虹彩流体", 2, "#0b0c18", "#9b8dff", "#ffd6a1", 0.82],
+      ["keycap", "键帽阵列", 8, "#0b1018", "#aebfff", "#f2c8ff", 0.37],
+      ["rgb-glitch", "RGB 故障", 5, "#05070d", "#ff466e", "#48e6ff", 0.99],
+      ["text-particles", "文字粒子", 0, "#040713", "#ffffff", "#a277ff", 1.12],
     ],
   },
 ].map((group) => ({
@@ -60,9 +75,74 @@ const themeGroups = [
   ),
 }));
 
-const themes = themeGroups.flatMap((group) =>
+const categoryByTheme = {
+  starfield: "星场",
+  "bokeh-dust": "星场",
+  "warp-starfield": "星场",
+  galaxy: "星场",
+  "audio-sphere": "星场",
+  "text-particles": "星场",
+  "aurora-flow": "极光云气",
+  "vivid-aurora": "极光云气",
+  "fluid-smoke": "极光云气",
+  "silk-waves": "极光云气",
+  "cloud-sea": "极光云气",
+  "ink-fluid": "极光云气",
+  "dissolve-transition": "极光云气",
+  "noise-shimmer": "光影渐变",
+  "mesh-gradient": "光影渐变",
+  "heatmap": "光影渐变",
+  "glow-orbs": "光影渐变",
+  "grain-gradient": "光影渐变",
+  "depth-photo": "光影渐变",
+  "light-rays": "光影渐变",
+  "riso-dither": "印刷故障",
+  halftone: "印刷故障",
+  "ascii-plasma": "印刷故障",
+  "rgb-glitch": "印刷故障",
+  "fluted-glass": "玻璃金属",
+  "holo-foil": "玻璃金属",
+  "liquid-metal": "玻璃金属",
+  "liquid-glass": "玻璃金属",
+  "liquid-chrome": "玻璃金属",
+  "holo-card": "玻璃金属",
+  "curved-gallery": "玻璃金属",
+  "iridescent-blob": "玻璃金属",
+  "chrome-logo": "玻璃金属",
+  "caustics": "焦散水面",
+  "vivid-caustics": "焦散水面",
+  "rain-glass": "焦散水面",
+  "click-ripple": "焦散水面",
+  "data-globe": "焦散水面",
+  "dot-grid-wave": "网格线框",
+  "pixel-grid": "网格线框",
+  "topo-lines": "网格线框",
+  "exploded-view": "网格线框",
+  "extruded-text": "网格线框",
+  keycap: "网格线框",
+};
+const categoryOrder = [
+  "星场",
+  "极光云气",
+  "光影渐变",
+  "玻璃金属",
+  "焦散水面",
+  "网格线框",
+  "印刷故障",
+];
+const themes = sourceGroups.flatMap((group) =>
   group.themes.map((theme) => ({ ...theme, group: group.label })),
 );
+themes.forEach((theme) => {
+  theme.category = categoryByTheme[theme.id] || "其他";
+});
+const themeGroups = categoryOrder
+  .map((category) => ({
+    id: category,
+    label: category,
+    themes: themes.filter((theme) => theme.category === category),
+  }))
+  .filter((group) => group.themes.length);
 const themeMap = new Map(themes.map((theme) => [theme.id, theme]));
 const storageKey = "qianbian-login-background-theme";
 const tuningKey = "qianbian-login-background-tuning";

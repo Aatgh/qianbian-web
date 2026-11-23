@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="desktop.css?v=20261118h" />
     <link rel="stylesheet" href="desktop-refresh.css?v=20261120a" />
     <link rel="stylesheet" href="desktop-workspace.css?v=20261123b" />
-    <link rel="stylesheet" href="desktop-login.css?v=20261123a" />
+    <link rel="stylesheet" href="desktop-login.css?v=20261123c" />
   </head>
   <body class="desktop-reference">
     <div class="login-gate login-starfield-preview" id="login-gate" hidden>
@@ -61,7 +61,7 @@
         <header class="login-theme-panel-head">
           <div>
             <span>主题库</span>
-            <h2>选择星场主题</h2>
+            <h2>选择视觉主题</h2>
           </div>
           <button class="login-theme-close" id="login-theme-close" type="button" aria-label="关闭主题选择">
             <i data-lucide="x"></i>
@@ -140,32 +140,32 @@
           <div class="login-panel">
             <span class="login-panel-border" aria-hidden="true"></span>
             <div class="login-panel-head">
-              <h2 id="login-title">欢迎回来</h2>
-              <p>选择一种方式，继续你的工作。</p>
+              <h2 id="login-title">登录框</h2>
+              <p>手机号或邮箱登录，新用户验证后自动注册。</p>
             </div>
 
-            <button class="login-google-button" type="button">
-              <span class="login-google-spotlight" aria-hidden="true"></span>
-              <span class="login-google-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z"/>
-                  <path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.36l-3.25-2.54c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.03v2.62A10 10 0 0 0 12 22Z"/>
-                  <path fill="#FBBC05" d="M6.39 13.93A6 6 0 0 1 6.07 12c0-.67.12-1.32.32-1.93V7.45H3.03A10 10 0 0 0 2 12c0 1.63.39 3.17 1.03 4.55l3.36-2.62Z"/>
-                  <path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.82 1.49l2.88-2.88A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.97 5.45l3.36 2.62C7.18 7.7 9.39 5.94 12 5.94Z"/>
-                </svg>
-              </span>
-              <span class="login-google-label">使用谷歌账号继续</span>
-              <span class="login-google-arrow" aria-hidden="true">
-                <i data-lucide="chevron-right"></i>
-              </span>
-              <span class="login-google-loader" aria-hidden="true"></span>
-            </button>
-
-            <div class="login-divider"><span>或使用邮箱</span></div>
-
             <form class="login-form" id="login-form" novalidate>
-              <div class="login-field" data-login-field="email">
-                <label class="login-field-label" for="login-email">邮箱地址</label>
+              <div class="login-account-tabs" role="tablist" aria-label="账号类型">
+                <button class="login-account-tab is-active" type="button" role="tab" aria-selected="true" data-login-account="phone">手机号</button>
+                <button class="login-account-tab" type="button" role="tab" aria-selected="false" data-login-account="email">邮箱</button>
+                <span class="login-account-indicator" aria-hidden="true"></span>
+              </div>
+
+              <div class="login-field" id="login-phone-field" data-login-field="phone">
+                <label class="login-field-label" for="login-phone">手机号</label>
+                <input
+                  id="login-phone"
+                  type="tel"
+                  name="phone"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="请输入 11 位手机号"
+                />
+                <span class="login-field-line" aria-hidden="true"></span>
+              </div>
+
+              <div class="login-field" id="login-email-field" data-login-field="email" hidden>
+                <label class="login-field-label" for="login-email">邮箱</label>
                 <input
                   id="login-email"
                   type="email"
@@ -178,64 +178,19 @@
                 <span class="login-field-line" aria-hidden="true"></span>
               </div>
 
-              <div class="login-mode-tabs" role="tablist" aria-label="登录方式">
-                <button
-                  class="login-mode-tab is-active"
-                  type="button"
-                  role="tab"
-                  aria-selected="true"
-                  data-login-mode="password"
-                >
-                  密码登录
-                </button>
-                <button
-                  class="login-mode-tab"
-                  type="button"
-                  role="tab"
-                  aria-selected="false"
-                  data-login-mode="code"
-                >
-                  验证码登录
-                </button>
-                <span class="login-mode-indicator" aria-hidden="true"></span>
-              </div>
-
-              <div class="login-mode-panel" data-login-panel="password">
-                <div class="login-field" data-login-field="password">
-                  <label class="login-field-label" for="login-password">密码</label>
-                  <input
-                    id="login-password"
-                    type="password"
-                    name="password"
-                    autocomplete="current-password"
-                    placeholder="输入密码"
-                  />
-                  <button
-                    class="login-password-toggle"
-                    type="button"
-                    aria-label="显示密码"
-                  >
-                    <i data-lucide="eye"></i>
-                  </button>
-                  <span class="login-field-line" aria-hidden="true"></span>
-                </div>
-              </div>
-
-              <div class="login-mode-panel" data-login-panel="code" hidden>
-                <div class="login-field" data-login-field="code">
-                  <label class="login-field-label" for="login-code">验证码</label>
-                  <input
-                    id="login-code"
-                    type="text"
-                    name="code"
-                    inputmode="numeric"
-                    autocomplete="one-time-code"
-                    maxlength="6"
-                    placeholder="6 位验证码"
-                  />
-                  <button class="login-code-button" type="button">获取验证码</button>
-                  <span class="login-field-line" aria-hidden="true"></span>
-                </div>
+              <div class="login-field" data-login-field="code">
+                <label class="login-field-label" for="login-code">验证码</label>
+                <input
+                  id="login-code"
+                  type="text"
+                  name="code"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  maxlength="6"
+                  placeholder="请输入验证码"
+                />
+                <button class="login-code-button" type="button">获取验证码</button>
+                <span class="login-field-line" aria-hidden="true"></span>
               </div>
 
               <div class="login-meta-row">
@@ -244,7 +199,6 @@
                   <span aria-hidden="true"><i data-lucide="check"></i></span>
                   <b>保持登录</b>
                 </label>
-                <button class="login-text-button" type="button">忘记密码？</button>
               </div>
 
               <div
@@ -257,15 +211,11 @@
 
               <button class="login-submit" type="submit">
                 <span class="login-submit-glow" aria-hidden="true"></span>
-                <span class="login-submit-label">登录</span>
+                <span class="login-submit-label">登录 / 注册</span>
                 <span class="login-submit-icon" aria-hidden="true">
                   <i data-lucide="arrow-right"></i>
                 </span>
                 <span class="login-submit-loader" aria-hidden="true"></span>
-              </button>
-
-              <button class="login-email-button" type="button">
-                使用邮箱继续
               </button>
             </form>
 
@@ -501,10 +451,10 @@
     <div class="sr-only" id="sr-status" aria-live="assertive"></div>
 
     <script src="assets/lucide.min.js"></script>
-    <script src="assets/login-three-scene.min.js?v=20261123b"></script>
+    <script src="assets/login-three-scene.min.js?v=20261123c"></script>
     <script src="data.js?v=20261118a"></script>
     <script src="desktop-api.js?v=20261123b"></script>
-    <script src="desktop-app.js?v=20261123b"></script>
-    <script src="desktop-login.js?v=20261123a"></script>
+    <script src="desktop-app.js?v=20261123c"></script>
+    <script src="desktop-login.js?v=20261123c"></script>
   </body>
 </html>

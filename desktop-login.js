@@ -6,20 +6,17 @@
   const body = document.body;
   const appShell = document.getElementById("app-shell");
   const form = document.getElementById("login-form");
+  const phoneInput = document.getElementById("login-phone");
   const emailInput = document.getElementById("login-email");
-  const passwordInput = document.getElementById("login-password");
+  const phoneField = document.getElementById("login-phone-field");
+  const emailField = document.getElementById("login-email-field");
+  const accountTabs = gate.querySelector(".login-account-tabs");
   const codeInput = document.getElementById("login-code");
   const errorBox = document.getElementById("login-error");
   const successPanel = document.getElementById("login-success");
-  const googleButton = gate.querySelector(".login-google-button");
-  const googleLabel = gate.querySelector(".login-google-label");
   const submitButton = gate.querySelector(".login-submit");
   const submitLabel = gate.querySelector(".login-submit-label");
-  const modeTabs = gate.querySelector(".login-mode-tabs");
-  const passwordToggle = gate.querySelector(".login-password-toggle");
   const codeButton = gate.querySelector(".login-code-button");
-  const emailContinue = gate.querySelector(".login-email-button");
-  const forgotButton = gate.querySelector(".login-text-button");
   const legalButtons = gate.querySelectorAll(".login-legal button");
   const fieldElements = gate.querySelectorAll(".login-field");
   const themeToggle = document.getElementById("login-theme-toggle");
@@ -52,7 +49,7 @@
     loggedIn: true,
   };
 
-  let mode = "password";
+  let accountType = "phone";
   let busy = false;
   let completionTimer = 0;
   let focusTimer = 0;
@@ -266,13 +263,10 @@
     successPanel.hidden = true;
     gate.classList.remove("is-leaving");
     gate.classList.remove("is-authenticating");
-    googleButton.classList.remove("is-connecting");
-    googleButton.removeAttribute("aria-busy");
-    googleLabel.textContent = "使用谷歌账号继续";
     submitButton.classList.remove("is-submitting");
     submitButton.disabled = false;
     submitButton.removeAttribute("aria-busy");
-    submitLabel.textContent = "登录";
+    submitLabel.textContent = "登录 / 注册";
     codeButton.disabled = false;
     codeButton.textContent = "获取验证码";
     gate.classList.remove("login-box-open");
@@ -281,6 +275,7 @@
     themeToggle?.setAttribute("aria-expanded", "false");
     tuningToggle?.setAttribute("aria-expanded", "false");
     syncLoginBoxToggle(false);
+    setAccountType("phone");
     hideError();
   }
 
@@ -300,7 +295,7 @@
     }
 
     if (focusEmail) {
-      focusTimer = window.setTimeout(() => emailInput.focus(), 780);
+      focusTimer = window.setTimeout(() => phoneInput.focus(), 780);
     }
   }
 
@@ -326,8 +321,8 @@
     errorBox.textContent = "";
     errorBox.classList.remove("is-info");
     fieldElements.forEach((field) => field.classList.remove("is-invalid"));
+    phoneInput.removeAttribute("aria-invalid");
     emailInput.removeAttribute("aria-invalid");
-    passwordInput.removeAttribute("aria-invalid");
     codeInput.removeAttribute("aria-invalid");
   }
 
@@ -354,6 +349,10 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
+  function validPhone(value) {
+    return /^1\d{10}$/.test(value);
+  }
+
   function syncFieldState(input) {
     input.closest(".login-field")?.classList.toggle(
       "has-value",
@@ -361,22 +360,21 @@
     );
   }
 
-  function setMode(nextMode) {
-    mode = nextMode;
-    modeTabs.dataset.mode = mode;
-    gate.querySelectorAll("[data-login-mode]").forEach((button) => {
-      const active = button.dataset.loginMode === mode;
+  function setAccountType(nextType) {
+    accountType = nextType;
+    if (accountTabs) accountTabs.dataset.account = accountType;
+    gate.querySelectorAll("[data-login-account]").forEach((button) => {
+      const active = button.dataset.loginAccount === accountType;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-selected", String(active));
       button.tabIndex = active ? 0 : -1;
     });
-    gate.querySelectorAll("[data-login-panel]").forEach((panel) => {
-      panel.hidden = panel.dataset.loginPanel !== mode;
-    });
+    phoneField.hidden = accountType !== "phone";
+    emailField.hidden = accountType !== "email";
     hideError();
-    submitLabel.textContent = "登录";
-    if (mode === "password") passwordInput.focus();
-    else codeInput.focus();
+    submitLabel.textContent = "登录 / 注册";
+    if (accountType === "phone") phoneInput.focus();
+    else emailInput.focus();
   }
 
   function setBusy(nextBusy) {
@@ -386,8 +384,10 @@
     submitButton.setAttribute("aria-busy", String(nextBusy));
   }
 
-  function finishLogin({ email, name, method }) {
-    const safeEmail = validEmail(email) ? email : defaultProfile.email;
+  function finishLogin({ identifier, type, name, method }) {
+    const safeEmail = validEmail(identifier)
+      ? identifier
+      : `${identifier.replace(/\D/g, "") || "user"}@phone.qianbian`;
     const existing = readProfile();
     const profile = {
       ...defaultProfile,
@@ -397,6 +397,10 @@
           ? existing.name
           : name || safeEmail.split("@")[0],
       email: safeEmail,
+      phone:
+        type === "phone"
+          ? identifier
+          : existing.phone || defaultProfile.phone,
       loggedIn: true,
       authMethod: method,
       lastLoginAt: new Date().toISOString(),
@@ -419,6 +423,7 @@
       new CustomEvent("qianbian:auth-success", {
         detail: {
           email: profile.email,
+          phone: profile.phone,
           name: profile.name,
           method,
         },
@@ -433,46 +438,29 @@
     );
   }
 
-  function handleGoogleLogin() {
-    if (busy) return;
-    hideError();
-    const email = validEmail(emailInput.value.trim())
-      ? emailInput.value.trim()
-      : defaultProfile.email;
-    googleButton.classList.add("is-connecting");
-    googleButton.setAttribute("aria-busy", "true");
-    googleLabel.textContent = "正在安全连接谷歌账号";
-    busy = true;
-    completionTimer = window.setTimeout(
-      () => {
-        finishLogin({
-          email,
-          name: email.split("@")[0],
-          method: "google",
-        });
-      },
-      reduceMotion.matches ? 80 : 920,
-    );
-  }
-
   function handleSubmit(event) {
     event.preventDefault();
     if (busy) return;
     hideError();
 
-    const email = emailInput.value.trim();
-    const emailField = emailInput.closest(".login-field");
-    if (!validEmail(email)) {
-      showError("请输入有效的邮箱地址。", emailField);
+    const identifier =
+      accountType === "phone"
+        ? phoneInput.value.trim()
+        : emailInput.value.trim();
+    const identifierField =
+      accountType === "phone"
+        ? phoneInput.closest(".login-field")
+        : emailInput.closest(".login-field");
+    if (accountType === "phone" && !validPhone(identifier)) {
+      showError("请输入有效的 11 位手机号。", identifierField);
+      return;
+    }
+    if (accountType === "email" && !validEmail(identifier)) {
+      showError("请输入有效的邮箱地址。", identifierField);
       return;
     }
 
-    if (mode === "password" && passwordInput.value.length < 6) {
-      showError("请输入至少 6 位密码。", passwordInput.closest(".login-field"));
-      return;
-    }
-
-    if (mode === "code" && !/^\d{4,6}$/.test(codeInput.value.trim())) {
+    if (!/^\d{4,6}$/.test(codeInput.value.trim())) {
       showError("请输入收到的 4 到 6 位验证码。", codeInput.closest(".login-field"));
       return;
     }
@@ -481,9 +469,13 @@
     completionTimer = window.setTimeout(
       () => {
         finishLogin({
-          email,
-          name: email.split("@")[0],
-          method: mode,
+          identifier,
+          type: accountType,
+          name:
+            accountType === "phone"
+              ? `用户${identifier.slice(-4)}`
+              : identifier.split("@")[0],
+          method: `${accountType}-code`,
         });
       },
       reduceMotion.matches ? 80 : 760,
@@ -491,14 +483,29 @@
   }
 
   function startCodeCountdown() {
-    const email = emailInput.value.trim();
-    if (!validEmail(email)) {
-      showError("请先输入有效的邮箱地址。", emailInput.closest(".login-field"));
+    const identifier =
+      accountType === "phone"
+        ? phoneInput.value.trim()
+        : emailInput.value.trim();
+    if (accountType === "phone" && !validPhone(identifier)) {
+      showError(
+        "请先输入有效的 11 位手机号。",
+        phoneInput.closest(".login-field"),
+      );
+      return;
+    }
+    if (accountType === "email" && !validEmail(identifier)) {
+      showError(
+        "请先输入有效的邮箱地址。",
+        emailInput.closest(".login-field"),
+      );
       return;
     }
 
     hideError();
-    showInfo(`验证码已发送到 ${email}`);
+    showInfo(
+      `验证码已发送到${accountType === "phone" ? "手机号" : "邮箱"} ${identifier}`,
+    );
     countdown = 30;
     codeButton.disabled = true;
     codeButton.textContent = `${countdown}s`;
@@ -515,18 +522,6 @@
     }, 1000);
   }
 
-  function togglePassword() {
-    const visible = passwordInput.type === "text";
-    passwordInput.type = visible ? "password" : "text";
-    passwordToggle.setAttribute(
-      "aria-label",
-      visible ? "显示密码" : "隐藏密码",
-    );
-    passwordToggle.innerHTML = `<i data-lucide="${visible ? "eye" : "eye-off"}"></i>`;
-    updateIcons(passwordToggle);
-    passwordInput.focus();
-  }
-
   function syncPointer(event) {
     if (reduceMotion.matches) return;
     const x = event.clientX / window.innerWidth - 0.5;
@@ -535,18 +530,6 @@
     root.style.setProperty("--login-pointer-y", `${y * 20}px`);
   }
 
-  googleButton.addEventListener("pointermove", (event) => {
-    const rect = googleButton.getBoundingClientRect();
-    googleButton.style.setProperty(
-      "--login-spot-x",
-      `${event.clientX - rect.left}px`,
-    );
-    googleButton.style.setProperty(
-      "--login-spot-y",
-      `${event.clientY - rect.top}px`,
-    );
-  });
-  googleButton.addEventListener("click", handleGoogleLogin);
   form.addEventListener("submit", handleSubmit);
   themeToggle?.addEventListener("click", () => toggleThemePanel());
   tuningToggle?.addEventListener("click", () => toggleTuningPanel());
@@ -572,24 +555,13 @@
     });
   });
 
-  gate.querySelectorAll("[data-login-mode]").forEach((button) => {
-    button.addEventListener("click", () => setMode(button.dataset.loginMode));
+  gate.querySelectorAll("[data-login-account]").forEach((button) => {
+    button.addEventListener("click", () =>
+      setAccountType(button.dataset.loginAccount),
+    );
   });
 
-  passwordToggle.addEventListener("click", togglePassword);
   codeButton.addEventListener("click", startCodeCountdown);
-  emailContinue.addEventListener("click", () => {
-    emailInput.focus();
-    emailInput.select();
-  });
-  forgotButton.addEventListener("click", () => {
-    const email = emailInput.value.trim();
-    if (!validEmail(email)) {
-      showError("请先输入邮箱地址，再获取重置链接。", emailInput.closest(".login-field"));
-      return;
-    }
-    showInfo(`密码重置链接已发送到 ${email}`);
-  });
   legalButtons.forEach((button) => {
     button.addEventListener("click", () => {
       showInfo("当前为本地演示登录，服务条款与隐私政策将在正式接入后生效。");
