@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#08090c" />
+    <title>千变 Logo · 3D Study</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #f7f2f5;
+        --muted: rgba(247, 242, 245, 0.52);
+        --accent: #b5297b;
+        --line: rgba(255, 255, 255, 0.1);
+        --glass: rgba(18, 19, 25, 0.7);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #08090c;
+      }
+
+      body {
+        color: var(--ink);
+        font-family:
+          "PingFang SC",
+          "Microsoft YaHei",
+          system-ui,
+          sans-serif;
+      }
+
+      .logo-3d-stage {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 46%, rgba(58, 24, 43, 0.18), transparent 42%),
+          #08090c;
+      }
+
+      #logo-3d-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: grab;
+        touch-action: none;
+      }
+
+      #logo-3d-canvas.is-dragging {
+        cursor: grabbing;
+      }
+
+      .logo-3d-meta {
+        position: fixed;
+        top: clamp(20px, 4vw, 42px);
+        left: clamp(20px, 4vw, 48px);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        pointer-events: none;
+      }
+
+      .logo-3d-meta img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        filter: drop-shadow(0 8px 18px rgba(181, 41, 123, 0.3));
+      }
+
+      .logo-3d-meta div {
+        display: grid;
+        gap: 2px;
+      }
+
+      .logo-3d-meta strong {
+        font-size: 13px;
+        font-weight: 680;
+      }
+
+      .logo-3d-meta span {
+        color: var(--muted);
+        font-family:
+          "JetBrains Mono",
+          Consolas,
+          monospace;
+        font-size: 8px;
+        letter-spacing: 0.08em;
+      }
+
+      .logo-3d-controls {
+        position: fixed;
+        bottom: max(22px, env(safe-area-inset-bottom));
+        left: 50%;
+        display: flex;
+        min-height: 54px;
+        align-items: center;
+        gap: 8px;
+        padding: 7px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--glass);
+        box-shadow:
+          0 20px 48px rgba(0, 0, 0, 0.38),
+          inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(24px) saturate(1.2);
+        transform: translateX(-50%);
+      }
+
+      .logo-3d-controls button {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.66);
+        cursor: pointer;
+        transition:
+          color 160ms ease,
+          background 160ms ease,
+          border-color 160ms ease,
+          transform 160ms ease;
+      }
+
+      .logo-3d-controls button:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.07);
+        color: #fff;
+        transform: translateY(-1px);
+      }
+
+      .logo-3d-controls button.is-active {
+        border-color: rgba(217, 90, 164, 0.34);
+        background: rgba(181, 41, 123, 0.18);
+        color: #ffc1df;
+      }
+
+      .logo-3d-controls button:focus-visible {
+        outline: 2px solid rgba(255, 175, 218, 0.9);
+        outline-offset: 2px;
+      }
+
+      .logo-3d-controls svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      @media (max-width: 620px) {
+        .logo-3d-meta {
+          top: 18px;
+          left: 18px;
+        }
+
+        .logo-3d-meta img {
+          width: 30px;
+          height: 30px;
+        }
+
+        .logo-3d-controls {
+          border-radius: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="logo-3d-stage">
+      <canvas id="logo-3d-canvas" aria-label="千变 Logo 3D 模型"></canvas>
+
+      <div class="logo-3d-meta" aria-hidden="true">
+        <img src="reference-logo.png" alt="" />
+        <div>
+          <strong>千变</strong>
+          <span>EXTRUDED FORM / 01</span>
+        </div>
+      </div>
+
+      <div class="logo-3d-controls" role="toolbar" aria-label="3D 模型控制">
+        <button
+          id="toggle-rotation"
+          type="button"
+          aria-label="暂停自动旋转"
+          aria-pressed="true"
+          title="暂停自动旋转"
+        >
+          <i data-lucide="orbit"></i>
+        </button>
+        <button
+          id="reset-view"
+          type="button"
+          aria-label="重置视角"
+          title="重置视角"
+        >
+          <i data-lucide="rotate-ccw"></i>
+        </button>
+      </div>
+    </main>
+
+    <script src="lucide.min.js"></script>
+    <script>
+      window.lucide?.createIcons({
+        attrs: { "stroke-width": "1.8", "aria-hidden": "true" },
+      });
+    </script>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -76,6 +76,8 @@ test("logo 3D demo remains framed on a narrow viewport", async ({ page }) => {
       controls: controlsBox.toJSON(),
       viewport: { width: innerWidth, height: innerHeight },
       scrollWidth: document.documentElement.scrollWidth,
+      modelBounds: window.__qianbianLogo3D.screenBounds(),
+      pixels: window.__qianbianLogo3D.samplePixels(),
     };
   });
 
@@ -85,4 +87,9 @@ test("logo 3D demo remains framed on a narrow viewport", async ({ page }) => {
   expect(metrics.controls.right).toBeLessThanOrEqual(metrics.viewport.width);
   expect(metrics.controls.bottom).toBeLessThanOrEqual(metrics.viewport.height);
   expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewport.width);
+  expect(metrics.modelBounds.left).toBeGreaterThanOrEqual(0);
+  expect(metrics.modelBounds.right).toBeLessThanOrEqual(metrics.viewport.width);
+  expect(metrics.modelBounds.top).toBeGreaterThanOrEqual(0);
+  expect(metrics.modelBounds.bottom).toBeLessThanOrEqual(metrics.viewport.height);
+  expect(metrics.pixels.maxChannel).toBeGreaterThan(100);
 });
