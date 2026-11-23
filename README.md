@@ -27,6 +27,7 @@ python -m http.server 8080
 - `desktop.html`、`desktop.css`、`desktop-refresh.css`、`desktop-workspace.css`：电脑端界面
 - `desktop-login.css`、`desktop-login.js`：电脑端登录界面、动画和本地登录状态
 - `src/login-three-scene.js`、`assets/login-three-scene.min.js`：Three.js 登录场景源码与离线构建产物
+- `desktop-api.js`：千变后端 API 客户端，覆盖会话、SSE、审批、提问、模型、技能和导出接口
 - `desktop-app.js`、`data.js`：电脑端工作区交互和演示数据
 - `index.html`、`styles.css`、`app.js`：手机端界面
 - `assets/`：品牌、图标、字体和演示素材
@@ -45,6 +46,16 @@ npm run test:e2e
 ```powershell
 npm run build:login-scene
 ```
+
+## 后端联调
+
+部署页与后端同源时默认使用 `/api`。本地静态预览可通过查询参数临时指定：
+
+```text
+desktop.html?api=http://192.168.1.10:3101/api
+```
+
+也可以把接口地址写入 `localStorage` 的 `qianbian-api-base`。后端不可用时页面自动回退到本地演示数据。
 
 ## 说明
 

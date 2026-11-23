@@ -40,6 +40,8 @@
   const documentsPanelHost = document.getElementById("documents-panel-host");
   const historyFilter = document.getElementById("history-filter");
   const historyCount = document.getElementById("history-count");
+  const backendPromptHost = document.getElementById("backend-prompt-host");
+  const api = window.QianbianApi || null;
 
   const VIEW_META = {
     chat: { title: "新对话", breadcrumb: "新对话" },
@@ -175,7 +177,7 @@
     "desktop-cover": {
       type: "图片",
       size: "1.8 MB",
-      image: "assets/brand/lingjing-logo.png",
+      image: "assets/brand/qianbian-tile.png",
       preview: "桌面工作区的品牌封面素材，用于工作区概览与分享卡片。",
     },
     "theme-tokens": {
@@ -878,6 +880,7 @@
     activeSession: null,
     historyPanelQuery: "",
     messages: [],
+    backendActivity: [],
     typing: false,
     draft: localStorage.getItem("qianbian-desktop-draft") || "",
     theme: storedTheme === "dark" ? "dark" : "light",
@@ -888,6 +891,9 @@
     contextTab: "overview",
     workspaceId: initialWorkspace.id,
     workspaceName: initialWorkspace.name,
+    workspaceRoot:
+      localStorage.getItem("qianbian-workspace-root") ||
+      "D:/project/千变/data/workspaces/u14",
     workspaceMenuOpen: false,
     detail: null,
     railDialog: null,
@@ -950,6 +956,7 @@
       description: "",
       mode: "upload",
       packageName: "",
+      packageFile: null,
       fileName: "skill.js",
       code: "",
       aiIdea: "",
@@ -975,6 +982,18 @@
       Array.isArray(storedDeletedMemories) ? storedDeletedMemories : [],
     ),
     model: "通用模型 V4",
+    modelId: "2",
+    models: [],
+    approvalMode: "onRequest",
+    apiAvailable: false,
+    apiStatus: null,
+    sessionLoading: false,
+    activeTurnId: null,
+    pendingApprovals: [],
+    pendingInputs: [],
+    contextUsage: null,
+    tokenUsage: null,
+    questionSelections: new Map(),
     agentTraining: Number.isFinite(storedAffinity)
       ? Math.min(100, Math.max(0, storedAffinity))
       : 30,
@@ -990,7 +1009,7 @@
     accountBio:
       storedAccountProfile.bio || "关注产品设计、工程实践与长期成长。",
     accountAvatar:
-      storedAccountProfile.avatar || "assets/brand/lingjing-logo.png",
+      storedAccountProfile.avatar || "assets/brand/qianbian-tile.png",
     accountPhone: storedAccountProfile.phone || "",
     accountRole: storedAccountProfile.role || "产品与设计",
     accountCompany: storedAccountProfile.company || "千变实验室",
@@ -1047,6 +1066,7 @@
   let mediaRecorder = null;
   let lastWideLayout = window.innerWidth > 1280;
   let viewportRenderFrame = 0;
+  let skillSearchTimer = null;
   let settingsSheetEntering = false;
   let skillMarketEntering = false;
   let accountDialogEntering = false;
@@ -1055,7 +1075,8 @@
     const installedMarketSkills = MARKET_SKILLS.filter(
       (skill) =>
         state.marketInstalled.has(skill.id) &&
-        !state.deletedSkills.has(skill.id),
+        !state.deletedSkills.has(skill.id) &&
+        !SKILLS.some((installed) => installed.id === skill.id),
     ).map((skill) => ({
       id: skill.id,
       title: skill.title,
@@ -1289,6 +1310,493 @@
     updateIcons(workspaceSwitcher);
   }
 
+  function formatBackendTime(value) {
+    const timestamp = Date.parse(value || "");
+    if (!Number.isFinite(timestamp)) return "刚刚";
+    const diff = Math.max(0, Date.now() - timestamp);
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return "刚刚";
+    if (minutes < 60) return `${minutes} 分钟前`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} 小时前`;
+    if (hours < 48) return "昨天";
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} 天前`;
+    return new Date(timestamp).toLocaleDateString("zh-CN", {
+      month: "numeric",
+      day: "numeric",
+    });
+  }
+
+  function mapBackendSession(session) {
+    return {
+      id: String(session.sessionId ?? session.id),
+      title: session.title || "新对话",
+      meta: formatBackendTime(session.updatedAt || session.createdAt),
+      icon: "message-square",
+      messages: [],
+      raw: session,
+    };
+  }
+
+  function replaceBackendSessions(list) {
+    const mapped = (Array.isArray(list) ? list : [])
+      .filter((session) => session && (session.sessionId || session.id))
+      .map(mapBackendSession);
+    SESSIONS.splice(0, SESSIONS.length, ...mapped);
+  }
+
+  function mapBackendItem(item) {
+    if (!item || !["userMessage", "agentMessage"].includes(item.kind)) {
+      return null;
+    }
+    return {
+      role: item.kind === "userMessage" ? "user" : "assistant",
+      text: item.text || item.visibleOutput || "",
+      itemId: item.itemId ? String(item.itemId) : undefined,
+      status: item.status || "completed",
+    };
+  }
+
+  function extractBackendItems(payload) {
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.history?.items)) return payload.history.items;
+    return [];
+  }
+
+  function hydrateMessagesFromBackend(payload) {
+    return extractBackendItems(payload).map(mapBackendItem).filter(Boolean);
+  }
+
+  function hydrateActivityFromBackend(payload) {
+    return extractBackendItems(payload)
+      .filter((item) =>
+        ["reasoning", "toolCall"].includes(item.kind),
+      )
+      .map((item) => ({
+        itemId: String(item.itemId || ""),
+        kind: item.kind,
+        tool: item.tool || "",
+        summary:
+          item.visibleOutput ||
+          (Array.isArray(item.summary) ? item.summary.join("\n") : "") ||
+          item.text ||
+          "",
+        status: item.status || "completed",
+      }));
+  }
+
+  function upsertBackendActivity(item) {
+    if (!item || !["reasoning", "toolCall"].includes(item.kind)) return;
+    const itemId = String(item.itemId || "");
+    const activity = {
+      itemId,
+      kind: item.kind,
+      tool: item.tool || "",
+      summary:
+        item.visibleOutput ||
+        (Array.isArray(item.summary) ? item.summary.join("\n") : "") ||
+        item.text ||
+        "",
+      status: item.status || "completed",
+    };
+    const index = state.backendActivity.findIndex(
+      (entry) => entry.itemId === itemId,
+    );
+    if (index >= 0) state.backendActivity[index] = activity;
+    else state.backendActivity.push(activity);
+    render();
+  }
+
+  function upsertBackendMessage(item) {
+    const mapped = mapBackendItem(item);
+    if (!mapped) return;
+    const itemId = mapped.itemId;
+    let index = itemId
+      ? state.messages.findIndex((message) => message.itemId === itemId)
+      : -1;
+    if (
+      index < 0 &&
+      mapped.role === "user" &&
+      state.messages.at(-1)?.role === "user" &&
+      !state.messages.at(-1)?.itemId &&
+      state.messages.at(-1)?.text === mapped.text
+    ) {
+      index = state.messages.length - 1;
+    }
+    if (index >= 0) state.messages[index] = { ...mapped };
+    else state.messages.push(mapped);
+    state.typing = false;
+    render();
+  }
+
+  function syncBackendModels(payload) {
+    const models = Array.isArray(payload?.models) ? payload.models : [];
+    if (!models.length) return;
+    state.models = models.map((model) => ({
+      modelId: String(model.modelId ?? model.id),
+      label: model.label || model.name || "未命名模型",
+      isDefault: Boolean(model.isDefault),
+    }));
+    const selected =
+      state.models.find((model) => model.modelId === state.modelId) ||
+      state.models.find((model) => model.isDefault) ||
+      state.models[0];
+    state.modelId = selected.modelId;
+    state.model = selected.label;
+  }
+
+  function normalizeBackendSkill(skill, scope = "market") {
+    const id = String(skill.id ?? skill.skillId ?? skill.name);
+    const badgeLabels = {
+      official: "官方",
+      reviewed: "已审查",
+      community: "社区",
+    };
+    return {
+      id,
+      title: skill.displayName || skill.name || "未命名技能",
+      name: skill.name || skill.displayName || id,
+      description: skill.description || "暂无技能说明。",
+      icon: scope === "market" ? "puzzle" : "sparkles",
+      badge:
+        badgeLabels[skill.badge] ||
+        skill.author ||
+        skill.category ||
+        "技能",
+      category: skill.category || "growth",
+      tags: [
+        skill.category,
+        skill.version,
+        badgeLabels[skill.badge] || skill.author,
+      ].filter(Boolean),
+      installed: Boolean(skill.installed),
+      enabled: skill.enabled !== false,
+      version: skill.version || "",
+      risk: skill.risk || "low",
+      permissions: Array.isArray(skill.permissions) ? skill.permissions : [],
+      raw: skill,
+    };
+  }
+
+  function skillCategoryLabel(category) {
+    const labels = {
+      all: "全部",
+      development: "开发",
+      data: "数据",
+      life: "生活",
+      wellness: "健康",
+      growth: "成长",
+      office: "办公",
+      design: "设计",
+      general: "通用",
+      productivity: "效率",
+      research: "研究",
+      automation: "自动化",
+    };
+    return labels[category] || category || "其他";
+  }
+
+  function applyBackendSkills({ market, installed, mine }) {
+    const marketSkills = Array.isArray(market?.skills)
+      ? market.skills.map((skill) => normalizeBackendSkill(skill, "market"))
+      : [];
+    if (marketSkills.length) {
+      MARKET_SKILLS.splice(0, MARKET_SKILLS.length, ...marketSkills);
+    }
+    state.marketInstalled = new Set(
+      marketSkills
+        .filter((skill) => skill.installed)
+        .map((skill) => skill.id),
+    );
+    const installedSkills = Array.isArray(installed?.skills)
+      ? installed.skills.map((skill) =>
+          normalizeBackendSkill(skill, "installed"),
+        )
+      : [];
+    if (installedSkills.length || installed) {
+      SKILLS.splice(0, SKILLS.length, ...installedSkills);
+      state.disabledSkills = new Set(
+        installedSkills
+          .filter((skill) => !skill.enabled)
+          .map((skill) => skill.id),
+      );
+    }
+    const mineSkills = Array.isArray(mine?.skills)
+      ? mine.skills.map((skill) => ({
+          id: String(skill.id ?? skill.skillId ?? skill.name),
+          title: skill.displayName || skill.name || "未命名技能",
+          description: skill.description || "暂无技能说明。",
+          icon: "package-check",
+          category: skill.category || "life",
+          status: skill.status || skill.reviewStatus || "pending",
+          updatedAt: formatBackendTime(skill.updatedAt),
+          raw: skill,
+        }))
+      : [];
+    if (mineSkills.length || mine) state.publishedSkills = mineSkills;
+  }
+
+  function renderBackendPrompts() {
+    if (!backendPromptHost) return;
+    const approvalCards = state.pendingApprovals.map((approval) => {
+      const subject =
+        typeof approval.subject === "string"
+          ? approval.subject
+          : approval.subject?.summary ||
+            JSON.stringify(approval.subject || {});
+      return `
+        <article class="backend-prompt-card" data-backend-approval="${escapeHtml(String(approval.approvalId))}">
+          <div class="backend-prompt-head">
+            <div>
+              <span>需要确认</span>
+              <strong>${escapeHtml(approval.toolName || "工具操作")}</strong>
+            </div>
+            ${icon("shield-alert")}
+          </div>
+          <p class="backend-prompt-copy">${escapeHtml(subject)}</p>
+          <div class="backend-prompt-actions">
+            ${(approval.availableChoices || [])
+              .map(
+                (choice) => `
+                  <button
+                    class="${choice.decision === "approved" ? "primary-button" : "secondary-button"}"
+                    data-approval-id="${escapeHtml(String(approval.approvalId))}"
+                    data-approval-choice="${escapeHtml(String(choice.choiceId))}"
+                    type="button"
+                  >${escapeHtml(choice.label || choice.choiceId)}</button>
+                `,
+              )
+              .join("")}
+          </div>
+        </article>
+      `;
+    });
+    const inputCards = state.pendingInputs.map(
+      (request) => `
+        <article class="backend-prompt-card" data-backend-input="${escapeHtml(String(request.userInputId))}">
+          <div class="backend-prompt-head">
+            <div>
+              <span>需要回答</span>
+              <strong>千变需要补充信息</strong>
+            </div>
+            ${icon("message-circle-question")}
+          </div>
+          ${(request.questions || [])
+            .map(
+              (question) => `
+                <div class="backend-prompt-question">
+                  <strong>${escapeHtml(question.header || question.question || "请选择")}</strong>
+                  <p class="backend-prompt-copy">${escapeHtml(question.question || "")}</p>
+                  <select data-backend-question="${escapeHtml(String(question.id))}">
+                    ${(question.options || [])
+                      .map(
+                        (option) =>
+                          `<option value="${escapeHtml(String(option.label))}">${escapeHtml(String(option.label))}</option>`,
+                      )
+                      .join("")}
+                  </select>
+                </div>
+              `,
+            )
+            .join("")}
+          <div class="backend-prompt-actions">
+            <button class="secondary-button" data-input-cancel="${escapeHtml(String(request.userInputId))}" type="button">取消</button>
+            <button class="primary-button" data-input-submit="${escapeHtml(String(request.userInputId))}" type="button">${icon("send")}提交回答</button>
+          </div>
+        </article>
+      `,
+    );
+    backendPromptHost.innerHTML = [...approvalCards, ...inputCards].join("");
+    updateIcons(backendPromptHost);
+  }
+
+  function handleBackendEvent(method, params) {
+    if (method === "turn/started") {
+      state.activeTurnId = params.turnId || null;
+      state.typing = true;
+      render();
+      return;
+    }
+    if (method === "item/started") {
+      if (["reasoning", "toolCall"].includes(params.item?.kind)) {
+        upsertBackendActivity(params.item);
+      } else {
+        upsertBackendMessage(params.item);
+      }
+      return;
+    }
+    if (method === "item/delta") {
+      const itemId = String(params.itemId || "");
+      if (params.field !== "text") {
+        const activity = state.backendActivity.find(
+          (item) => item.itemId === itemId,
+        );
+        if (activity) {
+          activity.summary += params.delta || "";
+          render();
+        }
+        return;
+      }
+      let message = state.messages.find(
+        (item) => item.itemId && item.itemId === itemId,
+      );
+      if (!message) {
+        message = {
+          role: "assistant",
+          text: "",
+          itemId,
+          status: "inProgress",
+        };
+        state.messages.push(message);
+      }
+      if (params.field === "text") {
+        message.text += params.delta || "";
+        state.typing = false;
+        render();
+      }
+      return;
+    }
+    if (method === "item/completed") {
+      if (["reasoning", "toolCall"].includes(params.item?.kind)) {
+        upsertBackendActivity(params.item);
+      } else {
+        upsertBackendMessage(params.item);
+      }
+      return;
+    }
+    if (method === "approval/requested") {
+      state.pendingApprovals = [
+        ...state.pendingApprovals.filter(
+          (item) => item.approvalId !== params.approvalId,
+        ),
+        params,
+      ];
+      renderBackendPrompts();
+      return;
+    }
+    if (method === "approval/resolved") {
+      state.pendingApprovals = state.pendingApprovals.filter(
+        (item) => item.approvalId !== params.approvalId,
+      );
+      renderBackendPrompts();
+      return;
+    }
+    if (method === "userInput/requested") {
+      state.pendingInputs = [
+        ...state.pendingInputs.filter(
+          (item) => item.userInputId !== params.userInputId,
+        ),
+        params,
+      ];
+      renderBackendPrompts();
+      return;
+    }
+    if (method === "userInput/settled") {
+      state.pendingInputs = state.pendingInputs.filter(
+        (item) => item.userInputId !== params.userInputId,
+      );
+      renderBackendPrompts();
+      return;
+    }
+    if (method === "session/tokenUsage") {
+      state.tokenUsage = params;
+      return;
+    }
+    if (method === "session/contextUsage") {
+      state.contextUsage = params;
+      return;
+    }
+    if (method === "turn/completed") {
+      state.typing = false;
+      state.activeTurnId = null;
+      render();
+      refreshBackendSessions();
+    }
+  }
+
+  async function refreshBackendSessions() {
+    if (!api || !state.apiAvailable) return;
+    try {
+      const payload = await api.sessions();
+      replaceBackendSessions(payload?.sessions);
+      renderSessions();
+      renderContext();
+    } catch {}
+  }
+
+  async function refreshBackendSkills(query = "") {
+    if (!api || !state.apiAvailable) return;
+    const [market, installed, mine] = await Promise.allSettled([
+      api.skills({ scope: "market", q: query }),
+      api.skills({ scope: "installed", q: query }),
+      api.mineSkills(),
+    ]);
+    applyBackendSkills({
+      market: market.status === "fulfilled" ? market.value : undefined,
+      installed: installed.status === "fulfilled" ? installed.value : undefined,
+      mine: mine.status === "fulfilled" ? mine.value : undefined,
+    });
+    render();
+  }
+
+  async function initializeBackend() {
+    if (!api) return;
+    if (location.protocol === "file:" && !api.explicit) return;
+    try {
+      await api.health();
+      state.apiAvailable = true;
+      if (engineLabel) engineLabel.textContent = "后端已连接";
+    } catch (error) {
+      state.apiAvailable = false;
+      state.apiStatus = { connected: false, error: error.message };
+      return;
+    }
+    const [sessionsResult, modelsResult, marketResult, installedResult, mineResult] =
+      await Promise.allSettled([
+        api.sessions(),
+        api.models(),
+        api.skills({ scope: "market" }),
+        api.skills({ scope: "installed" }),
+        api.mineSkills(),
+      ]);
+    if (sessionsResult.status === "fulfilled") {
+      replaceBackendSessions(sessionsResult.value?.sessions);
+    }
+    if (modelsResult.status === "fulfilled") {
+      syncBackendModels(modelsResult.value);
+    }
+    applyBackendSkills({
+      market:
+        marketResult.status === "fulfilled" ? marketResult.value : undefined,
+      installed:
+        installedResult.status === "fulfilled"
+          ? installedResult.value
+          : undefined,
+      mine: mineResult.status === "fulfilled" ? mineResult.value : undefined,
+    });
+    api.connectEvents({
+      onStatus(status) {
+        state.apiStatus = status;
+        if (engineLabel) {
+          engineLabel.textContent = status?.connected
+            ? "后端已连接"
+            : "后端重连中";
+        }
+      },
+      onEvent: handleBackendEvent,
+      onError(error) {
+        state.apiStatus = { connected: false, error: error?.message || "" };
+      },
+    });
+    render();
+  }
+
+  window.__qianbianBackend = {
+    handleEvent: handleBackendEvent,
+    initialize: initializeBackend,
+  };
+
   function renderSessions() {
     const query = state.historyPanelQuery.trim().toLowerCase();
     const visible = SESSIONS.filter((session) =>
@@ -1360,13 +1868,13 @@
   function renderMessage(message, index) {
     const isUser = message.role === "user";
     const userAvatar =
-      state.accountAvatar || "assets/brand/lingjing-logo.png";
+      state.accountAvatar || "assets/brand/qianbian-tile.png";
     return `
       <article class="message-row ${isUser ? "user" : "assistant"}">
         ${
           isUser
             ? ""
-            : `<span class="message-avatar"><img src="assets/brand/lingjing-logo.png" alt="" /></span>`
+            : `<span class="message-avatar"><img src="assets/brand/qianbian-tile.png" alt="" /></span>`
         }
         <div class="message-content">
           <div class="message-author">${isUser ? "你" : "千变"}</div>
@@ -1390,10 +1898,33 @@
     const messages = state.messages
       .map((message, index) => renderMessage(message, index))
       .join("");
+    const activity = state.backendActivity.length
+      ? `
+        <details class="backend-activity">
+          <summary>${icon("brain-circuit")}思考与工具调用 (${state.backendActivity.length})</summary>
+          <div class="backend-activity-list">
+            ${state.backendActivity
+              .slice(-12)
+              .map(
+                (item) => `
+                  <div class="backend-activity-row">
+                    ${icon(item.kind === "toolCall" ? "wrench" : "sparkles")}
+                    <span>
+                      <strong>${escapeHtml(item.tool || (item.kind === "reasoning" ? "思考摘要" : "工具调用"))}</strong>
+                      <small>${escapeHtml(item.summary || item.status)}</small>
+                    </span>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+        </details>
+      `
+      : "";
     const typing = state.typing
       ? `
         <article class="message-row assistant">
-          <span class="message-avatar"><img src="assets/brand/lingjing-logo.png" alt="" /></span>
+          <span class="message-avatar"><img src="assets/brand/qianbian-tile.png" alt="" /></span>
           <div class="message-content">
             <div class="message-author">千变</div>
             <div class="message-bubble">
@@ -1406,6 +1937,7 @@
     return `
       <div class="message-thread" id="message-thread">
         <div class="thread-meta">今天</div>
+        ${activity}
         ${messages}
         ${typing}
       </div>
@@ -1434,7 +1966,7 @@
   }
 
   function renderChatView() {
-    return state.messages.length || state.typing
+    return state.messages.length || state.typing || state.backendActivity.length
       ? renderChatThread()
       : renderEmptyChat();
   }
@@ -1732,26 +2264,44 @@
   }
 
   function renderModelDetail() {
-    const models = [
+    const fallbackModels = [
       {
+        modelId: "2",
         name: "通用模型 V4",
         description: "日常任务、工具调用与稳定输出",
         meta: "128k 上下文",
         icon: "sparkles",
       },
       {
+        modelId: "3",
         name: "推理模型",
         description: "复杂分析、规划与多步骤问题",
         meta: "64k 上下文",
         icon: "brain",
       },
       {
+        modelId: "4",
         name: "快速模型",
         description: "短对话、信息整理与快速草稿",
         meta: "32k 上下文",
         icon: "zap",
       },
     ];
+    const models = state.models.length
+      ? state.models.map((model) => ({
+          modelId: model.modelId,
+          name: model.label,
+          description: model.isDefault
+            ? "后端默认模型，适合日常任务与工具调用"
+            : "后端可用模型，用于当前会话",
+          meta: `ID ${model.modelId}`,
+          icon: model.isDefault ? "sparkles" : "brain",
+        }))
+      : fallbackModels;
+    const selectedModel =
+      models.find((model) => model.modelId === state.modelId) ||
+      models.find((model) => model.name === state.model) ||
+      models[0];
     return renderDetailShell(
       "模型与运行方式",
       "选择当前对话使用的模型。切换后会用于下一轮消息，不会改写已有内容。",
@@ -1762,11 +2312,11 @@
             ${models
               .map(
                 (model) => `
-                  <button class="choice-row ${state.model === model.name ? "is-selected" : ""}" data-select-model="${escapeHtml(model.name)}" type="button">
+                  <button class="choice-row ${selectedModel?.modelId === model.modelId ? "is-selected" : ""}" data-select-model="${escapeHtml(model.modelId)}" type="button">
                     <span class="choice-icon">${icon(model.icon)}</span>
                     <span class="choice-copy"><strong>${escapeHtml(model.name)}</strong><small>${escapeHtml(model.description)}</small></span>
                     <span class="soft-tag">${escapeHtml(model.meta)}</span>
-                    ${state.model === model.name ? icon("check", "choice-check") : ""}
+                    ${selectedModel?.modelId === model.modelId ? icon("check", "choice-check") : ""}
                   </button>
                 `,
               )
@@ -1779,6 +2329,16 @@
             <div class="detail-row">${icon("wrench")}<span>工具调用</span><strong>已启用</strong></div>
             <div class="detail-row">${icon("route")}<span>运行位置</span><strong>本地工作区</strong></div>
             <div class="detail-row">${icon("shield-check")}<span>权限</span><strong>工作区内修改</strong></div>
+            <label class="detail-row">
+              ${icon("badge-check")}
+              <span>审批模式</span>
+              <select id="approval-mode-select">
+                <option value="onRequest" ${state.approvalMode === "onRequest" ? "selected" : ""}>按需审批</option>
+                <option value="promptUnmatched" ${state.approvalMode === "promptUnmatched" ? "selected" : ""}>未匹配时询问</option>
+                <option value="denyUnmatched" ${state.approvalMode === "denyUnmatched" ? "selected" : ""}>未匹配时拒绝</option>
+                <option value="allowAll" ${state.approvalMode === "allowAll" ? "selected" : ""}>全部允许</option>
+              </select>
+            </label>
           </div>
         </section>
       `,
@@ -1787,7 +2347,7 @@
           <span class="detail-side-label">当前状态</span>
           <div class="status-summary">
             <span class="status-dot"></span>
-            <strong>${escapeHtml(state.model)}</strong>
+            <strong>${escapeHtml(selectedModel?.name || state.model)}</strong>
             <small>连接正常，可以继续对话</small>
           </div>
         </section>
@@ -2111,6 +2671,12 @@
         skill.badge.toLowerCase().includes(query);
       return filterMatch && queryMatch;
     });
+    const categories = [
+      ["all", "全部"],
+      ...[...new Set(MARKET_SKILLS.map((skill) => skill.category))]
+        .filter(Boolean)
+        .map((category) => [category, skillCategoryLabel(category)]),
+    ];
     return `
       <section class="skill-market-dialog">
         ${renderSkillMarketTabs()}
@@ -2126,12 +2692,7 @@
                 <button class="icon-button skill-market-refresh" data-toast="技能市场已刷新" type="button" aria-label="刷新技能市场">${icon("refresh-cw")}</button>
               </div>
               <div class="workspace-filter-row skill-market-filters" aria-label="技能市场分类">
-                ${[
-                  ["all", "全部"],
-                  ["life", "生活"],
-                  ["wellness", "健康"],
-                  ["growth", "成长"],
-                ]
+                ${categories
                   .map(
                     ([value, label]) => `
                       <button class="workspace-filter ${state.skillMarketFilter === value ? "is-active" : ""}" data-skill-market-filter="${value}" type="button" aria-pressed="${state.skillMarketFilter === value}">${label}</button>
@@ -2235,9 +2796,15 @@
       ?.classList.toggle("is-done", sourceReady);
   }
 
-  function setDesktopPublishPackage(fileName) {
-    if (!fileName) return;
-    state.desktopPublishDraft.packageName = fileName;
+  function setDesktopPublishPackage(fileOrName) {
+    if (!fileOrName) return;
+    if (typeof fileOrName === "string") {
+      state.desktopPublishDraft.packageName = fileOrName;
+      state.desktopPublishDraft.packageFile = null;
+    } else {
+      state.desktopPublishDraft.packageName = fileOrName.name || "";
+      state.desktopPublishDraft.packageFile = fileOrName;
+    }
     renderRailDialog();
     showToast(`已添加 ${fileName}`, "package-check");
   }
@@ -2256,6 +2823,7 @@
       description: "",
       mode: "upload",
       packageName: "",
+      packageFile: null,
       fileName: "skill.js",
       code: "",
       aiIdea: "",
@@ -2297,7 +2865,7 @@ export const skill = {
     showToast("AI 技能草稿已生成", "sparkles");
   }
 
-  function confirmDesktopPublish() {
+  async function confirmDesktopPublish() {
     const draft = state.desktopPublishDraft;
     if (!draft.name.trim() || !draft.summary.trim()) {
       showToast("请填写技能名称和一句话介绍", "info");
@@ -2325,6 +2893,37 @@ export const skill = {
       railDialogHost
         .querySelector('[data-desktop-publish-field="aiIdea"]')
         ?.focus();
+      return;
+    }
+    if (api && state.apiAvailable) {
+      const formData = new FormData();
+      formData.set("name", draft.name.trim());
+      formData.set("summary", draft.summary.trim());
+      formData.set("category", draft.category);
+      formData.set("description", draft.description || "");
+      formData.set(
+        "mode",
+        draft.mode === "upload" ? "upload" : "online",
+      );
+      if (draft.mode === "upload") {
+        if (!draft.packageFile) {
+          showToast("请选择实际的技能 ZIP 文件", "info");
+          return;
+        }
+        formData.set("file", draft.packageFile);
+      } else {
+        formData.set("fileName", draft.fileName || "skill.js");
+        formData.set("code", draft.code || "");
+      }
+      try {
+        await api.publishSkill(formData);
+        await refreshBackendSkills();
+        state.skillMarketTab = "mine";
+        renderRailDialog();
+        showToast(`“${draft.name.trim()}”已提交发布`, "circle-check");
+      } catch (error) {
+        showToast(error.message || "技能发布失败", "circle-alert");
+      }
       return;
     }
     const skill = {
@@ -2613,6 +3212,9 @@ export const skill = {
     state.composerOpen = false;
     state.composerOpening = false;
     state.composerClosing = false;
+    state.pendingApprovals = [];
+    state.pendingInputs = [];
+    renderBackendPrompts();
     render();
     window.requestAnimationFrame(() => {
       railDialogHost
@@ -3227,7 +3829,7 @@ export const skill = {
     state.accountEmail = account.email;
     state.accountBio = account.description;
     state.accountSwitchOpen = false;
-    state.accountAvatar = "assets/brand/lingjing-logo.png";
+    state.accountAvatar = "assets/brand/qianbian-tile.png";
     state.accountPhone = "";
     state.accountRole = account.name;
     state.accountCompany = "千变实验室";
@@ -3387,7 +3989,7 @@ export const skill = {
             state.draft,
           )}</textarea>
           <button class="composer-mic ${state.voiceRecording ? "is-recording" : ""}" type="button" data-toggle-voice aria-label="${state.voiceRecording ? "结束录音" : "开始录音"}" aria-pressed="${state.voiceRecording}">${icon(state.voiceRecording ? "square" : "mic")}</button>
-          <button class="composer-send" id="composer-send" type="button" aria-label="发送">${icon("arrow-up")}</button>
+          <button class="composer-send" id="composer-send" type="button" aria-label="${state.typing && state.apiAvailable ? "停止生成" : "发送"}">${icon(state.typing && state.apiAvailable ? "square" : "arrow-up")}</button>
         </div>
         ${
           state.voiceRecording
@@ -4301,6 +4903,7 @@ export const skill = {
   function startNewChat() {
     state.activeSession = null;
     state.messages = [];
+    state.backendActivity = [];
     state.typing = false;
     state.draft = "";
     state.detail = null;
@@ -4316,20 +4919,77 @@ export const skill = {
     });
   }
 
-  function selectSession(id) {
+  async function selectSession(id) {
     const session = SESSIONS.find((item) => item.id === id);
     if (!session) return;
     state.activeSession = id;
     state.messages = session.messages.map((message) => ({ ...message }));
-    state.typing = false;
+    state.typing = Boolean(api && state.apiAvailable);
+    state.sessionLoading = state.typing;
     state.view = "chat";
     state.detail = null;
     state.railDialog = null;
     state.actionDialog = null;
     state.composerOpen = false;
     render();
+    if (api && state.apiAvailable) {
+      try {
+        const payload = await api.resumeSession(id);
+        if (payload?.session?.title) {
+          session.title = payload.session.title;
+        }
+        state.messages = hydrateMessagesFromBackend(payload);
+        state.backendActivity = hydrateActivityFromBackend(payload);
+        const pending = Array.isArray(payload?.pendingRequests)
+          ? payload.pendingRequests
+          : [];
+        state.pendingApprovals = pending.filter(
+          (request) => request.approvalId,
+        );
+        state.pendingInputs = pending.filter(
+          (request) => request.userInputId,
+        );
+        renderBackendPrompts();
+      } catch (error) {
+        showToast(error.message || "会话打开失败", "circle-alert");
+      } finally {
+        state.typing = false;
+        state.sessionLoading = false;
+        render();
+      }
+    }
     closeMobileSidebar();
     announce(`${session.title} 已打开`);
+  }
+
+  async function startBackendSession() {
+    if (!api || !state.apiAvailable) return null;
+    const payload = await api.startSession({
+      modelId: state.modelId,
+      approvalMode: state.approvalMode || "onRequest",
+      workspaceRoot: state.workspaceRoot,
+    });
+    const session = payload?.session;
+    if (!session?.sessionId) {
+      throw new Error("后端未返回会话 ID");
+    }
+    const mapped = mapBackendSession(session);
+    SESSIONS.unshift(mapped);
+    state.activeSession = mapped.id;
+    state.modelId = payload.modelId || state.modelId;
+    state.messages = hydrateMessagesFromBackend(payload);
+    state.backendActivity = hydrateActivityFromBackend(payload);
+    return mapped;
+  }
+
+  async function cancelBackendTurn() {
+    if (!api || !state.activeSession || !state.apiAvailable) return;
+    try {
+      await api.cancelTurn(state.activeSession);
+      showToast("已请求停止生成", "square");
+    } catch (error) {
+      showToast(error.message || "停止生成失败", "circle-alert");
+    }
   }
 
   function bindComposerInput() {
@@ -4404,15 +5064,18 @@ export const skill = {
     }
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     if (state.voiceRecording) stopVoiceRecording();
+    if (state.typing && api && state.apiAvailable) {
+      await cancelBackendTurn();
+      return;
+    }
     const text = state.draft.trim();
     if (!text) {
       showToast("先输入一条消息", "info");
       document.getElementById("desktop-composer-input")?.focus();
       return;
     }
-    if (!state.messages.length) state.activeSession = null;
     state.messages.push({ role: "user", text });
     state.agentTraining = Math.min(100, state.agentTraining + 4);
     localStorage.setItem("dshgo-agent-training", String(state.agentTraining));
@@ -4424,6 +5087,23 @@ export const skill = {
     state.typing = true;
     state.view = "chat";
     render();
+    if (api && state.apiAvailable) {
+      try {
+        if (!state.activeSession) await startBackendSession();
+        const payload = await api.sendTurn({
+          sessionId: state.activeSession,
+          text,
+          modelId: state.modelId,
+          images: [],
+        });
+        state.activeTurnId = payload?.turnId || null;
+      } catch (error) {
+        state.typing = false;
+        render();
+        showToast(error.message || "消息发送失败", "circle-alert");
+      }
+      return;
+    }
     window.clearTimeout(typingTimer);
     typingTimer = window.setTimeout(() => {
       state.typing = false;
@@ -4598,7 +5278,7 @@ export const skill = {
       state.accountName = account.name;
       state.accountEmail = account.email;
       state.accountBio = account.description;
-      state.accountAvatar = "assets/brand/lingjing-logo.png";
+      state.accountAvatar = "assets/brand/qianbian-tile.png";
       persistAccountProfile();
     }
     render();
@@ -4818,13 +5498,26 @@ export const skill = {
     );
   }
 
-  function toggleSkillConfig(id) {
-    if (state.disabledSkills.has(id)) state.disabledSkills.delete(id);
+  async function toggleSkillConfig(id) {
+    const wasDisabled = state.disabledSkills.has(id);
+    if (wasDisabled) state.disabledSkills.delete(id);
     else state.disabledSkills.add(id);
     localStorage.setItem(
       "qianbian-desktop-disabled-skills",
       JSON.stringify([...state.disabledSkills]),
     );
+    if (api && state.apiAvailable) {
+      try {
+        if (wasDisabled) await api.enableSkill(id);
+        else await api.disableSkill(id);
+      } catch (error) {
+        if (wasDisabled) state.disabledSkills.add(id);
+        else state.disabledSkills.delete(id);
+        showToast(error.message || "技能状态更新失败", "circle-alert");
+        renderInsightPanel();
+        return;
+      }
+    }
     renderInsightPanel();
     showToast(
       state.disabledSkills.has(id) ? "技能已停用" : "技能已启用",
@@ -4844,9 +5537,18 @@ export const skill = {
     renderInsightPanel();
   }
 
-  function deleteSelectedSkills() {
+  async function deleteSelectedSkills() {
     if (!state.selectedSkills.size) return;
     const deletedCount = state.selectedSkills.size;
+    const ids = [...state.selectedSkills];
+    if (api && state.apiAvailable) {
+      const results = await Promise.allSettled(
+        ids.map((id) => api.deleteSkill(id)),
+      );
+      if (results.some((result) => result.status === "rejected")) {
+        showToast("部分技能删除失败", "circle-alert");
+      }
+    }
     state.selectedSkills.forEach((id) => {
       state.deletedSkills.add(id);
       state.disabledSkills.delete(id);
@@ -4987,10 +5689,46 @@ export const skill = {
     else if (type === "skill") openSkill(id);
   }
 
-  function selectModel(name) {
-    state.model = name;
+  async function selectModel(value) {
+    const selected =
+      state.models.find((model) => model.modelId === String(value)) ||
+      state.models.find((model) => model.label === value);
+    const name = selected?.label || String(value);
+    if (selected) {
+      state.modelId = selected.modelId;
+      state.model = selected.label;
+    } else {
+      state.model = name;
+    }
+    if (api && state.apiAvailable && state.activeSession) {
+      try {
+        await api.setSessionModel({
+          sessionId: state.activeSession,
+          modelId: state.modelId,
+        });
+      } catch (error) {
+        showToast(error.message || "模型切换失败", "circle-alert");
+        return;
+      }
+    }
     render();
     showToast(`已切换到${name}`, "brain");
+  }
+
+  async function setBackendApprovalMode(mode) {
+    state.approvalMode = mode;
+    if (api && state.apiAvailable && state.activeSession) {
+      try {
+        await api.setApprovalMode({
+          sessionId: state.activeSession,
+          mode,
+        });
+        showToast("审批模式已更新", "shield-check");
+      } catch (error) {
+        showToast(error.message || "审批模式更新失败", "circle-alert");
+      }
+    }
+    render();
   }
 
   function handleViewportChange() {
@@ -5029,7 +5767,51 @@ export const skill = {
     true,
   );
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
+    const approvalChoice = event.target.closest("[data-approval-choice]");
+    if (approvalChoice && api && state.apiAvailable) {
+      try {
+        await api.decideApproval({
+          sessionId: state.activeSession,
+          approvalId: approvalChoice.dataset.approvalId,
+          choiceId: approvalChoice.dataset.approvalChoice,
+        });
+      } catch (error) {
+        showToast(error.message || "审批操作失败", "circle-alert");
+      }
+      return;
+    }
+    const inputSubmit = event.target.closest("[data-input-submit]");
+    if (inputSubmit && api && state.apiAvailable) {
+      const card = inputSubmit.closest("[data-backend-input]");
+      const answers = [...(card?.querySelectorAll("[data-backend-question]") || [])]
+        .map((select) => ({
+          questionId: select.dataset.backendQuestion,
+          value: select.value,
+        }));
+      try {
+        await api.answerInput({
+          sessionId: state.activeSession,
+          userInputId: inputSubmit.dataset.inputSubmit,
+          answers,
+        });
+      } catch (error) {
+        showToast(error.message || "回答提交失败", "circle-alert");
+      }
+      return;
+    }
+    const inputCancel = event.target.closest("[data-input-cancel]");
+    if (inputCancel && api && state.apiAvailable) {
+      try {
+        await api.cancelInput({
+          sessionId: state.activeSession,
+          userInputId: inputCancel.dataset.inputCancel,
+        });
+      } catch (error) {
+        showToast(error.message || "取消提问失败", "circle-alert");
+      }
+      return;
+    }
     if (event.target.closest("#account-menu-button")) {
       openAccountDialog();
       return;
@@ -5284,11 +6066,21 @@ export const skill = {
     }
     const marketSkill = event.target.closest("[data-install-market-skill]");
     if (marketSkill) {
-      state.marketInstalled.add(marketSkill.dataset.installMarketSkill);
+      const id = marketSkill.dataset.installMarketSkill;
+      state.marketInstalled.add(id);
       localStorage.setItem(
         "qianbian-desktop-market-installed",
         JSON.stringify([...state.marketInstalled]),
       );
+      if (api && state.apiAvailable) {
+        try {
+          await api.installSkill(id);
+          await refreshBackendSkills(state.skillMarketQuery);
+        } catch (error) {
+          showToast(error.message || "技能安装失败", "circle-alert");
+          return;
+        }
+      }
       render();
       showToast("技能已安装", "circle-check");
       return;
@@ -5410,6 +6202,17 @@ export const skill = {
           input.setSelectionRange(input.value.length, input.value.length);
         }
       });
+      return;
+    }
+    if (event.target.closest(".skill-market-refresh")) {
+      if (api && state.apiAvailable) {
+        try {
+          await refreshBackendSkills(state.skillMarketQuery);
+          showToast("技能市场已刷新", "refresh-cw");
+        } catch (error) {
+          showToast(error.message || "刷新失败", "circle-alert");
+        }
+      }
       return;
     }
     const toastTarget = event.target.closest("[data-toast]");
@@ -5569,7 +6372,7 @@ export const skill = {
       state.accountName = ACCOUNTS[0].name;
       state.accountEmail = ACCOUNTS[0].email;
       state.accountBio = ACCOUNTS[0].description;
-      state.accountAvatar = "assets/brand/lingjing-logo.png";
+      state.accountAvatar = "assets/brand/qianbian-tile.png";
       state.accountPhone = "";
       state.accountRole = "产品与设计";
       state.accountCompany = "千变实验室";
@@ -5648,6 +6451,12 @@ export const skill = {
     if (event.target.id !== "skill-market-search") return;
     state.skillMarketQuery = event.target.value;
     renderRailDialog();
+    if (api && state.apiAvailable) {
+      window.clearTimeout(skillSearchTimer);
+      skillSearchTimer = window.setTimeout(() => {
+        refreshBackendSkills(state.skillMarketQuery);
+      }, 260);
+    }
     window.requestAnimationFrame(() => {
       const input = document.getElementById("skill-market-search");
       if (!input) return;
@@ -5674,10 +6483,14 @@ export const skill = {
     if (!dropzone) return;
     event.preventDefault();
     dropzone.classList.remove("is-dragging");
-    setDesktopPublishPackage(event.dataTransfer?.files?.[0]?.name || "");
+    setDesktopPublishPackage(event.dataTransfer?.files?.[0] || "");
   });
 
   document.addEventListener("change", (event) => {
+    if (event.target.id === "approval-mode-select") {
+      setBackendApprovalMode(event.target.value);
+      return;
+    }
     const desktopPublishSelect = event.target.closest(
       "[data-desktop-publish-select]",
     );
@@ -5690,7 +6503,7 @@ export const skill = {
       return;
     }
     if (event.target.matches("[data-desktop-package-input]")) {
-      setDesktopPublishPackage(event.target.files?.[0]?.name || "");
+      setDesktopPublishPackage(event.target.files?.[0] || "");
       return;
     }
     if (event.target.id === "account-avatar-upload") {
@@ -5877,6 +6690,7 @@ export const skill = {
 
   handleViewportChange();
   render();
+  initializeBackend();
   if (state.draft) {
     window.requestAnimationFrame(() => {
       const input = document.getElementById("desktop-composer-input");
