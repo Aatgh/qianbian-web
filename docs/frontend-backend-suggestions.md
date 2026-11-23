@@ -86,3 +86,25 @@
 
 - `http://192.168.1.10:3101/desktop.html`
 - 后端 `/api` 与页面同源，不需要额外配置
+
+## 移动端补充（2026-11-23）
+
+最新提交 `46bef4c feat: sync mobile web brand refresh` 已拉取并部署到 3101 的 `/index.html`。
+
+实测移动端：
+
+- 页面、品牌图、PWA 配置正常，无控制台错误、无 404
+- **仍然没有接后端**：`index.html` 没有引入 `desktop-api.js`，`app.js` 没有 `/api` 请求，
+  浏览器里 `window.QianbianApi` 不存在，所以所有数据和回复仍是本地演示
+
+移动端要接真实后端，建议按桌面同样方式：
+
+1. 在 `index.html` 里、`app.js` 之前引入 `<script src="desktop-api.js"></script>`
+2. 用 `window.QianbianApi`：
+   - `sessions()` / `startSession()` / `resumeSession()` / `transcript()`
+   - `sendTurn()` + `connectEvents()`
+   - `skills({scope:'market'|'installed'})`
+3. 保持同样的 SSE 事件映射：`item/started`、`item/delta`、`approval/requested`、`userInput/requested`
+4. 登录可以用 bridge 的固定账号；如果要多人使用，需要先补登录态
+
+接口字段与桌面端一致，直接参考 `docs/backend-api.md`。
