@@ -95,31 +95,45 @@ function makeVectorPoints(points) {
   return points.map(([x, y]) => new THREE.Vector2(x, y));
 }
 
+function addClosedSpline(path, points) {
+  path.moveTo(points[0].x, points[0].y);
+  path.splineThru([...points.slice(1), points[0]]);
+}
+
 let shapeCount = 0;
 let meshCount = 0;
+const smoothing = {
+  curveCount: 0,
+  bevelSegments: 12,
+  curveSegments: 48,
+};
 
 for (const definition of shapeData.shapes) {
   let outerPoints = makeVectorPoints(definition.outer);
   if (!ShapeUtils.isClockWise(outerPoints)) outerPoints.reverse();
-  const shape = new THREE.Shape(outerPoints);
+  const shape = new THREE.Shape();
+  addClosedSpline(shape, outerPoints);
+  smoothing.curveCount += 1;
 
   for (const holeDefinition of definition.holes) {
     let holePoints = makeVectorPoints(holeDefinition);
     if (ShapeUtils.isClockWise(holePoints)) holePoints.reverse();
-    shape.holes.push(new THREE.Path(holePoints));
+    const hole = new THREE.Path();
+    addClosedSpline(hole, holePoints);
+    shape.holes.push(hole);
+    smoothing.curveCount += 1;
   }
 
   const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: 1.05,
+    depth: 0.78,
     steps: 1,
     bevelEnabled: true,
-    bevelThickness: 0.11,
-    bevelSize: 0.1,
+    bevelThickness: 0.2,
+    bevelSize: 0.2,
     bevelOffset: 0,
-    bevelSegments: 5,
-    curveSegments: 16,
+    bevelSegments: smoothing.bevelSegments,
+    curveSegments: smoothing.curveSegments,
   });
-  geometry.computeVertexNormals();
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = true;
@@ -265,6 +279,9 @@ window.__qianbianLogo3D = {
       y: modelGroup.rotation.y,
       z: modelGroup.rotation.z,
     };
+  },
+  smoothing() {
+    return { ...smoothing };
   },
   screenBounds() {
     const box = new THREE.Box3().setFromObject(modelGroup);
