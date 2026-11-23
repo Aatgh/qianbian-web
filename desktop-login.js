@@ -26,7 +26,11 @@
   const themePanel = document.getElementById("login-theme-panel");
   const themeClose = document.getElementById("login-theme-close");
   const themeGrid = document.getElementById("login-theme-grid");
-  const themeName = document.getElementById("login-theme-name");
+  const tuningToggle = document.getElementById("login-tuning-toggle");
+  const tuningPanel = document.getElementById("login-tuning-panel");
+  const tuningClose = document.getElementById("login-tuning-close");
+  const tuningControls = document.getElementById("login-tuning-controls");
+  const tuningReset = document.getElementById("login-tuning-reset");
   const loginBoxToggle = document.getElementById("login-box-toggle");
   const loginPanelWrap = document.getElementById("login-panel-wrap");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -117,11 +121,9 @@
   }
 
   function getActiveTheme() {
-    const activeId = window.QianbianLoginBackground?.current;
     return (
-      window.QianbianLoginBackground?.themes.find(
-        (theme) => theme.id === activeId,
-      ) || window.QianbianLoginThemes?.[0]?.themes?.[0]
+      window.QianbianLoginBackground?.config ||
+      window.QianbianLoginThemes?.[0]?.themes?.[0]
     );
   }
 
@@ -134,7 +136,11 @@
         button.classList.toggle("is-active", selected);
         button.setAttribute("aria-pressed", String(selected));
       });
-    if (themeName && active) themeName.textContent = active.name;
+    if (active && themeToggle) {
+      const label = `选择主题，当前${active.name}`;
+      themeToggle.setAttribute("aria-label", label);
+      themeToggle.title = label;
+    }
   }
 
   function selectTheme(theme) {
@@ -149,6 +155,8 @@
     themePanel.hidden = !open;
     themeToggle.setAttribute("aria-expanded", String(open));
     if (open) {
+      tuningPanel.hidden = true;
+      tuningToggle?.setAttribute("aria-expanded", "false");
       syncThemeSelection();
       themePanel.querySelector(".login-theme-option")?.focus();
     } else {
@@ -156,13 +164,69 @@
     }
   }
 
+  const tuningFields = [
+    { key: "speed", label: "动画速度", min: 0.2, max: 2.5, step: 0.05 },
+    { key: "density", label: "粒子密度", min: 0.1, max: 2, step: 0.05 },
+    { key: "size", label: "粒子大小", min: 0.4, max: 2.2, step: 0.05 },
+    { key: "depth", label: "空间深度", min: 0, max: 2.5, step: 0.05 },
+    { key: "twinkle", label: "闪烁强度", min: 0, max: 1, step: 0.05 },
+    { key: "variant", label: "纹理变化", min: 0, max: 1.5, step: 0.05 },
+  ];
+
+  function renderTuningControls() {
+    if (!tuningControls) return;
+    const config = getActiveTheme();
+    if (!config) return;
+    tuningControls.replaceChildren();
+    tuningFields.forEach((field) => {
+      const row = document.createElement("label");
+      row.className = "login-tuning-row";
+      const name = document.createElement("span");
+      name.textContent = field.label;
+      const input = document.createElement("input");
+      input.type = "range";
+      input.min = String(field.min);
+      input.max = String(field.max);
+      input.step = String(field.step);
+      input.value = String(config[field.key] ?? field.min);
+      const output = document.createElement("output");
+      output.textContent = Number(input.value).toFixed(2);
+      input.addEventListener("input", () => {
+        const value = Number(input.value);
+        output.textContent = value.toFixed(2);
+        window.QianbianLoginBackground?.tune({
+          [field.key]: value,
+        });
+      });
+      row.append(name, input, output);
+      tuningControls.append(row);
+    });
+  }
+
+  function toggleTuningPanel(force) {
+    if (!tuningPanel || !tuningToggle) return;
+    const open =
+      typeof force === "boolean" ? force : tuningPanel.hidden;
+    tuningPanel.hidden = !open;
+    tuningToggle.setAttribute("aria-expanded", String(open));
+    if (open) {
+      themePanel.hidden = true;
+      themeToggle?.setAttribute("aria-expanded", "false");
+      renderTuningControls();
+      tuningPanel.querySelector('input[type="range"]')?.focus();
+    } else {
+      tuningToggle.focus();
+    }
+  }
+
   function syncLoginBoxToggle(open) {
     if (!loginBoxToggle) return;
     gate.classList.toggle("login-box-open", open);
     loginBoxToggle.setAttribute("aria-expanded", String(open));
-    const label = loginBoxToggle.querySelector("span");
-    if (label) label.textContent = open ? "收起" : "登录框";
-    loginBoxToggle.innerHTML = `<i data-lucide="${open ? "x" : "log-in"}"></i><span>${open ? "收起" : "登录框"}</span>`;
+    const label = open ? "收起登录框" : "打开登录框";
+    loginBoxToggle.setAttribute("aria-label", label);
+    loginBoxToggle.title = label;
+    loginBoxToggle.innerHTML = `<i data-lucide="${open ? "x" : "log-in"}"></i><span class="sr-only">${label}</span>`;
     updateIcons(loginBoxToggle);
     if (open) {
       window.requestAnimationFrame(() => {
@@ -204,7 +268,7 @@
     gate.classList.remove("is-authenticating");
     googleButton.classList.remove("is-connecting");
     googleButton.removeAttribute("aria-busy");
-    googleLabel.textContent = "使用 Google 继续";
+    googleLabel.textContent = "使用谷歌账号继续";
     submitButton.classList.remove("is-submitting");
     submitButton.disabled = false;
     submitButton.removeAttribute("aria-busy");
@@ -213,7 +277,9 @@
     codeButton.textContent = "获取验证码";
     gate.classList.remove("login-box-open");
     themePanel.hidden = true;
+    tuningPanel.hidden = true;
     themeToggle?.setAttribute("aria-expanded", "false");
+    tuningToggle?.setAttribute("aria-expanded", "false");
     syncLoginBoxToggle(false);
     hideError();
   }
@@ -375,7 +441,7 @@
       : defaultProfile.email;
     googleButton.classList.add("is-connecting");
     googleButton.setAttribute("aria-busy", "true");
-    googleLabel.textContent = "正在安全连接 Google";
+    googleLabel.textContent = "正在安全连接谷歌账号";
     busy = true;
     completionTimer = window.setTimeout(
       () => {
@@ -483,7 +549,13 @@
   googleButton.addEventListener("click", handleGoogleLogin);
   form.addEventListener("submit", handleSubmit);
   themeToggle?.addEventListener("click", () => toggleThemePanel());
+  tuningToggle?.addEventListener("click", () => toggleTuningPanel());
   themeClose?.addEventListener("click", () => toggleThemePanel(false));
+  tuningClose?.addEventListener("click", () => toggleTuningPanel(false));
+  tuningReset?.addEventListener("click", () => {
+    window.QianbianLoginBackground?.resetTuning();
+    renderTuningControls();
+  });
   loginBoxToggle?.addEventListener("click", () => toggleLoginBox());
   gate.addEventListener("pointermove", syncPointer, { passive: true });
   gate.addEventListener("pointerleave", () => {
@@ -530,6 +602,11 @@
 
   window.addEventListener("qianbian:login-theme-change", () => {
     syncThemeSelection();
+    if (!tuningPanel.hidden) renderTuningControls();
+  });
+
+  window.addEventListener("qianbian:login-theme-tuning", () => {
+    if (!tuningPanel.hidden) renderTuningControls();
   });
 
   document.addEventListener("keydown", (event) => {
@@ -538,6 +615,11 @@
     if (themePanel && !themePanel.hidden) {
       event.preventDefault();
       toggleThemePanel(false);
+      return;
+    }
+    if (tuningPanel && !tuningPanel.hidden) {
+      event.preventDefault();
+      toggleTuningPanel(false);
     }
   });
 
@@ -555,5 +637,6 @@
   }
 
   renderThemeOptions();
+  renderTuningControls();
   syncLoginBoxToggle(false);
 })();

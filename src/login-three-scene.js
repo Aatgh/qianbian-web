@@ -65,15 +65,35 @@ const themes = themeGroups.flatMap((group) =>
 );
 const themeMap = new Map(themes.map((theme) => [theme.id, theme]));
 const storageKey = "qianbian-login-background-theme";
+const tuningKey = "qianbian-login-background-tuning";
+let tuningOverrides = {};
+
+try {
+  const storedTuning = JSON.parse(localStorage.getItem(tuningKey) || "{}");
+  tuningOverrides =
+    storedTuning && typeof storedTuning === "object" ? storedTuning : {};
+} catch {
+  tuningOverrides = {};
+}
+
+function effectiveTheme(theme) {
+  return theme
+    ? { ...theme, ...(tuningOverrides[theme.id] || {}) }
+    : theme;
+}
+
 let currentTheme = themes[0];
 
 try {
-  currentTheme =
+  currentTheme = effectiveTheme(
     themeMap.get(localStorage.getItem(storageKey) || "") ||
-    themeMap.get("starfield") ||
-    themes[0];
+      themeMap.get("starfield") ||
+      themes[0],
+  );
 } catch {
-  currentTheme = themeMap.get("starfield") || themes[0];
+  currentTheme = effectiveTheme(
+    themeMap.get("starfield") || themes[0],
+  );
 }
 
 window.QianbianLoginThemes = themeGroups;
@@ -82,21 +102,62 @@ window.QianbianLoginBackground = {
   get current() {
     return currentTheme.id;
   },
+  get config() {
+    return { ...currentTheme };
+  },
   setTheme(id) {
-    const theme = themeMap.get(id);
-    if (!theme) return false;
-    currentTheme = theme;
+    const base = themeMap.get(id);
+    if (!base) return false;
+    currentTheme = effectiveTheme(base);
     try {
-      localStorage.setItem(storageKey, theme.id);
+      localStorage.setItem(storageKey, currentTheme.id);
     } catch {}
     window.dispatchEvent(
       new CustomEvent("qianbian:login-theme-change", {
-        detail: { theme: theme.id },
+        detail: { theme: currentTheme.id, config: { ...currentTheme } },
       }),
     );
     if (window.__qianbianLoginScene?.applyTheme) {
-      window.__qianbianLoginScene.applyTheme(theme);
+      window.__qianbianLoginScene.applyTheme(currentTheme);
     }
+    return true;
+  },
+  tune(values) {
+    const base = themeMap.get(currentTheme.id);
+    if (!base || !values || typeof values !== "object") return false;
+    tuningOverrides[base.id] = {
+      ...(tuningOverrides[base.id] || {}),
+      ...values,
+    };
+    currentTheme = effectiveTheme(base);
+    try {
+      localStorage.setItem(tuningKey, JSON.stringify(tuningOverrides));
+    } catch {}
+    if (window.__qianbianLoginScene?.applyTheme) {
+      window.__qianbianLoginScene.applyTheme(currentTheme);
+    }
+    window.dispatchEvent(
+      new CustomEvent("qianbian:login-theme-tuning", {
+        detail: { theme: currentTheme.id, config: { ...currentTheme } },
+      }),
+    );
+    return true;
+  },
+  resetTuning() {
+    const id = currentTheme.id;
+    delete tuningOverrides[id];
+    currentTheme = effectiveTheme(themeMap.get(id));
+    try {
+      localStorage.setItem(tuningKey, JSON.stringify(tuningOverrides));
+    } catch {}
+    if (window.__qianbianLoginScene?.applyTheme) {
+      window.__qianbianLoginScene.applyTheme(currentTheme);
+    }
+    window.dispatchEvent(
+      new CustomEvent("qianbian:login-theme-tuning", {
+        detail: { theme: currentTheme.id, config: { ...currentTheme } },
+      }),
+    );
     return true;
   },
 };

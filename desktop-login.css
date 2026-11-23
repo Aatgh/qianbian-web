@@ -55,6 +55,7 @@ body.login-locked {
 }
 
 .login-theme-toggle,
+.login-tuning-toggle,
 .login-theme-close,
 .login-box-toggle {
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -68,62 +69,60 @@ body.login-locked {
 }
 
 .login-gate:not(.login-starfield-preview) .login-theme-toggle,
+.login-gate:not(.login-starfield-preview) .login-tuning-toggle,
 .login-gate:not(.login-starfield-preview) .login-theme-panel,
+.login-gate:not(.login-starfield-preview) .login-tuning-panel,
 .login-gate:not(.login-starfield-preview) .login-box-toggle {
   display: none;
 }
 
-.login-theme-toggle,
-.login-box-toggle {
+.login-toolbar {
   position: fixed;
+  top: 22px;
+  left: 22px;
   z-index: 8;
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
+  display: flex;
   gap: 8px;
-  padding: 0 14px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 650;
+}
+
+.login-theme-toggle,
+.login-tuning-toggle,
+.login-box-toggle {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
   transition:
     transform 180ms var(--login-ease),
     border-color 180ms ease,
     background-color 180ms ease;
 }
 
-.login-theme-toggle {
-  top: 22px;
-  left: 22px;
-}
-
 .login-box-toggle {
+  position: fixed;
+  z-index: 8;
   right: 22px;
   bottom: 22px;
 }
 
 .login-theme-toggle:hover,
+.login-tuning-toggle:hover,
 .login-box-toggle:hover {
-  border-color: rgba(240, 181, 106, 0.34);
+  border-color: rgba(255, 255, 255, 0.26);
   background: rgba(28, 25, 32, 0.82);
   transform: translateY(-1px);
 }
 
 .login-theme-toggle svg,
+.login-tuning-toggle svg,
 .login-box-toggle svg,
 .login-theme-close svg {
   width: 15px;
   height: 15px;
-  color: var(--login-gold);
-}
-
-.login-theme-toggle b {
-  max-width: 92px;
-  overflow: hidden;
-  color: var(--login-muted);
-  font-size: 8px;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.76);
 }
 
 .login-box-toggle[aria-expanded="true"] svg {
@@ -168,7 +167,7 @@ body.login-locked {
 }
 
 .login-theme-panel-head span {
-  color: var(--login-gold);
+  color: rgba(255, 255, 255, 0.44);
   font-family: var(--font-mono, "JetBrains Mono", monospace);
   font-size: 7px;
   letter-spacing: 0.12em;
@@ -242,8 +241,8 @@ body.login-locked {
 }
 
 .login-theme-option.is-active {
-  border-color: rgba(240, 181, 106, 0.4);
-  background: rgba(240, 181, 106, 0.08);
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.09);
   color: var(--login-text);
 }
 
@@ -275,6 +274,68 @@ body.login-locked {
   white-space: nowrap;
 }
 
+.login-tuning-panel {
+  padding-bottom: 50px;
+}
+
+.login-tuning-controls {
+  display: grid;
+  min-height: 0;
+  gap: 13px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.login-tuning-row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 9px;
+}
+
+.login-tuning-row output {
+  color: rgba(255, 255, 255, 0.86);
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 8px;
+  text-align: right;
+}
+
+.login-tuning-row input[type="range"] {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  accent-color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.login-tuning-reset {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.login-tuning-reset:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.login-tuning-reset svg {
+  width: 14px;
+  height: 14px;
+}
+
 @keyframes login-theme-panel-in {
   from {
     opacity: 0;
@@ -284,6 +345,119 @@ body.login-locked {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+.login-starfield-preview .login-panel {
+  border-color: rgba(255, 255, 255, 0.15);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.09), transparent 34%),
+    rgba(24, 24, 27, 0.5);
+  box-shadow:
+    0 36px 100px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(40px) saturate(0.16);
+  -webkit-backdrop-filter: blur(40px) saturate(0.16);
+}
+
+.login-starfield-preview .login-panel::before {
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.09),
+    transparent 42%,
+    rgba(255, 255, 255, 0.025)
+  );
+}
+
+.login-starfield-preview .login-panel-border {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.32),
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.04) 68%,
+    rgba(255, 255, 255, 0.2)
+  );
+}
+
+.login-starfield-preview .login-google-button,
+.login-starfield-preview .login-field,
+.login-starfield-preview .login-mode-tabs {
+  border-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.035);
+}
+
+.login-starfield-preview .login-google-button::before {
+  display: none;
+}
+
+.login-starfield-preview .login-google-icon {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11);
+}
+
+.login-starfield-preview .login-google-icon svg {
+  filter: grayscale(1) brightness(2.25);
+}
+
+.login-starfield-preview .login-google-button:hover,
+.login-starfield-preview .login-google-button.is-connecting,
+.login-starfield-preview .login-field:focus-within {
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.login-starfield-preview .login-google-button.is-connecting {
+  background-color: rgba(255, 255, 255, 0.055);
+}
+
+.login-starfield-preview .login-field-line::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.88),
+    transparent
+  );
+}
+
+.login-starfield-preview .login-mode-indicator {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.login-starfield-preview .login-mode-tab.is-active {
+  color: #fff;
+}
+
+.login-starfield-preview .login-checkbox input:checked + span {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.login-starfield-preview .login-submit {
+  border-color: rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.09)
+    ),
+    rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.login-starfield-preview .login-submit:hover {
+  background:
+    linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.24),
+      rgba(255, 255, 255, 0.12)
+    ),
+    rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+  filter: none;
 }
 
 .login-gate {
@@ -2042,7 +2216,7 @@ body.login-locked {
     padding: 76px 18px 82px;
   }
 
-  .login-theme-toggle {
+  .login-toolbar {
     top: 14px;
     left: 12px;
   }

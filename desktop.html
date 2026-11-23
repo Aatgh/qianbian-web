@@ -32,22 +32,35 @@
       </div>
       <canvas id="login-three-canvas" class="login-three-canvas" aria-hidden="true"></canvas>
 
-      <button
-        class="login-theme-toggle"
-        id="login-theme-toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="login-theme-panel"
-      >
-        <i data-lucide="palette"></i>
-        <span>主题</span>
-        <b id="login-theme-name">星野</b>
-      </button>
+      <div class="login-toolbar" aria-label="登录背景设置">
+        <button
+          class="login-theme-toggle"
+          id="login-theme-toggle"
+          type="button"
+          aria-label="选择主题"
+          aria-expanded="false"
+          aria-controls="login-theme-panel"
+          title="选择主题"
+        >
+          <i data-lucide="palette"></i>
+        </button>
+        <button
+          class="login-tuning-toggle"
+          id="login-tuning-toggle"
+          type="button"
+          aria-label="调整主题参数"
+          aria-expanded="false"
+          aria-controls="login-tuning-panel"
+          title="调整主题参数"
+        >
+          <i data-lucide="sliders-horizontal"></i>
+        </button>
+      </div>
 
       <aside class="login-theme-panel" id="login-theme-panel" hidden>
         <header class="login-theme-panel-head">
           <div>
-            <span>Background themes</span>
+            <span>主题库</span>
             <h2>选择星场主题</h2>
           </div>
           <button class="login-theme-close" id="login-theme-close" type="button" aria-label="关闭主题选择">
@@ -55,6 +68,22 @@
           </button>
         </header>
         <div class="login-theme-grid" id="login-theme-grid"></div>
+      </aside>
+
+      <aside class="login-theme-panel login-tuning-panel" id="login-tuning-panel" hidden>
+        <header class="login-theme-panel-head">
+          <div>
+            <span>当前主题参数</span>
+            <h2>调整视觉效果</h2>
+          </div>
+          <button class="login-theme-close" id="login-tuning-close" type="button" aria-label="关闭参数调整">
+            <i data-lucide="x"></i>
+          </button>
+        </header>
+        <div class="login-tuning-controls" id="login-tuning-controls"></div>
+        <button class="login-tuning-reset" id="login-tuning-reset" type="button" aria-label="恢复当前主题默认参数" title="恢复默认">
+          <i data-lucide="rotate-ccw"></i>
+        </button>
       </aside>
 
       <button
@@ -65,7 +94,7 @@
         aria-controls="login-panel-wrap"
       >
         <i data-lucide="log-in"></i>
-        <span>登录框</span>
+        <span class="sr-only">打开登录框</span>
       </button>
 
       <header class="login-masthead">
@@ -111,7 +140,6 @@
           <div class="login-panel">
             <span class="login-panel-border" aria-hidden="true"></span>
             <div class="login-panel-head">
-              <span class="login-panel-kicker">Qianbian workspace</span>
               <h2 id="login-title">欢迎回来</h2>
               <p>选择一种方式，继续你的工作。</p>
             </div>
@@ -126,7 +154,7 @@
                   <path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.82 1.49l2.88-2.88A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.97 5.45l3.36 2.62C7.18 7.7 9.39 5.94 12 5.94Z"/>
                 </svg>
               </span>
-              <span class="login-google-label">使用 Google 继续</span>
+              <span class="login-google-label">使用谷歌账号继续</span>
               <span class="login-google-arrow" aria-hidden="true">
                 <i data-lucide="chevron-right"></i>
               </span>
@@ -144,7 +172,7 @@
                   name="email"
                   inputmode="email"
                   autocomplete="email"
-                  placeholder="name@company.com"
+                  placeholder="请输入邮箱地址"
                   spellcheck="false"
                 />
                 <span class="login-field-line" aria-hidden="true"></span>
