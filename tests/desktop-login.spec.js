@@ -187,11 +187,17 @@ test("login preview exposes all local themes and a floating login toggle", async
   ]);
 
   await expect(page.locator(".login-visual")).toBeHidden();
-  await expect(page.locator(".login-panel-wrap")).toBeHidden();
+  await expect(page.locator(".login-panel-wrap")).toBeVisible();
   await expect(page.locator("#login-theme-toggle")).toBeVisible();
   await expect(page.locator("#login-tuning-toggle")).toBeVisible();
   await expect(page.locator("#login-box-toggle")).toBeVisible();
-  await expect(page.locator("#login-box-toggle .lucide-power")).toHaveCount(1);
+  await expect(
+    page.locator("#login-box-toggle .lucide-user-round"),
+  ).toHaveCount(1);
+  await expect(page.locator("#login-box-toggle")).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   const toggleBox = await page.locator("#login-box-toggle").boundingBox();
   expect(
     Math.abs(toggleBox.x + toggleBox.width / 2 - 1920 / 2),
@@ -207,6 +213,13 @@ test("login preview exposes all local themes and a floating login toggle", async
     page.locator('script[src*="cdn.aidesigner.ai/effects/runtime"]'),
   ).toHaveCount(0);
   await expect(page.locator("[data-aifx]")).toHaveCount(0);
+  const initialPanelBox = await page.locator(".login-panel").boundingBox();
+  expect(initialPanelBox.width).toBeGreaterThanOrEqual(500);
+  expect(
+    Math.abs(initialPanelBox.x + initialPanelBox.width / 2 - 1920 / 2),
+  ).toBeLessThan(3);
+  await page.locator("#login-gate").click({ position: { x: 500, y: 820 } });
+  await expect(page.locator(".login-panel-wrap")).toBeHidden();
 
   await page.locator("#login-theme-toggle").click();
   await expect(page.locator("#login-theme-panel")).toBeVisible();
@@ -238,9 +251,12 @@ test("login preview exposes all local themes and a floating login toggle", async
       localStorage.getItem("qianbian-login-background-theme"),
     ),
   ).toBe("aurora-flow");
-
-  await page.locator("#login-theme-close").click();
-  await expect(page.locator("#login-theme-panel")).toBeHidden();
+  await page.reload();
+  await expect(page.locator("#login-three-canvas")).toHaveAttribute(
+    "data-theme",
+    "aurora-flow",
+  );
+  await expect(page.locator(".login-panel-wrap")).toBeVisible();
 
   await page.locator("#login-tuning-toggle").click();
   await expect(page.locator("#login-tuning-panel")).toBeVisible();
