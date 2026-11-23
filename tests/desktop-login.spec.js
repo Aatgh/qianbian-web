@@ -158,67 +158,58 @@ test("login gate stays inside a short desktop viewport", async ({ page }) => {
   expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.viewportHeight);
 });
 
-test("configured starfield fills the preview viewport", async ({
+test("login preview exposes all local themes and a floating login toggle", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await openFreshDesktop(page, { starfieldPreview: true });
 
-  const layout = await page.evaluate(() => {
-    const host = document.querySelector('[data-aifx="starfield"]');
-    const hostRect = host.getBoundingClientRect();
-    const hostStyle = getComputedStyle(host);
-    return {
-      viewport: [window.innerWidth, window.innerHeight],
-      host: [
-        hostRect.left,
-        hostRect.top,
-        hostRect.width,
-        hostRect.height,
-      ],
-      pointerEvents: hostStyle.pointerEvents,
-      hostZ: Number(hostStyle.zIndex),
-      layoutDisplay: getComputedStyle(
-        document.querySelector(".login-layout"),
-      ).display,
-      wordmarkCount: document.querySelectorAll(".login-wordmark").length,
-      attributes: Object.fromEntries(
-        [...host.attributes]
-          .filter(
-            (attribute) =>
-              attribute.name === "data-aifx" ||
-              attribute.name.startsWith("data-aifx-"),
-          )
-          .map((attribute) => [attribute.name, attribute.value]),
-      ),
-      runtimeLoaded: Boolean(
-        document.querySelector(
-          'script[src*="cdn.aidesigner.ai/effects/runtime/v1.js"]',
-        ),
-      ),
-    };
-  });
-
-  expect(layout.host).toEqual([
+  const canvas = page.locator("#login-three-canvas");
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveAttribute("data-scene-ready", "true");
+  const canvasBox = await canvas.boundingBox();
+  expect([
+    canvasBox.x,
+    canvasBox.y,
+    canvasBox.width,
+    canvasBox.height,
+  ]).toEqual([
     0,
     0,
-    layout.viewport[0],
-    layout.viewport[1],
+    1920,
+    1080,
   ]);
-  expect(layout.pointerEvents).toBe("none");
-  expect(layout.hostZ).toBe(0);
-  expect(layout.layoutDisplay).toBe("none");
-  expect(layout.wordmarkCount).toBe(0);
-  expect(layout.runtimeLoaded).toBe(true);
-  expect(layout.attributes).toEqual({
-    "data-aifx": "starfield",
-    "data-aifx-speed": "1.67",
-    "data-aifx-density": "0.1",
-    "data-aifx-size": "0.33",
-    "data-aifx-depth": "2",
-    "data-aifx-twinkle": "0.61",
-    "data-aifx-shooting": "0.6",
-    "data-aifx-angle": "170",
-    "data-aifx-mouse": "0.57",
-  });
+
+  await expect(page.locator(".login-visual")).toBeHidden();
+  await expect(page.locator(".login-panel-wrap")).toBeHidden();
+  await expect(page.locator("#login-theme-toggle")).toBeVisible();
+  await expect(page.locator("#login-box-toggle")).toBeVisible();
+  await expect(
+    page.locator('script[src*="cdn.aidesigner.ai/effects/runtime"]'),
+  ).toHaveCount(0);
+  await expect(page.locator("[data-aifx]")).toHaveCount(0);
+
+  await page.locator("#login-theme-toggle").click();
+  await expect(page.locator("#login-theme-panel")).toBeVisible();
+  await expect(page.locator(".login-theme-option")).toHaveCount(29);
+  await expect(page.locator(".login-theme-group-title")).toHaveCount(2);
+
+  await page.locator('[data-login-theme="aurora-flow"]').click();
+  await expect(canvas).toHaveAttribute("data-theme", "aurora-flow");
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("qianbian-login-background-theme"),
+    ),
+  ).toBe("aurora-flow");
+
+  await page.locator("#login-theme-close").click();
+  await expect(page.locator("#login-theme-panel")).toBeHidden();
+  await page.locator("#login-box-toggle").click();
+  await expect(page.locator(".login-panel-wrap")).toBeVisible();
+  await expect(page.locator("#login-box-toggle")).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await page.locator("#login-box-toggle").click();
+  await expect(page.locator(".login-panel-wrap")).toBeHidden();
 });
