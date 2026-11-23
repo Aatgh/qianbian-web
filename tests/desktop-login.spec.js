@@ -26,7 +26,7 @@ test("first visit shows the premium login gate", async ({ page }) => {
   await expect(gate).toBeVisible();
   await expect(gate.getByRole("heading", { name: "欢迎回来" })).toBeVisible();
   await expect(
-    gate.getByRole("button", { name: "使用 Google 继续" }),
+    gate.getByRole("button", { name: "使用谷歌账号继续" }),
   ).toBeVisible();
   await expect(gate.getByLabel("邮箱地址")).toBeVisible();
   await expect(page.locator("body")).toHaveClass(/login-locked/);
@@ -38,12 +38,12 @@ test("google connection animates into the desktop workspace", async ({
 }) => {
   await openFreshDesktop(page);
 
-  await page.getByRole("button", { name: "使用 Google 继续" }).click();
+  await page.getByRole("button", { name: "使用谷歌账号继续" }).click();
   await expect(page.locator(".login-google-button")).toHaveAttribute(
     "aria-busy",
     "true",
   );
-  await expect(page.getByText("正在安全连接 Google")).toBeVisible();
+  await expect(page.getByText("正在安全连接谷歌账号")).toBeVisible();
   await expect(page.locator("#login-gate")).toBeHidden({ timeout: 6000 });
   await expect(page.locator("body")).not.toHaveClass(/login-locked/);
   await expect(page.locator("#app-shell")).not.toHaveAttribute("inert", "");
@@ -183,7 +183,15 @@ test("login preview exposes all local themes and a floating login toggle", async
   await expect(page.locator(".login-visual")).toBeHidden();
   await expect(page.locator(".login-panel-wrap")).toBeHidden();
   await expect(page.locator("#login-theme-toggle")).toBeVisible();
+  await expect(page.locator("#login-tuning-toggle")).toBeVisible();
   await expect(page.locator("#login-box-toggle")).toBeVisible();
+  expect(
+    (await page.locator("#login-theme-toggle").textContent()).trim(),
+  ).toBe("");
+  expect(
+    (await page.locator("#login-tuning-toggle").textContent()).trim(),
+  ).toBe("");
+  await expect(page.locator(".login-panel-kicker")).toHaveCount(0);
   await expect(
     page.locator('script[src*="cdn.aidesigner.ai/effects/runtime"]'),
   ).toHaveCount(0);
@@ -204,6 +212,20 @@ test("login preview exposes all local themes and a floating login toggle", async
 
   await page.locator("#login-theme-close").click();
   await expect(page.locator("#login-theme-panel")).toBeHidden();
+
+  await page.locator("#login-tuning-toggle").click();
+  await expect(page.locator("#login-tuning-panel")).toBeVisible();
+  await expect(page.locator("#login-tuning-controls input")).toHaveCount(6);
+  await page.locator("#login-tuning-controls input").first().fill("1.4");
+  const tuning = await page.evaluate(() =>
+    JSON.parse(
+      localStorage.getItem("qianbian-login-background-tuning") || "{}",
+    ),
+  );
+  expect(tuning["aurora-flow"].speed).toBe(1.4);
+  await page.locator("#login-tuning-reset").click();
+  await page.locator("#login-tuning-close").click();
+
   await page.locator("#login-box-toggle").click();
   await expect(page.locator(".login-panel-wrap")).toBeVisible();
   await expect(page.locator("#login-box-toggle")).toHaveAttribute(
