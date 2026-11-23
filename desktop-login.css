@@ -310,6 +310,24 @@ body.login-locked {
   cursor: pointer;
 }
 
+.login-tuning-color-row input[type="color"] {
+  width: 100%;
+  height: 24px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+}
+
+.login-tuning-color-row output {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .login-tuning-reset {
   position: absolute;
   right: 14px;

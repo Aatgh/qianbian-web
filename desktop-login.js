@@ -198,6 +198,29 @@
       row.append(name, input, output);
       tuningControls.append(row);
     });
+
+    const colorLabels = ["主色", "辅色", "高光"];
+    const colors = [...(config.colors || [])];
+    colorLabels.forEach((label, index) => {
+      const row = document.createElement("label");
+      row.className = "login-tuning-row login-tuning-color-row";
+      const name = document.createElement("span");
+      name.textContent = label;
+      const input = document.createElement("input");
+      input.type = "color";
+      input.value = colors[index] || "#ffffff";
+      const output = document.createElement("output");
+      output.textContent = input.value.toUpperCase();
+      input.addEventListener("input", () => {
+        colors[index] = input.value;
+        output.textContent = input.value.toUpperCase();
+        window.QianbianLoginBackground?.tune({
+          colors: [...colors],
+        });
+      });
+      row.append(name, input, output);
+      tuningControls.append(row);
+    });
   }
 
   function toggleTuningPanel(force) {
@@ -578,7 +601,7 @@
   });
 
   window.addEventListener("qianbian:login-theme-tuning", () => {
-    if (!tuningPanel.hidden) renderTuningControls();
+    syncThemeSelection();
   });
 
   document.addEventListener("keydown", (event) => {
