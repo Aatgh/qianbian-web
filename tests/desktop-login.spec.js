@@ -69,7 +69,7 @@ test("phone password login can reveal the password and enter the workspace", asy
     "aria-selected",
     "true",
   );
-  await expect(gate.getByLabel("验证码", { exact: true })).toHaveCount(0);
+  await expect(gate.getByLabel("验证码", { exact: true })).toBeHidden();
 
   await gate.getByLabel("手机号", { exact: true }).fill("13800000000");
   const password = gate.getByLabel("密码", { exact: true });
@@ -80,14 +80,21 @@ test("phone password login can reveal the password and enter the workspace", asy
   await gate.getByRole("button", { name: "隐藏密码" }).click();
   await expect(password).toHaveAttribute("type", "password");
 
+  await page.evaluate(() => {
+    window.__lastDesktopAuthMethod = null;
+    window.addEventListener(
+      "qianbian:auth-success",
+      (event) => {
+        window.__lastDesktopAuthMethod = event.detail.method;
+      },
+      { once: true },
+    );
+  });
   await gate.getByRole("button", { name: "登录", exact: true }).click();
   await expect(gate).toBeHidden({ timeout: 6000 });
-  const profile = await page.evaluate(() =>
-    JSON.parse(
-      localStorage.getItem("qianbian-desktop-account-profile") || "{}",
-    ),
-  );
-  expect(profile.authMethod).toBe("phone-password");
+  await expect
+    .poll(() => page.evaluate(() => window.__lastDesktopAuthMethod))
+    .toBe("phone-password");
 });
 
 test("email account switching validates the email and code", async ({ page }) => {

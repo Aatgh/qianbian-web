@@ -12,10 +12,14 @@
   const emailField = document.getElementById("login-email-field");
   const accountTabs = gate.querySelector(".login-account-tabs");
   const codeInput = document.getElementById("login-code");
+  const passwordInput = document.getElementById("login-password");
   const errorBox = document.getElementById("login-error");
   const successPanel = document.getElementById("login-success");
   const submitButton = gate.querySelector(".login-submit");
   const submitLabel = gate.querySelector(".login-submit-label");
+  const loginDescription = document.getElementById("login-description");
+  const modeTabs = gate.querySelector(".login-mode-tabs");
+  const passwordToggle = gate.querySelector(".login-password-toggle");
   const codeButton = gate.querySelector(".login-code-button");
   const legalButtons = gate.querySelectorAll(".login-legal button");
   const fieldElements = gate.querySelectorAll(".login-field");
@@ -41,6 +45,7 @@
   };
 
   let accountType = "phone";
+  let loginMode = "code";
   let busy = false;
   let completionTimer = 0;
   let focusTimer = 0;
@@ -179,11 +184,18 @@
     submitButton.classList.remove("is-submitting");
     submitButton.disabled = false;
     submitButton.removeAttribute("aria-busy");
-    submitLabel.textContent = "登录 / 注册";
+    passwordInput.value = "";
+    passwordInput.type = "password";
+    passwordInput.closest(".login-field")?.classList.remove("has-value");
+    passwordToggle?.setAttribute("aria-label", "显示密码");
+    if (passwordToggle) {
+      passwordToggle.innerHTML = '<i data-lucide="eye"></i>';
+    }
     codeButton.disabled = false;
     codeButton.textContent = "获取验证码";
     gate.classList.add("login-box-open");
     setAccountType("phone");
+    setMode("code");
     hideError();
   }
 
@@ -232,6 +244,7 @@
     phoneInput.removeAttribute("aria-invalid");
     emailInput.removeAttribute("aria-invalid");
     codeInput.removeAttribute("aria-invalid");
+    passwordInput.removeAttribute("aria-invalid");
   }
 
   function showError(message, field) {
@@ -280,9 +293,30 @@
     phoneField.hidden = accountType !== "phone";
     emailField.hidden = accountType !== "email";
     hideError();
-    submitLabel.textContent = "登录 / 注册";
     if (accountType === "phone") phoneInput.focus();
     else emailInput.focus();
+  }
+
+  function setMode(nextMode) {
+    loginMode = nextMode === "password" ? "password" : "code";
+    if (modeTabs) modeTabs.dataset.mode = loginMode;
+    gate.querySelectorAll("[data-login-mode]").forEach((button) => {
+      const active = button.dataset.loginMode === loginMode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    gate.querySelectorAll("[data-login-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.loginPanel !== loginMode;
+    });
+    hideError();
+    submitLabel.textContent = loginMode === "password" ? "登录" : "登录 / 注册";
+    loginDescription.textContent =
+      loginMode === "password"
+        ? "使用已注册的手机号或邮箱和密码登录。"
+        : "手机号或邮箱登录，新用户验证后自动注册。";
+    if (loginMode === "password") passwordInput.focus();
+    else codeInput.focus();
   }
 
   function setBusy(nextBusy) {
@@ -368,7 +402,15 @@
       return;
     }
 
-    if (!/^\d{4,6}$/.test(codeInput.value.trim())) {
+    if (loginMode === "password" && passwordInput.value.length < 6) {
+      showError(
+        "请输入至少 6 位密码。",
+        passwordInput.closest(".login-field"),
+      );
+      return;
+    }
+
+    if (loginMode === "code" && !/^\d{4,6}$/.test(codeInput.value.trim())) {
       showError("请输入收到的 4 到 6 位验证码。", codeInput.closest(".login-field"));
       return;
     }
@@ -383,7 +425,7 @@
             accountType === "phone"
               ? `用户${identifier.slice(-4)}`
               : identifier.split("@")[0],
-          method: `${accountType}-code`,
+          method: `${accountType}-${loginMode}`,
         });
       },
       reduceMotion.matches ? 80 : 760,
@@ -438,6 +480,20 @@
     root.style.setProperty("--login-pointer-y", `${y * 20}px`);
   }
 
+  function togglePasswordVisibility() {
+    const visible = passwordInput.type === "text";
+    passwordInput.type = visible ? "password" : "text";
+    passwordToggle?.setAttribute(
+      "aria-label",
+      visible ? "显示密码" : "隐藏密码",
+    );
+    if (passwordToggle) {
+      passwordToggle.innerHTML = `<i data-lucide="${visible ? "eye" : "eye-off"}"></i>`;
+      updateIcons(passwordToggle);
+    }
+    passwordInput.focus();
+  }
+
   form.addEventListener("submit", handleSubmit);
   loginPanel?.addEventListener("pointerdown", (event) => {
     if (event.target.closest("input, textarea, select, button, a, label")) {
@@ -472,6 +528,12 @@
       setAccountType(button.dataset.loginAccount),
     );
   });
+
+  gate.querySelectorAll("[data-login-mode]").forEach((button) => {
+    button.addEventListener("click", () => setMode(button.dataset.loginMode));
+  });
+
+  passwordToggle?.addEventListener("click", togglePasswordVisibility);
 
   codeButton.addEventListener("click", startCodeCountdown);
   legalButtons.forEach((button) => {
