@@ -1,10 +1,33 @@
 const path = require("node:path");
+const fs = require("node:fs");
 const { test, expect } = require("@playwright/test");
 
 const apiScriptPath = path.resolve(__dirname, "..", "desktop-api.js");
+const desktopRoot = path.resolve(__dirname, "..");
 const desktopUrl = `file:///${path
   .resolve(__dirname, "..", "desktop.html")
   .replaceAll("\\", "/")}?api=${encodeURIComponent("http://backend.test/api")}`;
+
+async function unlockDesktop(page) {
+  await page
+    .waitForSelector("#login-gate.is-ready", {
+      state: "attached",
+      timeout: 5000,
+    })
+    .catch(() => {});
+  await page.evaluate(() => {
+    localStorage.setItem("qianbian-desktop-auth", "true");
+    document.getElementById("login-gate").hidden = true;
+    document.body.classList.remove("login-locked");
+    document.documentElement.classList.remove("login-pending");
+    const shell = document.getElementById("app-shell");
+    shell.inert = false;
+    shell.removeAttribute("aria-hidden");
+  });
+  await page.waitForFunction(
+    () => getComputedStyle(document.getElementById("app-shell")).visibility !== "hidden",
+  );
+}
 
 test("desktop API client covers every backend endpoint", async ({ page }) => {
   const calls = [];
@@ -293,13 +316,7 @@ test("desktop app hydrates sessions, models and approval prompts from API", asyn
   });
 
   await page.goto(desktopUrl);
-  await page.evaluate(() => {
-    document.getElementById("login-gate").hidden = true;
-    document.body.classList.remove("login-locked");
-    const shell = document.getElementById("app-shell");
-    shell.inert = false;
-    shell.removeAttribute("aria-hidden");
-  });
+  await unlockDesktop(page);
 
   await expect(page.locator("#session-list")).toContainText("后端天气会话");
   await page.evaluate(() => {
@@ -341,4 +358,354 @@ test("desktop app hydrates sessions, models and approval prompts from API", asyn
     "思考与工具调用",
   );
   await expect(page.locator(".backend-activity")).toContainText("读取完成");
+});
+
+test("desktop web auto-connects to same-origin API on localhost", async ({
+  page,
+}) => {
+  const apiCalls = [];
+  await page.route("http://localhost:3101/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/api/")) {
+      const pathname = url.pathname.replace(/^\/api/, "");
+      apiCalls.push(pathname);
+      if (pathname === "/health") {
+        return route.fulfill({ json: { status: "ok" } });
+      }
+      if (pathname === "/sessions") {
+        return route.fulfill({
+          json: {
+            sessions: [
+              {
+                sessionId: "local-1",
+                title: "本地联调会话",
+                updatedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        });
+      }
+      if (pathname === "/models") {
+        return route.fulfill({
+          json: {
+            models: [
+              { modelId: "2", label: "DeepSeek Chat", isDefault: true },
+            ],
+          },
+        });
+      }
+      if (pathname === "/automations") {
+        return route.fulfill({ json: { automations: [] } });
+      }
+      if (pathname === "/events") {
+        return route.fulfill({
+          contentType: "text/event-stream",
+          body: 'event: status\ndata: {"connected":true,"mock":false}\n\n',
+        });
+      }
+      return route.fulfill({ json: { skills: [] } });
+    }
+
+    const relative =
+      url.pathname === "/"
+        ? "desktop.html"
+        : decodeURIComponent(url.pathname.slice(1));
+    const filePath = path.resolve(desktopRoot, relative);
+    if (
+      !filePath.startsWith(`${desktopRoot}${path.sep}`) ||
+      !fs.existsSync(filePath) ||
+      fs.statSync(filePath).isDirectory()
+    ) {
+      return route.fulfill({ status: 404, body: "not found" });
+    }
+    const contentTypes = {
+      ".css": "text/css",
+      ".html": "text/html",
+      ".js": "text/javascript",
+      ".json": "application/json",
+      ".min.js": "text/javascript",
+      ".ttf": "font/ttf",
+    };
+    return route.fulfill({
+      path: filePath,
+      contentType:
+        contentTypes[path.extname(filePath).toLowerCase()] ||
+        "application/octet-stream",
+    });
+  });
+
+  await page.goto("http://localhost:3101/desktop.html");
+
+  await expect
+    .poll(() => apiCalls.includes("/sessions"))
+    .toBe(true);
+  await expect(page.locator("#session-list")).toContainText("本地联调会话");
+  expect(apiCalls).toContain("/health");
+  expect(apiCalls).toContain("/sessions");
+});
+
+test("new session keeps the optimistic user message", async ({ page }) => {
+  await page.route("http://backend.test/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname.replace(/^\/api/, "");
+    if (pathname === "/health") {
+      return route.fulfill({ json: { status: "ok" } });
+    }
+    if (pathname === "/sessions") {
+      return route.fulfill({ json: { sessions: [] } });
+    }
+    if (pathname === "/models") {
+      return route.fulfill({
+        json: {
+          models: [
+            { modelId: "2", label: "DeepSeek Chat", isDefault: true },
+          ],
+        },
+      });
+    }
+    if (pathname === "/automations") {
+      return route.fulfill({ json: { automations: [] } });
+    }
+    if (pathname === "/session/start") {
+      return route.fulfill({
+        json: {
+          session: { sessionId: "24", title: "新对话" },
+          history: { mode: "inline", items: [] },
+        },
+      });
+    }
+    if (pathname === "/turn") {
+      return route.fulfill({
+        json: {
+          disposition: "started",
+          startedNewTurn: true,
+          status: "accepted",
+          turnId: "turn-1",
+        },
+      });
+    }
+    if (pathname === "/events") {
+      return route.fulfill({
+        contentType: "text/event-stream",
+        body: 'event: status\ndata: {"connected":true,"mock":false}\n\n',
+      });
+    }
+    return route.fulfill({ json: { skills: [] } });
+  });
+
+  const sessionsLoaded = page.waitForResponse(
+    (response) => response.url() === "http://backend.test/api/sessions",
+  );
+  await page.goto(desktopUrl);
+  await sessionsLoaded;
+  await unlockDesktop(page);
+  await page.locator("#session-nav").click();
+  await page.locator("#new-chat").click();
+  await page.locator("#desktop-composer-input").fill("保留这条新会话消息");
+
+  const sessionStarted = page.waitForResponse(
+    (response) => response.url() === "http://backend.test/api/session/start",
+  );
+  const turnStarted = page.waitForResponse(
+    (response) => response.url() === "http://backend.test/api/turn",
+  );
+  await page.locator("#composer-send").click();
+  await sessionStarted;
+  await turnStarted;
+  await page.evaluate(() => {
+    window.__qianbianBackend.handleEvent("turn/started", {
+      sessionId: "24",
+      turnId: "turn-1",
+    });
+  });
+
+  await expect(
+    page.locator(".message-row.user .message-bubble").last(),
+  ).toContainText("保留这条新会话消息");
+});
+
+test("resume restores pending prompts and approval sends requirementId", async ({
+  page,
+}) => {
+  let approvalDecision = null;
+  await page.route("http://backend.test/api/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const pathname = url.pathname.replace(/^\/api/, "");
+    if (pathname === "/health") {
+      return route.fulfill({ json: { status: "ok" } });
+    }
+    if (pathname === "/sessions") {
+      return route.fulfill({
+        json: {
+          sessions: [
+            {
+              sessionId: "23",
+              title: "等待确认的会话",
+              updatedAt: new Date().toISOString(),
+            },
+          ],
+        },
+      });
+    }
+    if (pathname === "/session/resume") {
+      return route.fulfill({
+        json: {
+          session: { sessionId: "23", title: "等待确认的会话" },
+          history: { mode: "inline", items: [] },
+          pendingRequests: [
+            {
+              approvalId: "57",
+              sessionId: "23",
+              toolName: "write_file",
+              subject: { summary: "写入测试文件" },
+              currentRequirementId: { approvalId: "57", sourceIndex: 0 },
+              availableChoices: [
+                {
+                  choiceId: "allow_once",
+                  label: "允许一次",
+                  decision: "approved",
+                  scope: "once",
+                },
+              ],
+            },
+            {
+              userInputId: "12",
+              sessionId: "23",
+              questions: [
+                {
+                  id: "style",
+                  header: "风格",
+                  question: "请选择回答风格",
+                  options: [{ label: "简洁" }],
+                },
+              ],
+            },
+          ],
+        },
+      });
+    }
+    if (pathname === "/approval/decide") {
+      approvalDecision = request.postDataJSON();
+      return route.fulfill({ json: { status: "accepted" } });
+    }
+    if (pathname === "/models") {
+      return route.fulfill({
+        json: {
+          models: [
+            { modelId: "2", label: "DeepSeek Chat", isDefault: true },
+          ],
+        },
+      });
+    }
+    if (pathname === "/automations") {
+      return route.fulfill({ json: { automations: [] } });
+    }
+    if (pathname === "/events") {
+      return route.fulfill({
+        contentType: "text/event-stream",
+        body: 'event: status\ndata: {"connected":true,"mock":false}\n\n',
+      });
+    }
+    return route.fulfill({ json: { skills: [] } });
+  });
+
+  const sessionsLoaded = page.waitForResponse(
+    (response) => response.url() === "http://backend.test/api/sessions",
+  );
+  await page.goto(desktopUrl);
+  await sessionsLoaded;
+  await unlockDesktop(page);
+  await page.locator("#session-nav").click();
+  const resumed = page.waitForResponse(
+    (response) =>
+      response.url() === "http://backend.test/api/session/resume",
+  );
+  await page.locator('[data-session="23"]').click();
+  await resumed;
+
+  await expect(page.locator(".backend-prompt-card").first()).toContainText(
+    "允许一次",
+  );
+  await expect(page.locator("[data-backend-input='12']")).toContainText(
+    "请选择回答风格",
+  );
+  await page.locator("[data-approval-choice='allow_once']").click();
+
+  await expect.poll(() => approvalDecision).not.toBeNull();
+  expect(approvalDecision.requirementId).toEqual({
+    approvalId: "57",
+    sourceIndex: 0,
+  });
+});
+
+test("long skill copy is clamped and unsupported image input is disabled", async ({
+  page,
+}) => {
+  const apiCalls = [];
+  await page.route("http://backend.test/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname.replace(/^\/api/, "");
+    apiCalls.push(pathname);
+    if (pathname === "/health") {
+      return route.fulfill({ json: { status: "ok" } });
+    }
+    if (pathname === "/sessions") {
+      return route.fulfill({ json: { sessions: [] } });
+    }
+    if (pathname === "/models") {
+      return route.fulfill({
+        json: {
+          models: [
+            { modelId: "2", label: "DeepSeek Chat", isDefault: true },
+          ],
+        },
+      });
+    }
+    if (pathname === "/automations") {
+      return route.fulfill({ json: { automations: [] } });
+    }
+    if (pathname === "/events") {
+      return route.fulfill({
+        contentType: "text/event-stream",
+        body: 'event: status\ndata: {"connected":true,"mock":false}\n\n',
+      });
+    }
+    return route.fulfill({ json: { skills: [] } });
+  });
+
+  const sessionsLoaded = page.waitForResponse(
+    (response) => response.url() === "http://backend.test/api/sessions",
+  );
+  await page.goto(desktopUrl);
+  await sessionsLoaded;
+  await unlockDesktop(page);
+  await page.locator("#composer-plus").click();
+  await expect(
+    page.locator('[data-action-detail="add-image"]'),
+  ).toBeDisabled();
+
+  const lineClamp = await page.evaluate(() => {
+    const host = document.createElement("div");
+    host.className = "skills-grid";
+    host.style.width = "360px";
+    host.innerHTML = `
+      <article class="skill-card">
+        <span class="skill-card-icon"></span>
+        <div class="skill-card-copy">
+          <h3>育儿大师</h3>
+          <p>${"这是一段很长的真实技能描述，用来验证卡片不会因为文本过长而被撑开。".repeat(8)}</p>
+        </div>
+        <div class="skill-card-actions"></div>
+      </article>
+    `;
+    document.body.append(host);
+    const paragraph = host.querySelector(".skill-card-copy p");
+    const value = getComputedStyle(paragraph).webkitLineClamp;
+    host.remove();
+    return value;
+  });
+  expect(lineClamp).toBe("3");
+  expect(apiCalls).toContain("/automations");
 });
