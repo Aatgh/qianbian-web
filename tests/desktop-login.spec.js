@@ -54,6 +54,42 @@ test("phone code login enters the desktop workspace", async ({ page }) => {
   await expect(page.locator("#app-shell")).not.toHaveAttribute("inert", "");
 });
 
+test("phone password login can reveal the password and enter the workspace", async ({
+  page,
+}) => {
+  await openFreshDesktop(page);
+
+  const gate = page.locator("#login-gate");
+  await expect(gate.getByRole("tab", { name: "验证码登录" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await gate.getByRole("tab", { name: "密码登录" }).click();
+  await expect(gate.getByRole("tab", { name: "密码登录" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(gate.getByLabel("验证码", { exact: true })).toHaveCount(0);
+
+  await gate.getByLabel("手机号", { exact: true }).fill("13800000000");
+  const password = gate.getByLabel("密码", { exact: true });
+  await expect(password).toBeVisible();
+  await password.fill("qianbian123");
+  await gate.getByRole("button", { name: "显示密码" }).click();
+  await expect(password).toHaveAttribute("type", "text");
+  await gate.getByRole("button", { name: "隐藏密码" }).click();
+  await expect(password).toHaveAttribute("type", "password");
+
+  await gate.getByRole("button", { name: "登录", exact: true }).click();
+  await expect(gate).toBeHidden({ timeout: 6000 });
+  const profile = await page.evaluate(() =>
+    JSON.parse(
+      localStorage.getItem("qianbian-desktop-account-profile") || "{}",
+    ),
+  );
+  expect(profile.authMethod).toBe("phone-password");
+});
+
 test("email account switching validates the email and code", async ({ page }) => {
   await openFreshDesktop(page);
 
