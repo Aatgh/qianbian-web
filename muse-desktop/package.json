@@ -1,0 +1,12 @@
+{
+  "name": "qianbian-muse-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop preview based on OpenMuse (MIT)",
+  "scripts": {
+    "install:all": "npm --prefix web ci && npm --prefix server ci",
+    "build": "npm --prefix web run build",
+    "start": "node server/src/index.js",
+    "dev": "npm run build && npm start"
+  }
+}

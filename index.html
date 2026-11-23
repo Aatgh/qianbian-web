@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#a62466" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta
+      name="description"
+      content="千变 全量界面交互演示，覆盖主要功能、设置与二级页面。"
+    />
+    <title>千变 · UI Atlas</title>
+    <link rel="icon" href="assets/brand/lingjing-logo.png" />
+    <link rel="apple-touch-icon" href="assets/brand/icon-192.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css?v=20261120ml" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-tile" src="assets/brand/lingjing-logo.png" alt="千变" />
+          <div>
+            <div class="brand-wordmark">千变</div>
+            <div class="brand-subtitle">UI Atlas · 全量交互演示</div>
+          </div>
+        </div>
+
+        <div class="topbar-stats" aria-label="演示统计">
+          <span class="stat-pill"><i data-lucide="layout-grid"></i><b id="page-count">0</b> 页面</span>
+          <span class="stat-pill"><i data-lucide="mouse-pointer-click"></i>仅前端模拟</span>
+          <span class="stat-pill stat-status"><span class="status-dot"></span>运行正常</span>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="icon-button mobile-only" id="toggle-catalog" type="button" aria-label="打开页面目录">
+            <i data-lucide="panel-left"></i>
+          </button>
+          <label class="search-field" aria-label="搜索全部页面">
+            <i data-lucide="search"></i>
+            <input id="global-search" type="search" placeholder="搜索页面、功能或设置" autocomplete="off" />
+            <kbd>/</kbd>
+          </label>
+          <button class="icon-button" id="toggle-theme" type="button" aria-label="切换深色模式">
+            <i data-lucide="moon-star"></i>
+          </button>
+          <button class="icon-button mobile-only" id="toggle-inspector" type="button" aria-label="打开检查器">
+            <i data-lucide="sliders-horizontal"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="catalog-panel" id="catalog-panel" aria-label="全部页面目录">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">SCREEN INDEX</p>
+              <h1>全部界面</h1>
+            </div>
+            <button class="icon-button small mobile-only" id="close-catalog" type="button" aria-label="关闭目录">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <div class="catalog-note">
+            <span class="catalog-marker"></span>
+            按 App 内真实入口分组。点击任意页面即可定位，手机内仍可继续逐级操作。
+          </div>
+          <nav class="catalog-tree" id="catalog-tree"></nav>
+          <div class="catalog-empty" id="catalog-empty" hidden>
+            <i data-lucide="search-x"></i>
+            <strong>没有匹配页面</strong>
+            <span>换一个名称、功能或路径试试。</span>
+          </div>
+          <footer class="catalog-footer">
+            <div class="catalog-legend"><span></span>可交互页面</div>
+            <div class="catalog-legend"><span class="muted"></span>状态与弹层</div>
+          </footer>
+        </aside>
+
+        <main class="demo-stage" id="demo-stage">
+          <div class="stage-grid" aria-hidden="true"></div>
+          <div class="stage-caption">
+            <span class="stage-kicker">LIVE PROTOTYPE</span>
+            <span id="stage-path">千变</span>
+          </div>
+
+          <div class="phone-fit" id="phone-fit">
+            <div class="phone-device" id="phone-device">
+              <div class="phone-bezel">
+                <div class="phone-speaker" aria-hidden="true"></div>
+                <div class="phone-screen" id="phone-screen" aria-live="polite"></div>
+                <div class="home-indicator" aria-hidden="true"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stage-toolbar">
+            <button class="toolbar-button" id="phone-back" type="button">
+              <i data-lucide="arrow-left"></i>
+              返回
+            </button>
+            <button class="toolbar-button" id="phone-drawer" type="button">
+              <i data-lucide="panel-left-open"></i>
+              对话目录
+            </button>
+            <button class="toolbar-button" id="phone-settings" type="button">
+              <i data-lucide="settings-2"></i>
+              设置
+            </button>
+            <span class="toolbar-divider"></span>
+            <label class="device-picker">
+              <i data-lucide="smartphone"></i>
+              <select id="device-size" aria-label="预览尺寸">
+                <option value="390x844">390 × 844</option>
+                <option value="360x780">360 × 780</option>
+                <option value="430x932">430 × 932</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="toast-region" id="toast-region" aria-live="polite"></div>
+        </main>
+
+        <aside class="inspector-panel" id="inspector-panel" aria-label="页面检查器">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">INSPECTOR</p>
+              <h2>页面状态</h2>
+            </div>
+            <button class="icon-button small mobile-only" id="close-inspector" type="button" aria-label="关闭检查器">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+
+          <section class="inspector-section current-page-card">
+            <span class="inspector-label">CURRENT SURFACE</span>
+            <div class="current-page-head">
+              <span class="current-page-icon" id="current-page-icon">
+                <i data-lucide="message-circle"></i>
+              </span>
+              <div>
+                <h3 id="current-page-title">对话</h3>
+                <p id="current-page-summary">加载中</p>
+              </div>
+            </div>
+            <div class="path-chip" id="current-page-path">千变</div>
+          </section>
+
+          <section class="inspector-section">
+            <div class="inspector-section-title">
+              <span>外观</span>
+              <span class="mini-label">实时</span>
+            </div>
+            <div class="control-row">
+              <span>模式</span>
+              <div class="segmented-control" id="theme-control">
+                <button class="is-active" data-theme="light" type="button">浅色</button>
+                <button data-theme="dark" type="button">深色</button>
+              </div>
+            </div>
+            <div class="control-row">
+              <span>主题色</span>
+              <div class="swatch-row" id="accent-control">
+                <button class="swatch is-active" data-accent="a62466" style="--swatch:#a62466" aria-label="深梅"></button>
+              </div>
+            </div>
+            <div class="control-row">
+              <span>玻璃模糊</span>
+              <button class="switch is-on" data-toggle="glass" type="button" aria-label="切换玻璃模糊"><span></span></button>
+            </div>
+            <div class="control-row">
+              <span>减少动画</span>
+              <button class="switch" data-toggle="reducedMotion" type="button" aria-label="切换减少动画"><span></span></button>
+            </div>
+          </section>
+
+          <section class="inspector-section">
+            <div class="inspector-section-title">
+              <span>前端状态</span>
+              <span class="mini-label">Mock</span>
+            </div>
+            <div class="control-row">
+              <span>引擎</span>
+              <select id="engine-state" class="compact-select">
+                <option value="running">运行中</option>
+                <option value="starting">启动中</option>
+                <option value="idle">未启动</option>
+                <option value="error">异常</option>
+              </select>
+            </div>
+            <div class="control-row">
+              <span>网络</span>
+              <select id="network-state" class="compact-select">
+                <option value="online">在线</option>
+                <option value="reconnecting">重连中</option>
+                <option value="offline">离线</option>
+              </select>
+            </div>
+            <div class="control-row">
+              <span>当前主机</span>
+              <select id="host-state" class="compact-select">
+                <option value="phone">这台手机</option>
+                <option value="desktop">工作室电脑</option>
+                <option value="server">远程服务器</option>
+              </select>
+            </div>
+            <div class="control-row">
+              <span>界面语言</span>
+              <select id="locale-state" class="compact-select">
+                <option value="zh">简体中文</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div class="control-row training-control">
+              <span>Agent 契合度</span>
+              <div class="training-slider-wrap">
+                <input id="agent-training" type="range" min="0" max="100" step="1" value="30" />
+                <b id="agent-training-value">30%</b>
+              </div>
+            </div>
+          </section>
+
+          <section class="inspector-section">
+            <div class="inspector-section-title">
+              <span>覆盖范围</span>
+              <span class="mini-label" id="coverage-count">0 / 0</span>
+            </div>
+            <div class="coverage-bar"><span id="coverage-fill"></span></div>
+            <p class="inspector-copy">
+              页面目录覆盖主流程、功能页、设置分支和可触达弹层。所有操作只改变本地演示状态。
+            </p>
+          </section>
+
+          <section class="inspector-section inspector-actions">
+            <button class="primary-button" id="go-all-features" type="button">
+              <i data-lucide="panels-top-left"></i>
+              打开会话工作台
+            </button>
+            <button class="secondary-button" id="copy-link" type="button">
+              <i data-lucide="link"></i>
+              复制当前页链接
+            </button>
+          </section>
+        </aside>
+      </div>
+    </div>
+
+    <div class="mobile-scrim" id="mobile-scrim" hidden></div>
+    <div class="sr-only" id="sr-status" aria-live="assertive"></div>
+
+    <script src="assets/lucide.min.js"></script>
+    <script src="data.js?v=20261120ml"></script>
+    <script src="app.js?v=20261120ml"></script>
+  </body>
+</html>
