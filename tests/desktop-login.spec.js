@@ -5,11 +5,18 @@ const desktopUrl = `file:///${path
   .resolve(__dirname, "..", "desktop.html")
   .replaceAll("\\", "/")}`;
 
-async function openFreshDesktop(page) {
+async function openFreshDesktop(page, { starfieldPreview = false } = {}) {
   await page.goto(desktopUrl);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector("body");
+  if (!starfieldPreview) {
+    await page.evaluate(() =>
+      document
+        .getElementById("login-gate")
+        ?.classList.remove("login-starfield-preview"),
+    );
+  }
 }
 
 test("first visit shows the premium login gate", async ({ page }) => {
@@ -151,75 +158,67 @@ test("login gate stays inside a short desktop viewport", async ({ page }) => {
   expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.viewportHeight);
 });
 
-test("three.js login scene renders on desktop and mobile", async ({ page }) => {
-  await openFreshDesktop(page);
-
-  const canvas = page.locator("#login-three-canvas");
-  await expect(canvas).toBeVisible();
-  await expect(canvas).toHaveAttribute("data-scene-ready", "true");
-  await expect(canvas).toHaveAttribute("data-scene-style", "gravity-planet");
-  await expect(page.locator("#login-gate")).toHaveClass(/login-three-active/);
-  const desktopBox = await canvas.boundingBox();
-  expect(desktopBox.width).toBeGreaterThan(180);
-  expect(desktopBox.height).toBeGreaterThan(180);
-
-  const stats = await page.evaluate(() => window.__qianbianLoginScene?.stats());
-  expect(stats?.renderCalls).toBeGreaterThan(0);
-  expect(stats?.objectCount).toBeGreaterThan(2);
-  const pixels = await page.evaluate(() =>
-    window.__qianbianLoginScene?.samplePixels(),
-  );
-  expect(pixels?.painted).toBeGreaterThan(100);
-  expect(pixels?.maxChannel).toBeGreaterThan(40);
-
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.waitForTimeout(250);
-  const mobileBox = await canvas.boundingBox();
-  expect(mobileBox.width).toBeGreaterThan(90);
-  expect(mobileBox.height).toBeGreaterThan(90);
-  const mobilePixels = await page.evaluate(() =>
-    window.__qianbianLoginScene?.samplePixels(),
-  );
-  expect(mobilePixels?.painted).toBeGreaterThan(20);
-});
-
-test("starfield covers the viewport behind a floating login layer", async ({
+test("configured starfield fills the preview viewport", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await openFreshDesktop(page);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openFreshDesktop(page, { starfieldPreview: true });
 
   const layout = await page.evaluate(() => {
-    const canvas = document
-      .querySelector("#login-three-canvas")
-      .getBoundingClientRect();
-    const panel = document
-      .querySelector(".login-panel")
-      .getBoundingClientRect();
-    const panelStyle = getComputedStyle(
-      document.querySelector(".login-panel"),
-    );
-    const canvasStyle = getComputedStyle(
-      document.querySelector("#login-three-canvas"),
-    );
+    const host = document.querySelector('[data-aifx="starfield"]');
+    const hostRect = host.getBoundingClientRect();
+    const hostStyle = getComputedStyle(host);
     return {
       viewport: [window.innerWidth, window.innerHeight],
-      canvas: [canvas.left, canvas.top, canvas.width, canvas.height],
-      panel: [panel.left, panel.top, panel.width, panel.height],
-      panelZ: Number(panelStyle.zIndex),
-      canvasZ: Number(canvasStyle.zIndex),
+      host: [
+        hostRect.left,
+        hostRect.top,
+        hostRect.width,
+        hostRect.height,
+      ],
+      pointerEvents: hostStyle.pointerEvents,
+      hostZ: Number(hostStyle.zIndex),
+      layoutDisplay: getComputedStyle(
+        document.querySelector(".login-layout"),
+      ).display,
       wordmarkCount: document.querySelectorAll(".login-wordmark").length,
+      attributes: Object.fromEntries(
+        [...host.attributes]
+          .filter(
+            (attribute) =>
+              attribute.name === "data-aifx" ||
+              attribute.name.startsWith("data-aifx-"),
+          )
+          .map((attribute) => [attribute.name, attribute.value]),
+      ),
+      runtimeLoaded: Boolean(
+        document.querySelector(
+          'script[src*="cdn.aidesigner.ai/effects/runtime/v1.js"]',
+        ),
+      ),
     };
   });
 
-  expect(layout.canvas).toEqual([
+  expect(layout.host).toEqual([
     0,
     0,
     layout.viewport[0],
     layout.viewport[1],
   ]);
-  expect(layout.panel[0]).toBeGreaterThan(layout.viewport[0] * 0.5);
-  expect(layout.panel[2]).toBeLessThan(layout.viewport[0] * 0.45);
-  expect(layout.panelZ).toBeGreaterThan(layout.canvasZ);
+  expect(layout.pointerEvents).toBe("none");
+  expect(layout.hostZ).toBe(0);
+  expect(layout.layoutDisplay).toBe("none");
   expect(layout.wordmarkCount).toBe(0);
+  expect(layout.runtimeLoaded).toBe(true);
+  expect(layout.attributes).toEqual({
+    "data-aifx": "starfield",
+    "data-aifx-speed": "1.67",
+    "data-aifx-density": "0.1",
+    "data-aifx-size": "0.33",
+    "data-aifx-depth": "2",
+    "data-aifx-twinkle": "0.61",
+    "data-aifx-shooting": "0.6",
+    "data-aifx-angle": "170",
+    "data-aifx-mouse": "0.57",
+  });
 });
