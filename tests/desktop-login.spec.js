@@ -239,39 +239,6 @@ test("login keeps only the fixed default starfield theme", async ({
     "starfield",
   );
   await expect(page.locator(".login-panel-wrap")).toBeVisible();
-
-  const dragHandleBox = await page
-    .locator(".login-panel-drag-handle")
-    .boundingBox();
-  await page.mouse.move(
-    dragHandleBox.x + dragHandleBox.width / 2,
-    dragHandleBox.y + dragHandleBox.height / 2,
-  );
-  await page.mouse.down();
-  await page.waitForTimeout(260);
-  await page.mouse.move(
-    dragHandleBox.x + dragHandleBox.width / 2 + 260,
-    dragHandleBox.y + dragHandleBox.height / 2 + 140,
-    { steps: 5 },
-  );
-  const draggedBox = await page.locator(".login-panel").boundingBox();
-  expect(
-    Math.abs(draggedBox.x + draggedBox.width / 2 - 1920 / 2),
-  ).toBeGreaterThan(120);
-  await page.mouse.up();
-  await page.waitForTimeout(700);
-  const snappedBox = await page.locator(".login-panel").boundingBox();
-  expect(snappedBox.width).toBeGreaterThanOrEqual(500);
-  expect(
-    Math.abs(snappedBox.x + snappedBox.width / 2 - 1920 / 2),
-  ).toBeLessThan(3);
-  expect(
-    Math.abs(
-      snappedBox.y +
-        snappedBox.height / 2 -
-        (initialPanelBox.y + initialPanelBox.height / 2),
-    ),
-  ).toBeLessThan(5);
 });
 
 test("default starfield animates as a single theme", async ({ page }) => {
@@ -326,6 +293,10 @@ test("whole login panel is directly draggable by long press", async ({
   const wrap = page.locator("#login-panel-wrap");
   await expect(page.locator(".login-panel-drag-handle")).toHaveCount(0);
   const panelBox = await page.locator(".login-panel").boundingBox();
+  const initialCenter = {
+    x: panelBox.x + panelBox.width / 2,
+    y: panelBox.y + panelBox.height / 2,
+  };
   const startX = panelBox.x + 36;
   const startY = panelBox.y + 16;
 
@@ -344,4 +315,12 @@ test("whole login panel is directly draggable by long press", async ({
   expect(Number.parseFloat(offset.x)).toBeGreaterThan(160);
   expect(Number.parseFloat(offset.y)).toBeGreaterThan(80);
   await page.mouse.up();
+  await page.waitForTimeout(700);
+  const snappedBox = await page.locator(".login-panel").boundingBox();
+  expect(
+    Math.abs(snappedBox.x + snappedBox.width / 2 - initialCenter.x),
+  ).toBeLessThan(3);
+  expect(
+    Math.abs(snappedBox.y + snappedBox.height / 2 - initialCenter.y),
+  ).toBeLessThan(5);
 });

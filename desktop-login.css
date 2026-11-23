@@ -1216,6 +1216,8 @@ body.login-locked {
   width:100%;
   max-width: none;
   overflow: hidden;
+  cursor: grab;
+  touch-action: none;
   padding: 33px 32px 27px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 26px;
@@ -1228,32 +1230,6 @@ body.login-locked {
     inset 0 1px 0 rgba(255, 255, 255, 0.11);
   backdrop-filter: blur(34px) saturate(1.35);
   -webkit-backdrop-filter: blur(34px) saturate(1.35);
-}
-
-.login-panel-drag-handle {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 148px;
-  height: 28px;
-  border-radius: 0 0 14px 14px;
-  background: transparent;
-  transform: translateX(-50%);
-  cursor: grab;
-  pointer-events: auto;
-  touch-action: none;
-}
-
-.login-panel-drag-handle::after {
-  content: "";
-  position: absolute;
-  top: 9px;
-  left: 50%;
-  width: 58px;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateX(-50%);
 }
 
 .login-panel-head {
@@ -1270,10 +1246,6 @@ body.login-locked {
 }
 
 .login-panel-wrap.is-dragging .login-panel-head {
-  cursor: grabbing;
-}
-
-.login-panel-wrap.is-dragging .login-panel-drag-handle {
   cursor: grabbing;
 }
 

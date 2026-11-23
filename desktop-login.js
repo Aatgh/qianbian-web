@@ -20,10 +20,7 @@
   const legalButtons = gate.querySelectorAll(".login-legal button");
   const fieldElements = gate.querySelectorAll(".login-field");
   const loginPanelWrap = document.getElementById("login-panel-wrap");
-  const loginPanelHead = gate.querySelector(".login-panel-head");
-  const loginPanelDragHandle = gate.querySelector(
-    ".login-panel-drag-handle",
-  );
+  const loginPanel = gate.querySelector(".login-panel");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const authKey = "qianbian-desktop-auth";
@@ -439,8 +436,11 @@
   }
 
   form.addEventListener("submit", handleSubmit);
-  [loginPanelHead, loginPanelDragHandle].forEach((handle) => {
-    handle?.addEventListener("pointerdown", beginLoginDrag);
+  loginPanel?.addEventListener("pointerdown", (event) => {
+    if (event.target.closest("input, textarea, select, button, a, label")) {
+      return;
+    }
+    beginLoginDrag(event);
   });
   window.addEventListener("pointermove", moveLoginDrag, {
     passive: false,
