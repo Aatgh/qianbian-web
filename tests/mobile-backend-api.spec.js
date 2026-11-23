@@ -350,3 +350,73 @@ test("mobile does not show demo sessions when backend returns none", async ({
   await expect(page.locator(".history-session")).toHaveCount(0);
   await expect(page.locator("#history-empty")).toBeVisible();
 });
+
+test("mobile page fills the real viewport without simulator chrome", async ({
+  page,
+}) => {
+  const calls = [];
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockBackend(page, calls, { sessions: [] });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+
+  const layout = await page.evaluate(() => {
+    const screen = document
+      .querySelector("#phone-screen")
+      .getBoundingClientRect();
+    const fit = document.querySelector("#phone-fit").getBoundingClientRect();
+    const bezel = getComputedStyle(document.querySelector(".phone-bezel"));
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      scrollWidth: document.documentElement.scrollWidth,
+      fit: {
+        left: fit.left,
+        top: fit.top,
+        width: fit.width,
+        height: fit.height,
+      },
+      screen: {
+        left: screen.left,
+        top: screen.top,
+        width: screen.width,
+        height: screen.height,
+      },
+      bezel: {
+        padding: bezel.padding,
+        borderWidth: bezel.borderWidth,
+        borderRadius: bezel.borderRadius,
+      },
+      speaker: getComputedStyle(
+        document.querySelector(".phone-speaker"),
+      ).display,
+      homeIndicator: getComputedStyle(
+        document.querySelector(".home-indicator"),
+      ).display,
+      statusBar: getComputedStyle(
+        document.querySelector(".phone-statusbar"),
+      ).display,
+    };
+  });
+
+  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.viewport.width);
+  expect(layout.fit).toMatchObject({
+    left: 0,
+    top: 0,
+    width: layout.viewport.width,
+    height: layout.viewport.height,
+  });
+  expect(layout.screen).toMatchObject({
+    left: 0,
+    top: 0,
+    width: layout.viewport.width,
+    height: layout.viewport.height,
+  });
+  expect(layout.bezel).toMatchObject({
+    padding: "0px",
+    borderWidth: "0px",
+    borderRadius: "0px",
+  });
+  expect(layout.speaker).toBe("none");
+  expect(layout.homeIndicator).toBe("none");
+  expect(layout.statusBar).toBe("none");
+});
