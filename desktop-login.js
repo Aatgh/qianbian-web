@@ -135,17 +135,8 @@
   }
 
   function moveLoginDrag(event) {
-    if (!draggingLogin || !loginPanelWrap) {
-      if (
-        Math.hypot(
-          event.clientX - dragStartX,
-          event.clientY - dragStartY,
-        ) > 18
-      ) {
-        clearLongPress();
-      }
-      return;
-    }
+    if (!draggingLogin || !loginPanelWrap) return;
+    if (dragPointerId !== null && event.pointerId !== dragPointerId) return;
     event.preventDefault();
     const rect = loginPanelWrap.getBoundingClientRect();
     const maxX = Math.max(0, window.innerWidth / 2 - rect.width / 2 - 12);
