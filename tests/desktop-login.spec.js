@@ -282,30 +282,31 @@ test("default starfield animates as a single theme", async ({ page }) => {
     "true",
   );
 
+  const frameBefore = await page.evaluate(
+    () => window.__qianbianLoginScene.stats().frame,
+  );
+  await page.waitForTimeout(250);
+  const frameAfter = await page.evaluate(
+    () => window.__qianbianLoginScene.stats().frame,
+  );
+  expect(frameAfter).toBeGreaterThan(frameBefore);
+
   const result = await page.evaluate(() => {
     const api = window.QianbianLoginBackground;
     const scene = window.__qianbianLoginScene;
     const signatures = [];
-    let moving = 0;
     api.themes.forEach((theme) => {
       api.setTheme(theme.id);
-      api.tune({
-        colors: ["#111111", "#888888", "#eeeeee"],
-      });
-      const signature = scene.signature();
-      const start = scene.signatureAt(1000);
-      const later = scene.signatureAt(9000);
-      signatures.push(signature);
-      if (start !== later) moving += 1;
+      signatures.push(scene.signature());
     });
     return {
       total: signatures.length,
       unique: new Set(signatures).size,
-      moving,
+      pixels: scene.samplePixels(),
     };
   });
 
   expect(result.total).toBe(1);
   expect(result.unique).toBe(1);
-  expect(result.moving).toBe(1);
+  expect(result.pixels.maxChannel).toBeGreaterThan(24);
 });
