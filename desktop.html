@@ -9,12 +9,234 @@
       content="千变电脑端工作区：对话、技能、自动化与上下文协作。"
     />
     <title>千变 · 电脑端工作区</title>
+    <script>
+      try {
+        if (localStorage.getItem("qianbian-desktop-auth") !== "true") {
+          document.documentElement.classList.add("login-pending");
+        }
+      } catch {}
+    </script>
     <link rel="icon" type="image/png" href="assets/brand/lingjing-logo.png" />
     <link rel="stylesheet" href="desktop.css?v=20261118h" />
     <link rel="stylesheet" href="desktop-refresh.css?v=20261120a" />
     <link rel="stylesheet" href="desktop-workspace.css?v=20261120k" />
+    <link rel="stylesheet" href="desktop-login.css?v=20261123a" />
   </head>
   <body class="desktop-reference">
+    <div class="login-gate" id="login-gate" hidden>
+      <div class="login-atmosphere" aria-hidden="true">
+        <div class="login-grid"></div>
+        <div class="login-beam login-beam-a"></div>
+        <div class="login-beam login-beam-b"></div>
+        <div class="login-vignette"></div>
+      </div>
+
+      <header class="login-masthead">
+        <div class="login-wordmark" aria-label="千变">
+          <span class="login-wordmark-mark">
+            <img src="assets/brand/lingjing-logo.png" alt="" />
+          </span>
+          <span class="login-wordmark-copy">
+            <strong>千变</strong>
+            <small>QIANBIAN</small>
+          </span>
+        </div>
+        <div class="login-secure-status">
+          <i data-lucide="shield-check"></i>
+          <span>私密工作区</span>
+          <b aria-hidden="true"></b>
+        </div>
+      </header>
+
+      <main class="login-layout">
+        <section class="login-visual" aria-label="千变品牌展示">
+          <div class="login-orbit" aria-hidden="true">
+            <span class="login-orbit-ring login-orbit-ring-a"></span>
+            <span class="login-orbit-ring login-orbit-ring-b"></span>
+            <span class="login-orbit-ring login-orbit-ring-c"></span>
+            <span class="login-orbit-scan"></span>
+            <span class="login-prism">
+              <span class="login-prism-glass">
+                <img src="assets/brand/lingjing-logo.png" alt="" />
+              </span>
+            </span>
+            <span class="login-orbit-label login-orbit-label-a">理解</span>
+            <span class="login-orbit-label login-orbit-label-b">创造</span>
+            <span class="login-orbit-label login-orbit-label-c">协作</span>
+          </div>
+
+          <div class="login-visual-copy">
+            <span class="login-kicker">A workspace that moves with you</span>
+            <h1>让每一次意图<br /><em>自然成形。</em></h1>
+            <p>
+              从一句想法到完整成果，千变会把上下文、技能和执行过程收拢到同一个安静的工作空间。
+            </p>
+            <div class="login-capability-row" aria-label="工作方式">
+              <span><i data-lucide="sparkles"></i>理解上下文</span>
+              <span><i data-lucide="command"></i>调用能力</span>
+              <span><i data-lucide="orbit"></i>持续推进</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="login-panel-wrap">
+          <div class="login-panel">
+            <span class="login-panel-border" aria-hidden="true"></span>
+            <div class="login-panel-head">
+              <span class="login-panel-kicker">Qianbian workspace</span>
+              <h2 id="login-title">欢迎回来</h2>
+              <p>选择一种方式，继续你的工作。</p>
+            </div>
+
+            <button class="login-google-button" type="button">
+              <span class="login-google-spotlight" aria-hidden="true"></span>
+              <span class="login-google-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z"/>
+                  <path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.36l-3.25-2.54c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.03v2.62A10 10 0 0 0 12 22Z"/>
+                  <path fill="#FBBC05" d="M6.39 13.93A6 6 0 0 1 6.07 12c0-.67.12-1.32.32-1.93V7.45H3.03A10 10 0 0 0 2 12c0 1.63.39 3.17 1.03 4.55l3.36-2.62Z"/>
+                  <path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.82 1.49l2.88-2.88A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.97 5.45l3.36 2.62C7.18 7.7 9.39 5.94 12 5.94Z"/>
+                </svg>
+              </span>
+              <span class="login-google-label">使用 Google 继续</span>
+              <span class="login-google-arrow" aria-hidden="true">
+                <i data-lucide="chevron-right"></i>
+              </span>
+              <span class="login-google-loader" aria-hidden="true"></span>
+            </button>
+
+            <div class="login-divider"><span>或使用邮箱</span></div>
+
+            <form class="login-form" id="login-form" novalidate>
+              <div class="login-field" data-login-field="email">
+                <label class="login-field-label" for="login-email">邮箱地址</label>
+                <input
+                  id="login-email"
+                  type="email"
+                  name="email"
+                  inputmode="email"
+                  autocomplete="email"
+                  placeholder="name@company.com"
+                  spellcheck="false"
+                />
+                <span class="login-field-line" aria-hidden="true"></span>
+              </div>
+
+              <div class="login-mode-tabs" role="tablist" aria-label="登录方式">
+                <button
+                  class="login-mode-tab is-active"
+                  type="button"
+                  role="tab"
+                  aria-selected="true"
+                  data-login-mode="password"
+                >
+                  密码登录
+                </button>
+                <button
+                  class="login-mode-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  data-login-mode="code"
+                >
+                  验证码登录
+                </button>
+                <span class="login-mode-indicator" aria-hidden="true"></span>
+              </div>
+
+              <div class="login-mode-panel" data-login-panel="password">
+                <div class="login-field" data-login-field="password">
+                  <label class="login-field-label" for="login-password">密码</label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    name="password"
+                    autocomplete="current-password"
+                    placeholder="输入密码"
+                  />
+                  <button
+                    class="login-password-toggle"
+                    type="button"
+                    aria-label="显示密码"
+                  >
+                    <i data-lucide="eye"></i>
+                  </button>
+                  <span class="login-field-line" aria-hidden="true"></span>
+                </div>
+              </div>
+
+              <div class="login-mode-panel" data-login-panel="code" hidden>
+                <div class="login-field" data-login-field="code">
+                  <label class="login-field-label" for="login-code">验证码</label>
+                  <input
+                    id="login-code"
+                    type="text"
+                    name="code"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="6"
+                    placeholder="6 位验证码"
+                  />
+                  <button class="login-code-button" type="button">获取验证码</button>
+                  <span class="login-field-line" aria-hidden="true"></span>
+                </div>
+              </div>
+
+              <div class="login-meta-row">
+                <label class="login-checkbox">
+                  <input id="login-remember" type="checkbox" checked />
+                  <span aria-hidden="true"><i data-lucide="check"></i></span>
+                  <b>保持登录</b>
+                </label>
+                <button class="login-text-button" type="button">忘记密码？</button>
+              </div>
+
+              <div
+                class="login-error"
+                id="login-error"
+                role="alert"
+                aria-live="assertive"
+                hidden
+              ></div>
+
+              <button class="login-submit" type="submit">
+                <span class="login-submit-glow" aria-hidden="true"></span>
+                <span class="login-submit-label">登录</span>
+                <span class="login-submit-icon" aria-hidden="true">
+                  <i data-lucide="arrow-right"></i>
+                </span>
+                <span class="login-submit-loader" aria-hidden="true"></span>
+              </button>
+
+              <button class="login-email-button" type="button">
+                使用邮箱继续
+              </button>
+            </form>
+
+            <footer class="login-legal">
+              继续即表示同意
+              <button type="button">服务条款</button>
+              和
+              <button type="button">隐私政策</button>
+            </footer>
+          </div>
+        </section>
+      </main>
+
+      <footer class="login-footer">
+        <span><i data-lucide="lock-keyhole"></i>连接由本地工作区保护</span>
+        <span class="login-footer-pulse" aria-hidden="true"></span>
+        <span>千变桌面端 · 安全登录</span>
+      </footer>
+
+      <div class="login-success" id="login-success" hidden>
+        <span class="login-success-halo" aria-hidden="true"></span>
+        <span class="login-success-mark"><i data-lucide="check"></i></span>
+        <strong>身份已确认</strong>
+        <small>正在进入你的工作区</small>
+      </div>
+    </div>
+
     <div class="app-shell" id="app-shell">
       <aside class="sidebar" id="sidebar" aria-label="主导航">
         <div class="sidebar-actions">
@@ -224,5 +446,6 @@
     <script src="assets/lucide.min.js"></script>
     <script src="data.js?v=20261118a"></script>
     <script src="desktop-app.js?v=20261120g"></script>
+    <script src="desktop-login.js?v=20261123a"></script>
   </body>
 </html>

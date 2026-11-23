@@ -2,6 +2,8 @@
 
 千变电脑端和手机端的纯静态 Web 演示项目，包含对话工作区、技能市场、任务面板、上下文配置和本地演示交互。
 
+电脑端首次进入会显示全屏登录界面。当前登录为本地演示流程，不会向 Google 或任何外部服务发送账号信息。
+
 ## 页面入口
 
 - 电脑端：`desktop.html`
@@ -21,12 +23,20 @@ python -m http.server 8080
 ## 目录
 
 - `desktop.html`、`desktop.css`、`desktop-refresh.css`、`desktop-workspace.css`：电脑端界面
-- `desktop-app.js`、`data.js`：电脑端交互和演示数据
+- `desktop-login.css`、`desktop-login.js`：电脑端登录界面、动画和本地登录状态
+- `desktop-app.js`、`data.js`：电脑端工作区交互和演示数据
 - `index.html`、`styles.css`、`app.js`：手机端界面
 - `assets/`：品牌、图标、字体和演示素材
 - `docs/`：设计说明和实现计划
 - `muse-desktop/`：基于 OpenMuse 的桌面端预览源码
 
+## 测试
+
+```powershell
+npm install
+npm run test:e2e
+```
+
 ## 说明
 
-当前项目是可离线打开的静态前端演示，不包含真实后端、账号服务或模型接口。用户设置和部分交互状态保存在浏览器 `localStorage` 中。
+当前项目是可离线打开的静态前端演示，不包含真实后端、账号服务或模型接口。登录状态、用户设置和部分交互状态保存在浏览器 `localStorage` 中。

@@ -48,14 +48,14 @@ test("email validation and password mode switching work", async ({ page }) => {
   const gate = page.locator("#login-gate");
   await gate.getByRole("button", { name: "使用邮箱继续" }).click();
   await gate.getByLabel("邮箱地址").fill("not-an-email");
-  await gate.getByRole("button", { name: "继续" }).click();
+  await gate.getByRole("button", { name: "登录", exact: true }).click();
   await expect(gate.getByRole("alert")).toContainText("请输入有效的邮箱地址");
 
   await gate.getByLabel("邮箱地址").fill("hello@qianbian.ai");
-  await gate.getByRole("button", { name: "验证码登录" }).click();
-  await expect(gate.getByLabel("验证码")).toBeVisible();
-  await gate.getByRole("button", { name: "密码登录" }).click();
-  await expect(gate.getByLabel("密码")).toBeVisible();
+  await gate.getByRole("tab", { name: "验证码登录" }).click();
+  await expect(gate.getByLabel("验证码", { exact: true })).toBeVisible();
+  await gate.getByRole("tab", { name: "密码登录" }).click();
+  await expect(gate.getByLabel("密码", { exact: true })).toBeVisible();
   await expect(gate.getByRole("button", { name: "显示密码" })).toBeVisible();
 });
 
@@ -64,9 +64,13 @@ test("successful email login and logout reopen the gate", async ({ page }) => {
 
   const gate = page.locator("#login-gate");
   await gate.getByLabel("邮箱地址").fill("hello@qianbian.ai");
-  await gate.getByLabel("密码").fill("qianbian-demo");
-  await gate.getByRole("button", { name: "登录" }).click();
+  await gate.getByLabel("密码", { exact: true }).fill("qianbian-demo");
+  await gate.getByRole("button", { name: "登录", exact: true }).click();
   await expect(gate).toBeHidden({ timeout: 6000 });
+
+  await page.reload();
+  await expect(page.locator("#login-gate")).toBeHidden();
+  await expect(page.locator("#app-shell")).toBeVisible();
 
   await page.locator("#account-menu-button").click();
   await page.locator("[data-account-logout]").click();

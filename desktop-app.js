@@ -5058,14 +5058,24 @@ export const skill = {
     }
     if (event.target.closest("[data-account-logout]")) {
       state.loggedIn = false;
+      localStorage.removeItem("qianbian-desktop-auth");
       persistAccountProfile();
+      state.accountDialogOpen = false;
+      state.accountSwitchOpen = false;
       renderAccountDialog();
+      render();
+      window.dispatchEvent(new Event("qianbian:auth-required"));
       return;
     }
     if (event.target.closest("[data-account-login]")) {
-      state.loggedIn = true;
+      state.loggedIn = false;
+      localStorage.removeItem("qianbian-desktop-auth");
       persistAccountProfile();
+      state.accountDialogOpen = false;
+      state.accountSwitchOpen = false;
       renderAccountDialog();
+      render();
+      window.dispatchEvent(new Event("qianbian:auth-required"));
       return;
     }
     if (event.target.closest("[data-open-settings]")) {
@@ -5753,6 +5763,7 @@ export const skill = {
     }
   });
   document.addEventListener("keydown", (event) => {
+    if (body.classList.contains("login-locked")) return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
       event.preventDefault();
       setSidePanel("search");
@@ -5843,6 +5854,25 @@ export const skill = {
     if (!Number.isFinite(next)) return;
     state.agentTraining = Math.min(100, Math.max(0, next));
     renderContext();
+  });
+  window.addEventListener("qianbian:auth-success", (event) => {
+    const detail = event.detail || {};
+    state.loggedIn = true;
+    state.accountDialogOpen = false;
+    state.accountSwitchOpen = false;
+    if (detail.email) state.accountEmail = detail.email;
+    if (detail.name) state.accountName = detail.name;
+    persistAccountProfile();
+    renderAccountDialog();
+    render();
+  });
+  window.addEventListener("qianbian:auth-required", () => {
+    state.loggedIn = false;
+    state.accountDialogOpen = false;
+    state.accountSwitchOpen = false;
+    persistAccountProfile();
+    renderAccountDialog();
+    render();
   });
 
   handleViewportChange();
