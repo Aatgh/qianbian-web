@@ -420,3 +420,54 @@ test("mobile page fills the real viewport without simulator chrome", async ({
   expect(layout.homeIndicator).toBe("none");
   expect(layout.statusBar).toBe("none");
 });
+
+test("mobile formats backend markdown without allowing unsafe html", async ({
+  page,
+}) => {
+  const calls = [];
+  await mockBackend(page, calls);
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+
+  await page.locator('[data-action="open-history"]').click();
+  await page.locator('[data-session-id="23"]').click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/session/resume"))
+    .toBeTruthy();
+
+  await page.evaluate(() => {
+    window.__qianbianMobileBackend.handleEvent("item/completed", {
+      item: {
+        itemId: "markdown-answer",
+        kind: "agentMessage",
+        status: "completed",
+        done: true,
+        text: `哈尔滨今天天气：
+
+**温度**：-10～-6℃
+**天气**：多云
+
+- 穿羽绒服
+- 注意路面结冰
+
+[危险链接](javascript:alert(1))
+<script>window.__markdownHacked = true</script>`,
+      },
+    });
+  });
+
+  const answer = page.locator(".assistant-message").last();
+  await expect(answer.locator(".assistant-text strong").first()).toHaveText(
+    "温度",
+  );
+  await expect(answer.locator("li")).toHaveCount(2);
+  await expect(answer).not.toContainText("**");
+  await expect(answer.locator("script")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__markdownHacked)).toBeUndefined();
+  const unsafeHref = await answer
+    .locator("a[href]")
+    .evaluateAll((links) =>
+      links.some((link) => /^javascript:/i.test(link.getAttribute("href"))),
+    );
+  expect(unsafeHref).toBe(false);
+});
