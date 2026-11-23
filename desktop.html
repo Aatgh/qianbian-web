@@ -23,14 +23,26 @@
     <link rel="stylesheet" href="desktop-login.css?v=20261123a" />
   </head>
   <body class="desktop-reference">
-    <div class="login-gate" id="login-gate" hidden>
+    <div class="login-gate login-starfield-preview" id="login-gate" hidden>
       <div class="login-atmosphere" aria-hidden="true">
         <div class="login-grid"></div>
         <div class="login-beam login-beam-a"></div>
         <div class="login-beam login-beam-b"></div>
         <div class="login-vignette"></div>
       </div>
-      <canvas id="login-three-canvas" class="login-three-canvas"></canvas>
+      <div
+        data-aifx="starfield"
+        data-aifx-speed="1.67"
+        data-aifx-density="0.1"
+        data-aifx-size="0.33"
+        data-aifx-depth="2"
+        data-aifx-twinkle="0.61"
+        data-aifx-shooting="0.6"
+        data-aifx-angle="170"
+        data-aifx-mouse="0.57"
+        class="login-aifx-starfield"
+        aria-hidden="true"
+      ></div>
 
       <header class="login-masthead">
         <div class="login-secure-status">
@@ -436,7 +448,7 @@
     <div class="sr-only" id="sr-status" aria-live="assertive"></div>
 
     <script src="assets/lucide.min.js"></script>
-    <script src="assets/login-three-scene.min.js?v=20261123a"></script>
+    <script src="https://cdn.aidesigner.ai/effects/runtime/v1.js"></script>
     <script src="data.js?v=20261118a"></script>
     <script src="desktop-app.js?v=20261120g"></script>
     <script src="desktop-login.js?v=20261123a"></script>

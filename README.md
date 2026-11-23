@@ -4,6 +4,8 @@
 
 电脑端首次进入会显示全屏登录界面。当前登录为本地演示流程，不会向 Google 或任何外部服务发送账号信息。
 
+当前星场视觉预览接入 AIDesigner 的 Starfield runtime，需要访问其 CDN；免费 runtime 会显示右下角标识。
+
 ## 页面入口
 
 - 电脑端：`desktop.html`
