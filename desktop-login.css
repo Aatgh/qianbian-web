@@ -84,6 +84,27 @@ body.login-locked {
   overflow: hidden;
 }
 
+.login-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: -16%;
+  opacity: 0.22;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.82) 0 0.7px, transparent 1.2px),
+    radial-gradient(circle, rgba(211, 117, 255, 0.56) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.58) 0 0.5px, transparent 1px);
+  background-position:
+    0 0,
+    53px 37px,
+    121px 89px;
+  background-size:
+    173px 151px,
+    239px 211px,
+    317px 277px;
+  mask-image: radial-gradient(circle at 42% 46%, black 0 30%, transparent 78%);
+  animation: login-stars-drift 34s linear infinite;
+}
+
 .login-grid {
   inset: -20%;
   opacity: 0.26;
@@ -295,6 +316,15 @@ body.login-locked {
 
 .login-gate.is-ready .login-three-canvas {
   animation: login-canvas-in 1200ms var(--login-spring) 280ms both;
+}
+
+.login-three-active .login-prism {
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.72);
+  transition:
+    opacity 500ms ease,
+    transform 700ms var(--login-spring);
 }
 
 .login-gate.is-ready .login-orbit {
@@ -1478,6 +1508,15 @@ body.login-locked {
   }
   to {
     transform: translate3d(18%, 4%, 0) rotate(-12deg);
+  }
+}
+
+@keyframes login-stars-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-72px, 48px, 0);
   }
 }
 

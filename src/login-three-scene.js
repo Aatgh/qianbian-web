@@ -6,6 +6,7 @@ if (canvas) {
   const gate = canvas.closest(".login-gate");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const startedAt = performance.now();
+  const logoPurple = new THREE.Color(0xa62466);
   let renderer;
 
   try {
@@ -25,127 +26,258 @@ if (canvas) {
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.32;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
-    camera.position.set(0, 0, 7.2);
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 90);
+    camera.position.set(0, 0, 7.4);
 
-    const root = new THREE.Group();
-    root.scale.setScalar(0.33);
-    scene.add(root);
+    const world = new THREE.Group();
+    world.scale.setScalar(0.28);
+    scene.add(world);
 
-    const knotMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x2a1025,
-      roughness: 0.2,
-      metalness: 0.74,
+    const planetGroup = new THREE.Group();
+    world.add(planetGroup);
+
+    const planetMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xe8d8f4,
+      roughness: 0.34,
+      metalness: 0.08,
       clearcoat: 1,
       clearcoatRoughness: 0.16,
-      iridescence: 1,
-      iridescenceIOR: 1.34,
-      iridescenceThicknessMinimum: 120,
-      iridescenceThicknessMaximum: 680,
-      emissive: 0x67193f,
-      emissiveIntensity: 0.42,
+      emissive: logoPurple,
+      emissiveIntensity: 0.12,
     });
-    const knot = new THREE.Mesh(
-      new THREE.TorusKnotGeometry(1.08, 0.23, 220, 36, 2, 3),
-      knotMaterial,
+    const planet = new THREE.Mesh(
+      new THREE.SphereGeometry(1.08, 96, 64),
+      planetMaterial,
     );
-    knot.rotation.set(0.42, -0.36, 0.18);
-    root.add(knot);
+    planetGroup.add(planet);
 
-    const shellMaterial = new THREE.MeshBasicMaterial({
-      color: 0xf1a8c0,
+    const atmosphereMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uWhite: { value: new THREE.Color(0xffffff) },
+        uPurple: { value: logoPurple.clone() },
+      },
+      vertexShader: `
+        varying vec3 vNormalView;
+        void main() {
+          vNormalView = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vNormalView;
+        uniform vec3 uWhite;
+        uniform vec3 uPurple;
+        void main() {
+          float rim = pow(1.0 - abs(vNormalView.z), 2.45);
+          vec3 glow = mix(uWhite, uPurple, smoothstep(0.08, 0.95, rim));
+          gl_FragColor = vec4(glow, rim * 0.82);
+        }
+      `,
       transparent: true,
-      opacity: 0.07,
-      wireframe: true,
-      depthWrite: false,
       blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      depthWrite: false,
     });
-    const shell = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(1.72, 2),
-      shellMaterial,
+    const atmosphere = new THREE.Mesh(
+      new THREE.SphereGeometry(1.34, 96, 64),
+      atmosphereMaterial,
     );
-    root.add(shell);
+    planetGroup.add(atmosphere);
 
-    const ringMaterial = new THREE.MeshBasicMaterial({
-      color: 0xf1b56f,
-      transparent: true,
-      opacity: 0.22,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
+    const innerGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(1.16, 64, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xe7b6ff,
+        transparent: true,
+        opacity: 0.035,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    planetGroup.add(innerGlow);
+
+    const markMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xfffbff,
+      metalness: 0.24,
+      roughness: 0.16,
+      clearcoat: 1,
+      clearcoatRoughness: 0.12,
+      emissive: 0xc45cff,
+      emissiveIntensity: 0.92,
     });
-    const rings = [
+    const markGroup = new THREE.Group();
+    markGroup.position.z = 1.52;
+    markGroup.scale.setScalar(1.03);
+    world.add(markGroup);
+
+    const leftLoop = new THREE.Mesh(
+      new THREE.TorusGeometry(0.43, 0.058, 16, 100),
+      markMaterial,
+    );
+    leftLoop.position.x = -0.46;
+    leftLoop.rotation.y = -0.08;
+    leftLoop.rotation.z = 0.06;
+    markGroup.add(leftLoop);
+
+    const rightLoop = new THREE.Mesh(
+      new THREE.TorusGeometry(0.43, 0.058, 16, 100),
+      markMaterial,
+    );
+    rightLoop.position.x = 0.46;
+    rightLoop.rotation.y = 0.08;
+    rightLoop.rotation.z = -0.06;
+    markGroup.add(rightLoop);
+
+    const connector = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.052, 0.72, 8, 18),
+      markMaterial,
+    );
+    connector.rotation.z = -0.67;
+    connector.position.z = 0.06;
+    connector.scale.y = 0.92;
+    markGroup.add(connector);
+
+    const markHalo = new THREE.Mesh(
+      new THREE.TorusGeometry(0.93, 0.006, 8, 160),
+      new THREE.MeshBasicMaterial({
+        color: 0xf5d6ff,
+        transparent: true,
+        opacity: 0.36,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    markHalo.scale.x = 1.55;
+    markHalo.scale.y = 0.74;
+    markHalo.position.z = 0.02;
+    markGroup.add(markHalo);
+
+    const gravityRings = [
       new THREE.Mesh(
-        new THREE.TorusGeometry(1.9, 0.006, 8, 180),
-        ringMaterial.clone(),
+        new THREE.TorusGeometry(1.52, 0.007, 8, 160),
+        new THREE.MeshBasicMaterial({
+          color: 0xf6e6ff,
+          transparent: true,
+          opacity: 0.25,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        }),
       ),
       new THREE.Mesh(
-        new THREE.TorusGeometry(1.62, 0.005, 8, 160),
-        ringMaterial.clone(),
-      ),
-      new THREE.Mesh(
-        new THREE.TorusGeometry(2.16, 0.004, 8, 200),
-        ringMaterial.clone(),
+        new THREE.TorusGeometry(1.78, 0.004, 8, 180),
+        new THREE.MeshBasicMaterial({
+          color: logoPurple,
+          transparent: true,
+          opacity: 0.36,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        }),
       ),
     ];
-    rings[0].rotation.set(1.1, 0.25, -0.2);
-    rings[1].rotation.set(0.45, 1.05, 0.8);
-    rings[2].rotation.set(1.35, -0.5, 0.3);
-    rings[0].material.opacity = 0.2;
-    rings[1].material.color.setHex(0xf07d9a);
-    rings[1].material.opacity = 0.16;
-    rings[2].material.color.setHex(0x7790ff);
-    rings[2].material.opacity = 0.11;
-    rings.forEach((ring) => root.add(ring));
+    gravityRings[0].rotation.set(1.13, 0.18, -0.24);
+    gravityRings[1].rotation.set(0.58, 1.02, 0.56);
+    gravityRings.forEach((ring) => world.add(ring));
 
-    const particleCount = 180;
-    const particlePositions = new Float32Array(particleCount * 3);
-    for (let index = 0; index < particleCount; index += 1) {
-      const radius = 2.1 + Math.random() * 1.45;
+    const dustCount = 250;
+    const dustPositions = new Float32Array(dustCount * 3);
+    const dustColors = new Float32Array(dustCount * 3);
+    for (let index = 0; index < dustCount; index += 1) {
+      const radius = 1.42 + Math.random() * 1.5;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      particlePositions[index * 3] =
+      dustPositions[index * 3] =
         radius * Math.sin(phi) * Math.cos(theta);
-      particlePositions[index * 3 + 1] = radius * Math.cos(phi);
-      particlePositions[index * 3 + 2] =
+      dustPositions[index * 3 + 1] = radius * Math.cos(phi) * 0.72;
+      dustPositions[index * 3 + 2] =
         radius * Math.sin(phi) * Math.sin(theta);
+      const color = Math.random() > 0.46
+        ? new THREE.Color(0xffffff)
+        : logoPurple.clone().lerp(new THREE.Color(0xffb7ef), 0.58);
+      dustColors[index * 3] = color.r;
+      dustColors[index * 3 + 1] = color.g;
+      dustColors[index * 3 + 2] = color.b;
     }
-    const particleGeometry = new THREE.BufferGeometry();
-    particleGeometry.setAttribute(
+    const dustGeometry = new THREE.BufferGeometry();
+    dustGeometry.setAttribute(
       "position",
-      new THREE.BufferAttribute(particlePositions, 3),
+      new THREE.BufferAttribute(dustPositions, 3),
     );
-    const particles = new THREE.Points(
-      particleGeometry,
+    dustGeometry.setAttribute(
+      "color",
+      new THREE.BufferAttribute(dustColors, 3),
+    );
+    const gravityDust = new THREE.Points(
+      dustGeometry,
       new THREE.PointsMaterial({
-        color: 0xf3c27d,
-        size: 0.026,
+        size: 0.028,
         sizeAttenuation: true,
+        vertexColors: true,
         transparent: true,
-        opacity: 0.52,
+        opacity: 0.7,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }),
     );
-    root.add(particles);
+    world.add(gravityDust);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-    const pinkLight = new THREE.PointLight(0xff5f95, 34, 14, 2);
-    pinkLight.position.set(3.2, 1.6, 4);
-    scene.add(pinkLight);
-    const goldLight = new THREE.PointLight(0xffbb70, 24, 12, 2);
-    goldLight.position.set(-3.5, -1.4, 3);
-    scene.add(goldLight);
-    const blueLight = new THREE.PointLight(0x718dff, 18, 10, 2);
-    blueLight.position.set(0.5, 3.1, -3);
-    scene.add(blueLight);
+    const starCount = 900;
+    const starPositions = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+    const starSpeeds = new Float32Array(starCount);
+    for (let index = 0; index < starCount; index += 1) {
+      starPositions[index * 3] = (Math.random() - 0.5) * 22;
+      starPositions[index * 3 + 1] = (Math.random() - 0.5) * 14;
+      starPositions[index * 3 + 2] = (Math.random() - 0.5) * 18 - 2;
+      starSpeeds[index] = 0.0008 + Math.random() * 0.0022;
+      const color = Math.random() > 0.26
+        ? new THREE.Color(0xffffff)
+        : logoPurple.clone().lerp(new THREE.Color(0xffd7ff), 0.72);
+      starColors[index * 3] = color.r;
+      starColors[index * 3 + 1] = color.g;
+      starColors[index * 3 + 2] = color.b;
+    }
+    const starGeometry = new THREE.BufferGeometry();
+    starGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(starPositions, 3),
+    );
+    starGeometry.setAttribute(
+      "color",
+      new THREE.BufferAttribute(starColors, 3),
+    );
+    const starField = new THREE.Points(
+      starGeometry,
+      new THREE.PointsMaterial({
+        size: 0.027,
+        sizeAttenuation: true,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.62,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    scene.add(starField);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const whiteLight = new THREE.PointLight(0xffffff, 24, 16, 2);
+    whiteLight.position.set(2.8, 2.4, 4.2);
+    scene.add(whiteLight);
+    const purpleLight = new THREE.PointLight(0xc34dff, 24, 15, 2);
+    purpleLight.position.set(-3.2, -1.2, 3.1);
+    scene.add(purpleLight);
+    const rimLight = new THREE.PointLight(0xffd7ff, 20, 14, 2);
+    rimLight.position.set(0.2, 3.2, -3);
+    scene.add(rimLight);
 
     let pointerX = 0;
     let pointerY = 0;
     let successAt = 0;
     let frame = 0;
+    let previousTime = 0;
 
     function easeOutCubic(value) {
       return 1 - Math.pow(1 - value, 3);
@@ -166,13 +298,37 @@ if (canvas) {
       camera.updateProjectionMatrix();
     }
 
+    function driftStars(delta) {
+      const positions = starGeometry.attributes.position.array;
+      for (let index = 0; index < starCount; index += 1) {
+        positions[index * 3 + 1] -=
+          starSpeeds[index] * delta * 60;
+        positions[index * 3] +=
+          starSpeeds[index] * delta * 8;
+        if (positions[index * 3 + 1] < -7) {
+          positions[index * 3 + 1] = 7;
+          positions[index * 3] = (Math.random() - 0.5) * 22;
+        }
+        if (positions[index * 3] > 11) {
+          positions[index * 3] = -11;
+        }
+      }
+      starGeometry.attributes.position.needsUpdate = true;
+      starField.rotation.z += delta * 0.008;
+    }
+
     function renderFrame(time = 0) {
       resize();
       const seconds = time * 0.001;
+      const delta = previousTime
+        ? Math.min(0.05, (time - previousTime) * 0.001)
+        : 0.016;
+      previousTime = time;
+
       const intro = reducedMotion.matches
         ? 1
         : easeOutCubic(
-            Math.min(1, (performance.now() - startedAt) / 1250),
+            Math.min(1, (performance.now() - startedAt) / 1400),
           );
       const successProgress = successAt
         ? easeOutCubic(
@@ -181,45 +337,55 @@ if (canvas) {
         : 0;
       const successScale = 1 - successProgress * 0.34;
 
-      root.scale.setScalar((0.33 + intro * 0.67) * successScale);
-      root.rotation.x +=
-        (pointerY * 0.22 +
-          Math.sin(seconds * 0.24) * 0.04 -
-          root.rotation.x) *
+      world.scale.setScalar((0.28 + intro * 0.72) * successScale);
+      world.rotation.x +=
+        (pointerY * 0.18 +
+          Math.sin(seconds * 0.22) * 0.035 -
+          world.rotation.x) *
         0.045;
-      root.rotation.y +=
-        (pointerX * 0.32 + seconds * 0.08 + 0.3 - root.rotation.y) * 0.045;
-      root.rotation.z = Math.sin(seconds * 0.2) * 0.035;
+      world.rotation.y +=
+        (pointerX * 0.28 + 0.18 - world.rotation.y) * 0.045;
+      world.rotation.z = Math.sin(seconds * 0.18) * 0.025;
 
-      knot.rotation.x += reducedMotion.matches ? 0 : 0.0024;
-      knot.rotation.y += reducedMotion.matches ? 0 : 0.0036;
-      knot.scale.setScalar(1 + Math.sin(seconds * 1.15) * 0.025);
+      planetGroup.rotation.y += reducedMotion.matches ? 0 : 0.0013;
+      planetGroup.rotation.x =
+        Math.sin(seconds * 0.34) * 0.045;
+      planetMaterial.emissiveIntensity =
+        0.12 + Math.sin(seconds * 0.82) * 0.03;
+      innerGlow.material.opacity =
+        0.032 + Math.sin(seconds * 1.1) * 0.008;
 
-      shell.rotation.x -= reducedMotion.matches ? 0 : 0.0012;
-      shell.rotation.y += reducedMotion.matches ? 0 : 0.0018;
-      shellMaterial.opacity = 0.065 + (1 - intro) * 0.08;
+      markGroup.rotation.x =
+        -pointerY * 0.08 + Math.sin(seconds * 0.5) * 0.035;
+      markGroup.rotation.y =
+        pointerX * 0.12 + Math.sin(seconds * 0.42) * 0.06;
+      markGroup.rotation.z = Math.sin(seconds * 0.28) * 0.045;
+      markMaterial.emissiveIntensity =
+        0.92 + successProgress * 0.45 + Math.sin(seconds * 1.4) * 0.08;
+      markHalo.rotation.z += reducedMotion.matches ? 0 : 0.0015;
 
-      rings.forEach((ring, index) => {
+      gravityRings.forEach((ring, index) => {
         ring.rotation.z +=
           reducedMotion.matches
             ? 0
-            : (index % 2 === 0 ? 1 : -1) * 0.0016;
-        ring.rotation.x += reducedMotion.matches ? 0 : 0.0007;
+            : (index === 0 ? 0.0011 : -0.0008);
       });
-      particles.rotation.y += reducedMotion.matches ? 0 : 0.00055;
-      particles.rotation.x = Math.sin(seconds * 0.13) * 0.08;
+      gravityDust.rotation.y += reducedMotion.matches ? 0 : 0.0012;
+      gravityDust.rotation.x = Math.sin(seconds * 0.2) * 0.16;
 
-      pinkLight.position.x = Math.cos(seconds * 0.45) * 3.2;
-      pinkLight.position.y = Math.sin(seconds * 0.38) * 1.8;
-      goldLight.position.x = Math.cos(seconds * 0.32 + 2.2) * 3.3;
-      goldLight.position.y = Math.sin(seconds * 0.42 + 1.1) * 1.4;
+      if (!reducedMotion.matches) driftStars(delta);
 
-      knotMaterial.emissiveIntensity =
-        0.42 + Math.sin(seconds * 0.85) * 0.08 + successProgress * 0.75;
+      whiteLight.position.x = Math.cos(seconds * 0.38) * 3.1;
+      whiteLight.position.y = Math.sin(seconds * 0.44) * 2.2;
+      purpleLight.position.x = Math.cos(seconds * 0.31 + 2.4) * 3.3;
+      purpleLight.position.y = Math.sin(seconds * 0.36 + 1.2) * 2.1;
+
       renderer.render(scene, camera);
       frame = renderer.info.render.frame;
       canvas.dataset.sceneReady = "true";
+      canvas.dataset.sceneStyle = "gravity-planet";
       canvas.dataset.renderFrame = String(frame);
+      gate?.classList.add("login-three-active");
     }
 
     function animationLoop(time) {
@@ -263,7 +429,7 @@ if (canvas) {
     });
     window.addEventListener("qianbian:auth-required", () => {
       successAt = 0;
-      root.scale.setScalar(1);
+      world.scale.setScalar(1);
       syncAnimation();
     });
     window.addEventListener("qianbian:auth-success", () => {
@@ -282,7 +448,7 @@ if (canvas) {
       stats() {
         return {
           renderCalls: renderer.info.render.calls,
-          objectCount: root.children.length,
+          objectCount: world.children.length + starField.children.length,
           triangles: renderer.info.render.triangles,
           points: renderer.info.render.points,
           frame,
