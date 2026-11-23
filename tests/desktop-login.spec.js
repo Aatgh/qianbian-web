@@ -210,6 +210,18 @@ test("login preview exposes all local themes and a floating login toggle", async
   await expect(page.locator(".login-theme-group-title").first()).toHaveText(
     "星场",
   );
+  const defaultPalettes = await page.evaluate(() =>
+    window.QianbianLoginBackground.themes.map((theme) =>
+      theme.colors.map((color) => color.toLowerCase()),
+    ),
+  );
+  expect(
+    defaultPalettes.every(
+      (palette) =>
+        JSON.stringify(palette) ===
+        JSON.stringify(["#09040a", "#a62466", "#f6e9ff"]),
+    ),
+  ).toBe(true);
 
   await page.locator('[data-login-theme="aurora-flow"]').click();
   await expect(canvas).toHaveAttribute("data-theme", "aurora-flow");
@@ -229,7 +241,7 @@ test("login preview exposes all local themes and a floating login toggle", async
   await page.locator("#login-tuning-controls input[type='color']").first().fill("#112233");
   const tuning = await page.evaluate(() =>
     JSON.parse(
-      localStorage.getItem("qianbian-login-background-tuning") || "{}",
+      localStorage.getItem("qianbian-login-background-tuning-v2") || "{}",
     ),
   );
   expect(tuning["aurora-flow"].speed).toBe(1.4);
