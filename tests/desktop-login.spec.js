@@ -224,14 +224,16 @@ test("login preview exposes all local themes and a floating login toggle", async
 
   await page.locator("#login-tuning-toggle").click();
   await expect(page.locator("#login-tuning-panel")).toBeVisible();
-  await expect(page.locator("#login-tuning-controls input")).toHaveCount(6);
-  await page.locator("#login-tuning-controls input").first().fill("1.4");
+  await expect(page.locator("#login-tuning-controls input")).toHaveCount(9);
+  await page.locator("#login-tuning-controls input[type='range']").first().fill("1.4");
+  await page.locator("#login-tuning-controls input[type='color']").first().fill("#112233");
   const tuning = await page.evaluate(() =>
     JSON.parse(
       localStorage.getItem("qianbian-login-background-tuning") || "{}",
     ),
   );
   expect(tuning["aurora-flow"].speed).toBe(1.4);
+  expect(tuning["aurora-flow"].colors[0]).toBe("#112233");
   await page.locator("#login-tuning-reset").click();
   await page.locator("#login-tuning-close").click();
 
@@ -243,4 +245,34 @@ test("login preview exposes all local themes and a floating login toggle", async
   );
   await page.locator("#login-box-toggle").click();
   await expect(page.locator(".login-panel-wrap")).toBeHidden();
+});
+
+test("theme structures differ beyond color", async ({ page }) => {
+  await page.setViewportSize({ width: 480, height: 270 });
+  await openFreshDesktop(page, { starfieldPreview: true });
+  await expect(page.locator("#login-three-canvas")).toHaveAttribute(
+    "data-scene-ready",
+    "true",
+  );
+
+  const result = await page.evaluate(() => {
+    const api = window.QianbianLoginBackground;
+    const scene = window.__qianbianLoginScene;
+    const signatures = [];
+    api.themes.forEach((theme) => {
+      api.setTheme(theme.id);
+      api.tune({
+        colors: ["#111111", "#888888", "#eeeeee"],
+      });
+      const signature = scene.signature();
+      signatures.push(signature);
+    });
+    return {
+      total: signatures.length,
+      unique: new Set(signatures).size,
+    };
+  });
+
+  expect(result.total).toBe(44);
+  expect(result.unique).toBe(44);
 });
