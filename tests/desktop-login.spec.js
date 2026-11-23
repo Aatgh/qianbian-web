@@ -150,3 +150,33 @@ test("login gate stays inside a short desktop viewport", async ({ page }) => {
   expect(metrics.panelBottom).toBeLessThanOrEqual(metrics.viewportHeight);
   expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.viewportHeight);
 });
+
+test("three.js login scene renders on desktop and mobile", async ({ page }) => {
+  await openFreshDesktop(page);
+
+  const canvas = page.locator("#login-three-canvas");
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveAttribute("data-scene-ready", "true");
+  const desktopBox = await canvas.boundingBox();
+  expect(desktopBox.width).toBeGreaterThan(180);
+  expect(desktopBox.height).toBeGreaterThan(180);
+
+  const stats = await page.evaluate(() => window.__qianbianLoginScene?.stats());
+  expect(stats?.renderCalls).toBeGreaterThan(0);
+  expect(stats?.objectCount).toBeGreaterThan(2);
+  const pixels = await page.evaluate(() =>
+    window.__qianbianLoginScene?.samplePixels(),
+  );
+  expect(pixels?.painted).toBeGreaterThan(100);
+  expect(pixels?.maxChannel).toBeGreaterThan(40);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(250);
+  const mobileBox = await canvas.boundingBox();
+  expect(mobileBox.width).toBeGreaterThan(90);
+  expect(mobileBox.height).toBeGreaterThan(90);
+  const mobilePixels = await page.evaluate(() =>
+    window.__qianbianLoginScene?.samplePixels(),
+  );
+  expect(mobilePixels?.painted).toBeGreaterThan(20);
+});
