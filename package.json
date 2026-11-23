@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build:login-scene": "esbuild src/login-three-scene.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/login-three-scene.min.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:server": "npm test --prefix muse-desktop/server"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

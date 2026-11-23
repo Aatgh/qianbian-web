@@ -7,6 +7,7 @@ const fs = require("node:fs");
 const express = require("express");
 const cors = require("cors");
 const { MspHost } = require("./msp");
+const { mergePendingRequests } = require("./pending-requests");
 
 const PORT = Number(process.env.PORT || 3101);
 const MOCK = process.env.OPENMUSE_MOCK === "1";
@@ -80,11 +81,47 @@ if (MOCK) {
   host.on("status", (s) => broadcast("status", s));
   host.start();
 }
+const pendingRequestsBySession = new Map();
+
 host.on("notification", (msg) => {
   const params = msg.params || msg;
+  trackPendingRequest(msg.method, params);
   broadcast("msp", { method: msg.method || "message", params });
   automationRunEvent(msg.method, params);
 });
+
+function pendingState(sessionId) {
+  const key = String(sessionId || "");
+  let value = pendingRequestsBySession.get(key);
+  if (!value) {
+    value = { approvals: new Map(), userInputs: new Map() };
+    pendingRequestsBySession.set(key, value);
+  }
+  return value;
+}
+
+function trackPendingRequest(method, params) {
+  const sessionId = params?.sessionId;
+  if (!sessionId) return;
+  const pending = pendingState(sessionId);
+  if (method === "approval/requested" && params.approvalId) {
+    pending.approvals.set(String(params.approvalId), params);
+  } else if (method === "approval/resolved" && params.approvalId) {
+    pending.approvals.delete(String(params.approvalId));
+  } else if (method === "userInput/requested" && params.userInputId) {
+    pending.userInputs.set(String(params.userInputId), params);
+  } else if (method === "userInput/settled" && params.userInputId) {
+    pending.userInputs.delete(String(params.userInputId));
+  }
+}
+
+function cachedPendingRequests(sessionId) {
+  const pending = pendingState(sessionId);
+  return {
+    approvals: [...pending.approvals.values()],
+    userInputs: [...pending.userInputs.values()],
+  };
+}
 
 // ---- automation run lifecycle -> SSE + ledger ----
 // Tracks turnId -> run context in memory (one-shot; a restart between start
@@ -183,7 +220,33 @@ app.post("/api/session/resume", async (req, res) => {
   try {
     const { sessionId } = req.body || {};
     if (!sessionId) return res.status(400).json({ error: "sessionId required" });
-    res.json(await host.sessionResume(sessionId));
+    const resumed = await host.sessionResume(sessionId);
+    let listed = null;
+    if (typeof host.approvalListPending === "function") {
+      try {
+        listed = await host.approvalListPending(sessionId);
+      } catch {
+        listed = null;
+      }
+    }
+    const cached = cachedPendingRequests(sessionId);
+    const mergedList = {
+      approvals: [
+        ...(Array.isArray(listed?.approvals) ? listed.approvals : []),
+        ...cached.approvals,
+      ],
+      userInputs: [
+        ...(Array.isArray(listed?.userInputs) ? listed.userInputs : []),
+        ...cached.userInputs,
+      ],
+    };
+    res.json({
+      ...resumed,
+      pendingRequests: mergePendingRequests(
+        resumed?.pendingRequests,
+        mergedList,
+      ),
+    });
   } catch (e) {
     sendError(res, e);
   }

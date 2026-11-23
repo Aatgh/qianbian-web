@@ -683,8 +683,9 @@
     {
       id: "add-image",
       label: "添加图片",
-      description: "设计稿、截图或照片",
+      description: "当前后端暂不支持图片理解",
       icon: "image",
+      disabled: true,
     },
     {
       id: "choose-folder",
@@ -991,6 +992,8 @@
     activeTurnId: null,
     pendingApprovals: [],
     pendingInputs: [],
+    backendAutomations: [],
+    automationsState: "demo",
     contextUsage: null,
     tokenUsage: null,
     questionSelections: new Map(),
@@ -1166,7 +1169,7 @@
       ? getActiveSkills().find((item) => item.id === detail.id)
       : null;
     const automation = detail.id
-      ? AUTOMATIONS.find((item) => item.id === detail.id)
+      ? getVisibleAutomations().find((item) => item.id === detail.id)
       : null;
     const action = detail.id
       ? COMPOSE_ACTIONS.find((item) => item.id === detail.id)
@@ -1339,6 +1342,28 @@
     };
   }
 
+  function mapBackendAutomation(automation) {
+    const schedule =
+      automation.cron ||
+      (automation.everyMinutes
+        ? `每 ${automation.everyMinutes} 分钟`
+        : "手动");
+    return {
+      id: String(automation.automationId || automation.id),
+      title: automation.name || automation.title || "未命名自动化",
+      description: automation.prompt || automation.description || "",
+      icon: "workflow",
+      schedule,
+      enabled: automation.enabled !== false,
+    };
+  }
+
+  function getVisibleAutomations() {
+    return state.apiAvailable && state.automationsState === "ready"
+      ? state.backendAutomations
+      : AUTOMATIONS;
+  }
+
   function replaceBackendSessions(list) {
     const mapped = (Array.isArray(list) ? list : [])
       .filter((session) => session && (session.sessionId || session.id))
@@ -1366,6 +1391,19 @@
 
   function hydrateMessagesFromBackend(payload) {
     return extractBackendItems(payload).map(mapBackendItem).filter(Boolean);
+  }
+
+  function preserveLocalUserMessages(hydrated, existing) {
+    if (!hydrated.length) return existing;
+    const localOnly = existing.filter(
+      (message) =>
+        message.role === "user" &&
+        !message.itemId &&
+        !hydrated.some(
+          (item) => item.role === "user" && item.text === message.text,
+        ),
+    );
+    return [...hydrated, ...localOnly];
   }
 
   function hydrateActivityFromBackend(payload) {
@@ -1743,12 +1781,6 @@
   async function initializeBackend() {
     if (!api) return;
     if (location.protocol === "file:" && !api.explicit) return;
-    if (
-      ["localhost", "127.0.0.1"].includes(location.hostname) &&
-      !api.explicit
-    ) {
-      return;
-    }
     try {
       await api.health();
       state.apiAvailable = true;
@@ -1758,13 +1790,21 @@
       state.apiStatus = { connected: false, error: error.message };
       return;
     }
-    const [sessionsResult, modelsResult, marketResult, installedResult, mineResult] =
+    const [
+      sessionsResult,
+      modelsResult,
+      marketResult,
+      installedResult,
+      mineResult,
+      automationsResult,
+    ] =
       await Promise.allSettled([
         api.sessions(),
         api.models(),
         api.skills({ scope: "market" }),
         api.skills({ scope: "installed" }),
         api.mineSkills(),
+        api.automations(),
       ]);
     if (sessionsResult.status === "fulfilled") {
       replaceBackendSessions(sessionsResult.value?.sessions);
@@ -1781,6 +1821,16 @@
           : undefined,
       mine: mineResult.status === "fulfilled" ? mineResult.value : undefined,
     });
+    if (automationsResult.status === "fulfilled") {
+      const list = automationsResult.value?.automations;
+      state.backendAutomations = (Array.isArray(list) ? list : []).map(
+        mapBackendAutomation,
+      );
+      state.automationsState = "ready";
+    } else {
+      state.backendAutomations = [];
+      state.automationsState = "unavailable";
+    }
     api.connectEvents({
       onStatus(status) {
         state.apiStatus = status;
@@ -2038,36 +2088,55 @@
     `;
   }
 
+  function renderAutomationRows(automations, emptyCopy) {
+    if (!automations.length && state.apiAvailable) {
+      return `<div class="workspace-panel-empty">${icon("workflow")}<strong>${emptyCopy[0]}</strong><span>${emptyCopy[1]}</span></div>`;
+    }
+    return automations
+      .map((automation) => {
+        const enabled = Boolean(
+          automation.enabled ?? state.automationEnabled.get(automation.id),
+        );
+        return `
+          <article class="automation-row">
+            <button class="automation-main" data-automation-detail="${automation.id}" type="button">
+              <span class="automation-row-icon">${icon(automation.icon)}</span>
+              <span class="automation-copy">
+                <strong>${escapeHtml(automation.title)}</strong>
+                <span>${escapeHtml(automation.description)}</span>
+              </span>
+            </button>
+            <span class="schedule-pill">${escapeHtml(automation.schedule)}</span>
+            <button class="switch ${enabled ? "is-on" : ""}" data-automation="${automation.id}" type="button" aria-label="${enabled ? "停用" : "启用"}${escapeHtml(automation.title)}" aria-pressed="${enabled}"></button>
+          </article>
+        `;
+      })
+      .join("");
+  }
+
   function renderAutomationView() {
+    const automations = getVisibleAutomations();
+    const emptyCopy =
+      state.apiAvailable && state.automationsState === "unavailable"
+        ? ["自动化服务暂不可用", "恢复连接后会自动刷新。"]
+        : ["还没有自动化", "创建后会在这里显示执行计划。"];
+    const description = state.apiAvailable
+      ? "设置触发条件、执行内容和通知方式，任务状态直接来自当前后端。"
+      : "设置触发条件、执行内容和通知方式。所有任务都为本地演示状态。";
     return `
       <div class="page-view">
         <div class="page-view-head">
           <div>
             <span class="eyebrow">自动化</span>
             <h2>让重复工作按计划运行</h2>
-            <p>设置触发条件、执行内容和通知方式。所有任务都为本地演示状态。</p>
+            <p>${description}</p>
           </div>
           <div class="page-view-actions">
             <button class="primary-button" data-detail-type="automationNew" type="button">${icon("plus")}新建自动化</button>
           </div>
         </div>
         <div class="automation-list">
-          ${AUTOMATIONS.map((automation) => {
-            const enabled = Boolean(state.automationEnabled.get(automation.id));
-            return `
-              <article class="automation-row">
-                <button class="automation-main" data-automation-detail="${automation.id}" type="button">
-                  <span class="automation-row-icon">${icon(automation.icon)}</span>
-                  <span class="automation-copy">
-                    <strong>${escapeHtml(automation.title)}</strong>
-                    <span>${escapeHtml(automation.description)}</span>
-                  </span>
-                </button>
-                <span class="schedule-pill">${escapeHtml(automation.schedule)}</span>
-                <button class="switch ${enabled ? "is-on" : ""}" data-automation="${automation.id}" type="button" aria-label="${enabled ? "停用" : "启用"}${escapeHtml(automation.title)}" aria-pressed="${enabled}"></button>
-              </article>
-            `;
-          }).join("")}
+          ${renderAutomationRows(automations, emptyCopy)}
         </div>
       </div>
     `;
@@ -3011,7 +3080,9 @@ export const skill = {
   function renderAutomationDetail() {
     const automation = getDetailInfo(state.detail).automation;
     if (!automation) return renderDetailShell("自动化详情", "未找到自动化", "");
-    const enabled = Boolean(state.automationEnabled.get(automation.id));
+    const enabled = Boolean(
+      automation.enabled ?? state.automationEnabled.get(automation.id),
+    );
     return renderDetailShell(
       automation.title,
       automation.description,
@@ -3252,7 +3323,7 @@ export const skill = {
     const action = COMPOSE_ACTIONS.find(
       (item) => item.id === state.actionDialog,
     );
-    if (!action) {
+    if (!action || action.disabled) {
       actionDialogHost.innerHTML = "";
       return;
     }
@@ -3861,6 +3932,7 @@ export const skill = {
     skillMarketEntering = root === "skill-market";
     state.railDialog = { root };
     state.detail = null;
+    state.actionDialog = null;
     state.workspaceMenuOpen = false;
     state.composerOpen = false;
     state.composerOpening = false;
@@ -4019,7 +4091,7 @@ export const skill = {
                   <div class="compose-action-grid">
                     ${COMPOSE_ACTIONS.map(
                       (action) => `
-                        <button class="compose-action-tile" data-action-detail="${action.id}" type="button" title="${escapeHtml(action.description)}">
+                        <button class="compose-action-tile" data-action-detail="${action.id}" type="button" title="${escapeHtml(action.description)}" ${action.disabled ? "disabled" : ""}>
                           <span class="compose-action-icon">${icon(action.icon)}</span>
                           <span class="compose-action-label">${escapeHtml(action.label)}</span>
                         </button>
@@ -4983,7 +5055,10 @@ export const skill = {
     SESSIONS.unshift(mapped);
     state.activeSession = mapped.id;
     state.modelId = payload.modelId || state.modelId;
-    state.messages = hydrateMessagesFromBackend(payload);
+    state.messages = preserveLocalUserMessages(
+      hydrateMessagesFromBackend(payload),
+      state.messages,
+    );
     state.backendActivity = hydrateActivityFromBackend(payload);
     return mapped;
   }
@@ -5777,10 +5852,17 @@ export const skill = {
     const approvalChoice = event.target.closest("[data-approval-choice]");
     if (approvalChoice && api && state.apiAvailable) {
       try {
+        const approval = state.pendingApprovals.find(
+          (item) =>
+            String(item.approvalId) === approvalChoice.dataset.approvalId,
+        );
+        const requirementId =
+          approval?.requirementId || approval?.currentRequirementId;
         await api.decideApproval({
           sessionId: state.activeSession,
           approvalId: approvalChoice.dataset.approvalId,
           choiceId: approvalChoice.dataset.approvalChoice,
+          requirementId,
         });
       } catch (error) {
         showToast(error.message || "审批操作失败", "circle-alert");

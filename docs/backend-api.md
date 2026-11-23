@@ -225,8 +225,15 @@ es.addEventListener('status', (event) => {
 
 ```
 POST /api/approval/decide
-{ "sessionId": "23", "approvalId": "57", "choiceId": "allow_once" }
+{
+  "sessionId": "23",
+  "approvalId": "57",
+  "choiceId": "allow_once",
+  "requirementId": { "approvalId": "57", "sourceIndex": 0 }
+}
 ```
+
+`requirementId` 取自 `approval/requested` 的 `currentRequirementId` 或待处理审批列表；bridge 的 `session/resume` 会统一输出为 `requirementId`。
 
 ### 提问
 

@@ -631,6 +631,12 @@ body.context-closed .app-shell {
   background: color-mix(in srgb, var(--accent) 5%, var(--surface));
 }
 
+.compose-action-tile:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
 .compose-action-icon {
   width: 34px;
   height: 34px;
@@ -771,6 +777,15 @@ body.context-closed .app-shell {
   width: 36px;
   height: 36px;
   border-radius: 9px;
+}
+
+.skill-card-copy p {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .automation-list {

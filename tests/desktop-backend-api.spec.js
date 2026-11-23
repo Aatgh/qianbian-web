@@ -708,4 +708,11 @@ test("long skill copy is clamped and unsupported image input is disabled", async
   });
   expect(lineClamp).toBe("3");
   expect(apiCalls).toContain("/automations");
+
+  await page.locator('[data-action-detail="more-actions"]').click();
+  await page.locator('.action-dialog [data-view="automation"]').click();
+  await expect(page.locator(".action-dialog")).toHaveCount(0);
+  await expect(
+    page.locator(".automation-list .workspace-panel-empty"),
+  ).toContainText("还没有自动化");
 });
