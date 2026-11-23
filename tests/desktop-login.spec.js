@@ -310,3 +310,39 @@ test("default starfield animates as a single theme", async ({ page }) => {
   expect(result.unique).toBe(1);
   expect(result.pixels.maxChannel).toBeGreaterThan(24);
 });
+
+test("direct long press keeps dragging after slight pointer movement", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openFreshDesktop(page, { starfieldPreview: true });
+  await page.locator("#login-gate.is-ready").waitFor();
+  await page
+    .locator(".login-panel-wrap")
+    .evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished)),
+    );
+
+  const wrap = page.locator("#login-panel-wrap");
+  const handleBox = await page
+    .locator(".login-panel-drag-handle")
+    .boundingBox();
+  const startX = handleBox.x + handleBox.width / 2;
+  const startY = handleBox.y + 12;
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.waitForTimeout(80);
+  await page.mouse.move(startX + 24, startY + 4, { steps: 3 });
+  await page.waitForTimeout(260);
+
+  await expect(wrap).toHaveClass(/is-dragging/);
+  await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
+  const offset = await wrap.evaluate((element) => ({
+    x: element.style.getPropertyValue("--login-drag-x"),
+    y: element.style.getPropertyValue("--login-drag-y"),
+  }));
+  expect(Number.parseFloat(offset.x)).toBeGreaterThan(160);
+  expect(Number.parseFloat(offset.y)).toBeGreaterThan(80);
+  await page.mouse.up();
+});
