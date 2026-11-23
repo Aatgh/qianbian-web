@@ -531,14 +531,39 @@ if (canvas) {
         }
 
         vec3 holoFoil(vec2 p) {
-          float t = uTime * uSpeed * 0.09;
-          float bands =
-            sin(vUv.y * 80.0 + fbm(p * 2.0 + t) * 4.0 + t * 2.0) +
-            sin(vUv.x * 55.0 - p.y * 9.0 - t);
-          float sheen = smoothstep(-0.4, 1.2, bands);
-          vec3 color = mix(uColorA, uColorB, vUv.y);
-          color = mix(color, uColorC, sheen * 0.52);
-          color += vec3(pow(sheen, 4.0) * 0.22);
+          float t = uTime * uSpeed * 0.11;
+          vec2 view = p + (uMouse - 0.5) * 0.5;
+          float brushed = noise(vec2(view.x * 125.0, view.y * 9.0 + t * 0.8));
+          float ribs =
+            sin(vUv.x * 260.0 + sin(view.y * 14.0 + t) * 2.0) * 0.5 + 0.5;
+          float foilComb = pow(ribs, 22.0);
+          float phase =
+            view.x * 20.0 +
+            view.y * 13.0 +
+            fbm(view * 2.4 + t * 0.35) * 7.0 +
+            t * 1.6;
+          float film = sin(phase) * 0.5 + 0.5;
+          float spectralEdge = pow(sin(phase * 1.7 + 1.4) * 0.5 + 0.5, 5.0);
+          vec3 metal = mix(uColorA, uColorB * 0.52, 0.25 + brushed * 0.55);
+          vec3 color = mix(metal, mix(uColorB, uColorC, film), film * 0.46);
+          color = mix(color, uColorC, spectralEdge * foilComb * 0.34);
+          float barA = smoothstep(
+            0.12,
+            0.0,
+            abs(vUv.y - (0.22 + sin(t * 0.55) * 0.22) - vUv.x * 0.16)
+          );
+          float barB = smoothstep(
+            0.08,
+            0.0,
+            abs(vUv.y - (0.78 + cos(t * 0.42) * 0.16) + vUv.x * 0.1)
+          );
+          color += uColorC * (barA * 0.16 + barB * 0.1);
+          vec2 glitterCell = floor(vUv * uResolution * 0.32);
+          float glitter = step(
+            0.985,
+            hash21(glitterCell + floor(t * 5.0))
+          );
+          color += uColorC * glitter * foilComb * 0.55;
           return color;
         }
 
