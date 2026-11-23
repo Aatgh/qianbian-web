@@ -110,8 +110,13 @@
 
   function connectEvents(handlers = {}) {
     if (eventsSource) eventsSource.close();
-    const source = new EventSource(apiUrl("/events"), {
-      withCredentials: true,
+    const eventUrl = apiUrl("/events");
+    let sameOrigin = false;
+    try {
+      sameOrigin = new URL(eventUrl).origin === location.origin;
+    } catch {}
+    const source = new EventSource(eventUrl, {
+      withCredentials: sameOrigin,
     });
     eventsSource = source;
 
