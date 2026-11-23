@@ -26,12 +26,16 @@ test("logo 3D demo renders an interactive extruded model", async ({ page }) => {
       rotation: model.rotation(),
       pixels: model.samplePixels(),
       autoRotate: model.autoRotate,
+      smoothing: model.smoothing(),
     };
   });
   expect(initial.meshCount).toBeGreaterThanOrEqual(2);
   expect(initial.shapeCount).toBe(2);
   expect(initial.pixels.maxChannel).toBeGreaterThan(40);
   expect(initial.autoRotate).toBe(true);
+  expect(initial.smoothing.curveCount).toBe(4);
+  expect(initial.smoothing.bevelSegments).toBeGreaterThanOrEqual(8);
+  expect(initial.smoothing.curveSegments).toBeGreaterThanOrEqual(32);
   await expect(page.locator("#toggle-rotation")).toHaveAttribute(
     "aria-pressed",
     "true",
