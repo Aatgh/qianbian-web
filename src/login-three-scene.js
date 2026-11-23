@@ -32,6 +32,24 @@ if (canvas) {
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 90);
     camera.position.set(0, 0, 7.4);
 
+    function createParticleTexture() {
+      const spriteCanvas = document.createElement("canvas");
+      spriteCanvas.width = 64;
+      spriteCanvas.height = 64;
+      const context = spriteCanvas.getContext("2d");
+      const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 31);
+      gradient.addColorStop(0, "rgba(255,255,255,1)");
+      gradient.addColorStop(0.22, "rgba(255,255,255,0.96)");
+      gradient.addColorStop(0.58, "rgba(224,153,255,0.36)");
+      gradient.addColorStop(1, "rgba(166,36,102,0)");
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, 64, 64);
+      const texture = new THREE.CanvasTexture(spriteCanvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
+    }
+    const particleTexture = createParticleTexture();
+
     const world = new THREE.Group();
     world.scale.setScalar(0.28);
     scene.add(world);
@@ -212,8 +230,10 @@ if (canvas) {
     const gravityDust = new THREE.Points(
       dustGeometry,
       new THREE.PointsMaterial({
-        size: 0.028,
+        size: 0.05,
         sizeAttenuation: true,
+        map: particleTexture,
+        alphaTest: 0.02,
         vertexColors: true,
         transparent: true,
         opacity: 0.7,
@@ -251,8 +271,10 @@ if (canvas) {
     const starField = new THREE.Points(
       starGeometry,
       new THREE.PointsMaterial({
-        size: 0.027,
+        size: 0.042,
         sizeAttenuation: true,
+        map: particleTexture,
+        alphaTest: 0.02,
         vertexColors: true,
         transparent: true,
         opacity: 0.62,
@@ -296,6 +318,15 @@ if (canvas) {
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      const halfHeight =
+        Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) *
+        camera.position.z;
+      const halfWidth = halfHeight * camera.aspect;
+      if (camera.aspect >= 1.2) {
+        world.position.set(-halfWidth * 0.33, halfHeight * 0.18, 0);
+      } else {
+        world.position.set(0, halfHeight * 0.73, 0);
+      }
     }
 
     function driftStars(delta) {
@@ -336,8 +367,11 @@ if (canvas) {
           )
         : 0;
       const successScale = 1 - successProgress * 0.34;
+      const responsiveScale = camera.aspect >= 1.2 ? 0.56 : 0.5;
 
-      world.scale.setScalar((0.28 + intro * 0.72) * successScale);
+      world.scale.setScalar(
+        (0.28 + intro * 0.72) * responsiveScale * successScale,
+      );
       world.rotation.x +=
         (pointerY * 0.18 +
           Math.sin(seconds * 0.22) * 0.035 -
@@ -374,6 +408,8 @@ if (canvas) {
       gravityDust.rotation.x = Math.sin(seconds * 0.2) * 0.16;
 
       if (!reducedMotion.matches) driftStars(delta);
+      starField.material.opacity =
+        0.53 + Math.sin(seconds * 0.72) * 0.07;
 
       whiteLight.position.x = Math.cos(seconds * 0.38) * 3.1;
       whiteLight.position.y = Math.sin(seconds * 0.44) * 2.2;
