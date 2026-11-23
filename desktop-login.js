@@ -22,6 +22,13 @@
   const forgotButton = gate.querySelector(".login-text-button");
   const legalButtons = gate.querySelectorAll(".login-legal button");
   const fieldElements = gate.querySelectorAll(".login-field");
+  const themeToggle = document.getElementById("login-theme-toggle");
+  const themePanel = document.getElementById("login-theme-panel");
+  const themeClose = document.getElementById("login-theme-close");
+  const themeGrid = document.getElementById("login-theme-grid");
+  const themeName = document.getElementById("login-theme-name");
+  const loginBoxToggle = document.getElementById("login-box-toggle");
+  const loginPanelWrap = document.getElementById("login-panel-wrap");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const authKey = "qianbian-desktop-auth";
@@ -78,6 +85,100 @@
     });
   }
 
+  function renderThemeOptions() {
+    if (!themeGrid) return;
+    themeGrid.replaceChildren();
+    const groups = window.QianbianLoginThemes || [];
+    groups.forEach((group) => {
+      const heading = document.createElement("div");
+      heading.className = "login-theme-group-title";
+      heading.textContent = group.label;
+      themeGrid.append(heading);
+      group.themes.forEach((theme) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "login-theme-option";
+        button.dataset.loginTheme = theme.id;
+        const swatch = document.createElement("span");
+        swatch.className = "login-theme-swatch";
+        swatch.style.setProperty("--theme-a", theme.colors[0]);
+        swatch.style.setProperty("--theme-b", theme.colors[1]);
+        swatch.style.setProperty("--theme-c", theme.colors[2]);
+        const label = document.createElement("span");
+        label.textContent = theme.name;
+        button.append(swatch, label);
+        button.addEventListener("click", () => {
+          selectTheme(theme);
+        });
+        themeGrid.append(button);
+      });
+    });
+    syncThemeSelection();
+  }
+
+  function getActiveTheme() {
+    const activeId = window.QianbianLoginBackground?.current;
+    return (
+      window.QianbianLoginBackground?.themes.find(
+        (theme) => theme.id === activeId,
+      ) || window.QianbianLoginThemes?.[0]?.themes?.[0]
+    );
+  }
+
+  function syncThemeSelection() {
+    const active = getActiveTheme();
+    themeGrid
+      ?.querySelectorAll("[data-login-theme]")
+      .forEach((button) => {
+        const selected = button.dataset.loginTheme === active?.id;
+        button.classList.toggle("is-active", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+    if (themeName && active) themeName.textContent = active.name;
+  }
+
+  function selectTheme(theme) {
+    window.QianbianLoginBackground?.setTheme(theme.id);
+    syncThemeSelection();
+  }
+
+  function toggleThemePanel(force) {
+    if (!themePanel || !themeToggle) return;
+    const open =
+      typeof force === "boolean" ? force : themePanel.hidden;
+    themePanel.hidden = !open;
+    themeToggle.setAttribute("aria-expanded", String(open));
+    if (open) {
+      syncThemeSelection();
+      themePanel.querySelector(".login-theme-option")?.focus();
+    } else {
+      themeToggle.focus();
+    }
+  }
+
+  function syncLoginBoxToggle(open) {
+    if (!loginBoxToggle) return;
+    gate.classList.toggle("login-box-open", open);
+    loginBoxToggle.setAttribute("aria-expanded", String(open));
+    const label = loginBoxToggle.querySelector("span");
+    if (label) label.textContent = open ? "收起" : "登录框";
+    loginBoxToggle.innerHTML = `<i data-lucide="${open ? "x" : "log-in"}"></i><span>${open ? "收起" : "登录框"}</span>`;
+    updateIcons(loginBoxToggle);
+    if (open) {
+      window.requestAnimationFrame(() => {
+        loginPanelWrap?.querySelector("button, input")?.focus();
+      });
+    }
+  }
+
+  function toggleLoginBox(force) {
+    const open =
+      typeof force === "boolean"
+        ? force
+        : !gate.classList.contains("login-box-open");
+    syncLoginBoxToggle(open);
+  }
+
   function setLocked(locked) {
     body.classList.toggle("login-locked", locked);
     root.classList.toggle("login-pending", locked);
@@ -110,6 +211,10 @@
     submitLabel.textContent = "登录";
     codeButton.disabled = false;
     codeButton.textContent = "获取验证码";
+    gate.classList.remove("login-box-open");
+    themePanel.hidden = true;
+    themeToggle?.setAttribute("aria-expanded", "false");
+    syncLoginBoxToggle(false);
     hideError();
   }
 
@@ -377,6 +482,9 @@
   });
   googleButton.addEventListener("click", handleGoogleLogin);
   form.addEventListener("submit", handleSubmit);
+  themeToggle?.addEventListener("click", () => toggleThemePanel());
+  themeClose?.addEventListener("click", () => toggleThemePanel(false));
+  loginBoxToggle?.addEventListener("click", () => toggleLoginBox());
   gate.addEventListener("pointermove", syncPointer, { passive: true });
   gate.addEventListener("pointerleave", () => {
     root.style.setProperty("--login-pointer-x", "0px");
@@ -420,6 +528,19 @@
     showGate({ focusEmail: true });
   });
 
+  window.addEventListener("qianbian:login-theme-change", () => {
+    syncThemeSelection();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!body.classList.contains("login-locked")) return;
+    if (event.key !== "Escape") return;
+    if (themePanel && !themePanel.hidden) {
+      event.preventDefault();
+      toggleThemePanel(false);
+    }
+  });
+
   window.addEventListener("storage", (event) => {
     if (event.key === authKey && event.newValue !== "true") {
       showGate();
@@ -432,4 +553,7 @@
   } else {
     showGate();
   }
+
+  renderThemeOptions();
+  syncLoginBoxToggle(false);
 })();

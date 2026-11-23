@@ -1,19 +1,118 @@
 import * as THREE from "three";
 
+const themeGroups = [
+  {
+    id: "aidesigner",
+    label: "AIDesigner",
+    themes: [
+      ["fluted-glass", "玻璃棱镜", 7, "#071018", "#77d9ff", "#f0c7ff", 0.2],
+      ["riso-dither", "复古网点", 5, "#11131c", "#ff666b", "#6d79ff", 0.12],
+      ["noise-shimmer", "薄膜微光", 3, "#12111c", "#6e4bff", "#ffb7d5", 0.46],
+      ["dot-grid-wave", "点阵波", 5, "#06121b", "#2ed2d0", "#b4f3ff", 0.7],
+      ["fluid-smoke", "流体烟雾", 2, "#090d18", "#5b45a5", "#e16b9f", 0.3],
+      ["light-rays", "体积光束", 6, "#070b12", "#ffe2a6", "#a68cff", 0.58],
+      ["holo-foil", "全息箔", 7, "#0b0e17", "#7be4ff", "#ff9dd6", 0.52],
+      ["halftone", "半调印刷", 5, "#17151a", "#e5c77d", "#d24276", 0.38],
+      ["caustics", "水下焦散", 4, "#03131d", "#67e4ff", "#b58aff", 0.25],
+      ["aurora-flow", "极光流", 1, "#050d17", "#4effc5", "#a767ff", 0.3],
+      ["silk-waves", "丝绸波浪", 2, "#0b0c17", "#ca87ff", "#f2b994", 0.55],
+      ["liquid-metal", "液态金属", 7, "#11131a", "#a8d8ff", "#f2c8ff", 0.72],
+      ["heatmap", "热力场", 3, "#120914", "#ff4f6e", "#ffd285", 0.28],
+      ["liquid-glass", "液态玻璃", 7, "#07131b", "#8fdfff", "#d0b5ff", 0.4],
+      ["mesh-gradient", "网格渐变", 3, "#0d1022", "#656cff", "#ff91ba", 0.5],
+      ["starfield", "星野", 0, "#030813", "#ffffff", "#b95cff", 0.16],
+      ["bokeh-dust", "散景尘埃", 0, "#080916", "#f9d9ff", "#9b7bff", 0.88],
+      ["glow-orbs", "光晕", 3, "#0c0714", "#ff6cab", "#7a71ff", 0.62],
+      ["ascii-plasma", "ASCII 等离子", 5, "#06110d", "#62ffb4", "#d8ff74", 0.9],
+      ["pixel-grid", "像素网格", 8, "#07101d", "#51b5ff", "#da8cff", 0.65],
+      ["topo-lines", "等高线", 8, "#0f1118", "#e7d2a3", "#8fb6ff", 0.34],
+    ],
+  },
+  {
+    id: "vividsites",
+    label: "Vividsites Shader backgrounds",
+    themes: [
+      ["vivid-aurora", "极光", 1, "#041019", "#5df1cf", "#b477ff", 0.65],
+      ["vivid-caustics", "焦散", 4, "#031018", "#7cecff", "#b8a0ff", 0.72],
+      ["cloud-sea", "云海", 2, "#07111e", "#a8c8ff", "#e9b8d8", 0.55],
+      ["grain-gradient", "颗粒渐变", 3, "#15121b", "#d58bff", "#ffb58b", 0.82],
+      ["ink-fluid", "墨流", 2, "#050a12", "#3e8dff", "#d270ff", 0.44],
+      ["liquid-chrome", "液态铬", 7, "#0d1117", "#d9ecff", "#9b8cff", 0.86],
+      ["rain-glass", "雨玻璃", 6, "#07111b", "#a6dcff", "#d2a6ff", 0.9],
+      ["warp-starfield", "曲速星场", 0, "#020510", "#ffffff", "#8f6bff", 1.35],
+    ],
+  },
+].map((group) => ({
+  ...group,
+  themes: group.themes.map(
+    ([id, name, mode, colorA, colorB, colorC, variant]) => ({
+      id,
+      name,
+      mode,
+      colors: [colorA, colorB, colorC],
+      variant,
+      speed: 0.72 + (mode % 4) * 0.11,
+      density: 0.52 + (variant % 0.5),
+      size: 0.72 + variant * 0.38,
+      depth: 0.8 + variant,
+      twinkle: 0.45 + variant * 0.32,
+    }),
+  ),
+}));
+
+const themes = themeGroups.flatMap((group) =>
+  group.themes.map((theme) => ({ ...theme, group: group.label })),
+);
+const themeMap = new Map(themes.map((theme) => [theme.id, theme]));
+const storageKey = "qianbian-login-background-theme";
+let currentTheme = themes[0];
+
+try {
+  currentTheme =
+    themeMap.get(localStorage.getItem(storageKey) || "") ||
+    themeMap.get("starfield") ||
+    themes[0];
+} catch {
+  currentTheme = themeMap.get("starfield") || themes[0];
+}
+
+window.QianbianLoginThemes = themeGroups;
+window.QianbianLoginBackground = {
+  themes,
+  get current() {
+    return currentTheme.id;
+  },
+  setTheme(id) {
+    const theme = themeMap.get(id);
+    if (!theme) return false;
+    currentTheme = theme;
+    try {
+      localStorage.setItem(storageKey, theme.id);
+    } catch {}
+    window.dispatchEvent(
+      new CustomEvent("qianbian:login-theme-change", {
+        detail: { theme: theme.id },
+      }),
+    );
+    if (window.__qianbianLoginScene?.applyTheme) {
+      window.__qianbianLoginScene.applyTheme(theme);
+    }
+    return true;
+  },
+};
+
 const canvas = document.getElementById("login-three-canvas");
 
 if (canvas) {
   const gate = canvas.closest(".login-gate");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const startedAt = performance.now();
-  const logoPurple = new THREE.Color(0xa62466);
   let renderer;
 
   try {
     renderer = new THREE.WebGLRenderer({
       canvas,
-      alpha: true,
-      antialias: true,
+      alpha: false,
+      antialias: false,
       powerPreference: "high-performance",
     });
   } catch {
@@ -22,411 +121,287 @@ if (canvas) {
   }
 
   if (renderer) {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
-    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setClearColor(0x03040a, 1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.32;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 90);
-    camera.position.set(0, 0, 7.4);
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const uniforms = {
+      uTime: { value: 0 },
+      uResolution: { value: new THREE.Vector2(1, 1) },
+      uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+      uMode: { value: currentTheme.mode },
+      uVariant: { value: currentTheme.variant },
+      uDensity: { value: currentTheme.density },
+      uSpeed: { value: currentTheme.speed },
+      uSize: { value: currentTheme.size },
+      uDepth: { value: currentTheme.depth },
+      uTwinkle: { value: currentTheme.twinkle },
+      uColorA: { value: new THREE.Color(currentTheme.colors[0]) },
+      uColorB: { value: new THREE.Color(currentTheme.colors[1]) },
+      uColorC: { value: new THREE.Color(currentTheme.colors[2]) },
+    };
 
-    function createParticleTexture() {
-      const spriteCanvas = document.createElement("canvas");
-      spriteCanvas.width = 64;
-      spriteCanvas.height = 64;
-      const context = spriteCanvas.getContext("2d");
-      const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 31);
-      gradient.addColorStop(0, "rgba(255,255,255,1)");
-      gradient.addColorStop(0.22, "rgba(255,255,255,0.96)");
-      gradient.addColorStop(0.58, "rgba(224,153,255,0.36)");
-      gradient.addColorStop(1, "rgba(166,36,102,0)");
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, 64, 64);
-      const texture = new THREE.CanvasTexture(spriteCanvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      return texture;
-    }
-    const particleTexture = createParticleTexture();
-
-    const world = new THREE.Group();
-    world.scale.setScalar(0.28);
-    scene.add(world);
-
-    const planetGroup = new THREE.Group();
-    world.add(planetGroup);
-
-    const planetMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xe8d8f4,
-      roughness: 0.34,
-      metalness: 0.08,
-      clearcoat: 1,
-      clearcoatRoughness: 0.16,
-      emissive: logoPurple,
-      emissiveIntensity: 0.12,
-    });
-    const planet = new THREE.Mesh(
-      new THREE.SphereGeometry(1.08, 96, 64),
-      planetMaterial,
-    );
-    planetGroup.add(planet);
-
-    const atmosphereMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        uWhite: { value: new THREE.Color(0xffffff) },
-        uPurple: { value: logoPurple.clone() },
-      },
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      depthTest: false,
+      depthWrite: false,
       vertexShader: `
-        varying vec3 vNormalView;
+        varying vec2 vUv;
         void main() {
-          vNormalView = normalize(normalMatrix * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
         }
       `,
       fragmentShader: `
-        varying vec3 vNormalView;
-        uniform vec3 uWhite;
-        uniform vec3 uPurple;
+        precision highp float;
+        varying vec2 vUv;
+        uniform float uTime;
+        uniform float uMode;
+        uniform float uVariant;
+        uniform float uDensity;
+        uniform float uSpeed;
+        uniform float uSize;
+        uniform float uDepth;
+        uniform float uTwinkle;
+        uniform vec2 uResolution;
+        uniform vec2 uMouse;
+        uniform vec3 uColorA;
+        uniform vec3 uColorB;
+        uniform vec3 uColorC;
+
+        float hash21(vec2 p) {
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        vec2 hash22(vec2 p) {
+          float n = hash21(p);
+          return vec2(n, hash21(p + 17.17));
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          float a = hash21(i);
+          float b = hash21(i + vec2(1.0, 0.0));
+          float c = hash21(i + vec2(0.0, 1.0));
+          float d = hash21(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+
+        float fbm(vec2 p) {
+          float value = 0.0;
+          float amplitude = 0.5;
+          for (int i = 0; i < 5; i++) {
+            value += noise(p) * amplitude;
+            p = p * 2.03 + vec2(13.1, 7.7);
+            amplitude *= 0.5;
+          }
+          return value;
+        }
+
+        float starLayer(vec2 p, float scale, float seed, float size) {
+          p += (uMouse - 0.5) * uDepth * 0.12;
+          vec2 grid = p * scale;
+          vec2 id = floor(grid);
+          vec2 f = fract(grid) - 0.5;
+          float h = hash21(id + seed);
+          float present = smoothstep(0.28, 1.0, h) * uDensity;
+          vec2 offset = (hash22(id + seed + 17.0) - 0.5) * 0.72;
+          float distanceToStar = length(f - offset);
+          float radius = mix(0.035, 0.14, pow(h, 7.0)) * size;
+          float core = smoothstep(radius, 0.0, distanceToStar);
+          float twinkle =
+            0.66 +
+            sin(uTime * uSpeed * (0.8 + uTwinkle * 2.2) + h * 40.0) *
+              (0.18 + uTwinkle * 0.2);
+          return core * present * (0.28 + h * h * 1.8) * twinkle;
+        }
+
+        vec3 cosmicStars(vec2 p) {
+          float band = fbm(vec2(p.x * 0.72, p.y * 1.5 + p.x * 0.18) + 3.0);
+          float milky = smoothstep(0.24, 0.82, band) *
+            smoothstep(0.82, 0.12, abs(p.y + p.x * 0.08));
+          vec3 color = uColorA * 0.42;
+          color += mix(uColorB, uColorC, 0.36) * milky * 0.13;
+          float stars = 0.0;
+          stars += starLayer(p, 9.0, 1.0, 0.65) * 0.52;
+          stars += starLayer(p, 17.0, 21.0, 0.82) * 0.75;
+          stars += starLayer(p, 31.0, 47.0, 1.0) * 0.92;
+          if (uVariant > 0.8) {
+            stars += starLayer(p, 6.0, 83.0, 2.4) * 0.34;
+          }
+          float shooting = 0.0;
+          float cycle = fract(uTime * 0.028 + uVariant * 0.17);
+          if (cycle > 0.78) {
+            vec2 a = vec2(-1.1, 0.48);
+            vec2 b = vec2(0.9, -0.35);
+            float line = length(p - mix(a, b, clamp((cycle - 0.78) / 0.22, 0.0, 1.0)));
+            shooting = smoothstep(0.022, 0.0, line) * (1.0 - cycle) * 2.6;
+          }
+          return color + vec3(stars + shooting) * mix(uColorB, vec3(1.0), 0.65);
+        }
+
+        vec3 aurora(vec2 p) {
+          float t = uTime * uSpeed * 0.13;
+          float warp = fbm(p * 1.6 + vec2(t, t * 0.4));
+          float curtain = 0.0;
+          for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            float center =
+              0.18 +
+              sin(p.x * (2.1 + fi * 0.42) + t * (1.0 + fi * 0.25)) *
+                (0.16 + fi * 0.025) +
+              warp * 0.16;
+            float band = smoothstep(0.44 - fi * 0.08, 0.0, abs(p.y - center));
+            float rays =
+              0.52 +
+              0.48 *
+                sin(p.x * (22.0 + fi * 9.0) + warp * 7.0 + t * 2.4);
+            curtain += band * rays * (0.55 - fi * 0.1);
+          }
+          float stars = starLayer(p, 28.0, 44.0, 0.85) * 0.34;
+          return uColorA * 0.44 +
+            mix(uColorB, uColorC, vUv.y + warp * 0.16) * curtain * 0.9 +
+            vec3(stars);
+        }
+
+        vec3 fluid(vec2 p) {
+          float t = uTime * uSpeed * 0.05;
+          vec2 q = vec2(fbm(p * 1.5 + vec2(t, 0.0)), fbm(p * 1.5 + vec2(4.2, t)));
+          float f = fbm(p * 2.0 + q * 1.7 + vec2(t * 0.7, -t * 0.4));
+          vec3 color = mix(uColorA, uColorB, smoothstep(0.14, 0.85, f));
+          color = mix(color, uColorC, smoothstep(0.42, 0.95, fbm(p * 3.4 + q + t)));
+          return color * (0.52 + f * 0.72);
+        }
+
+        vec3 meshGradient(vec2 p) {
+          float t = uTime * uSpeed * 0.04;
+          vec2 q = vec2(fbm(p * 1.4 + t), fbm(p * 1.4 - t));
+          float f = fbm(p * 2.1 + q * 1.3 + t);
+          vec3 color = mix(uColorA, uColorB, smoothstep(0.12, 0.9, f + p.x * 0.12));
+          color = mix(color, uColorC, smoothstep(0.35, 0.86, 1.0 - length(p) + f * 0.3));
+          return color * (0.64 + f * 0.4);
+        }
+
+        vec3 caustics(vec2 p) {
+          float t = uTime * uSpeed * 0.12;
+          vec2 q = p + vec2(fbm(p * 1.6 + t), fbm(p * 1.6 - t)) * 0.22;
+          float web =
+            abs(sin(q.x * 10.0 + sin(q.y * 8.0 + t) * 1.8 + t)) +
+            abs(sin(q.y * 12.0 - sin(q.x * 7.0 - t) * 1.4 - t));
+          float lines = pow(1.0 - min(web * 0.5, 1.0), 7.0);
+          return uColorA * 0.36 +
+            mix(uColorB, uColorC, vUv.y) * lines * 0.9;
+        }
+
+        vec3 printGrid(vec2 p) {
+          float scale = mix(30.0, 82.0, uVariant);
+          vec2 grid = (vUv - 0.5) * vec2(uResolution.x / uResolution.y, 1.0) * scale;
+          vec2 id = floor(grid);
+          vec2 f = fract(grid) - 0.5;
+          float h = hash21(id + floor(uTime * uSpeed * 0.1));
+          float field = fbm(id * 0.045 + uTime * 0.012);
+          float radius = mix(0.06, 0.43, smoothstep(0.18, 0.9, field + h * 0.2));
+          float dot = smoothstep(radius, 0.0, length(f));
+          vec3 ink = mix(uColorA, uColorB, smoothstep(0.05, 0.92, field));
+          return mix(ink * 0.42, uColorC, dot * (0.5 + field * 0.45));
+        }
+
+        vec3 lightRays(vec2 p) {
+          float t = uTime * uSpeed * 0.08;
+          vec2 origin = vec2(-0.15, 0.42);
+          vec2 delta = p - origin;
+          float angle = atan(delta.y, delta.x);
+          float rays =
+            0.5 + 0.5 * sin(angle * 28.0 + sin(angle * 9.0 + t) * 3.0 + t * 2.0);
+          rays = pow(rays, 8.0);
+          float distanceFade = smoothstep(1.2, 0.02, length(delta));
+          float dust = fbm(p * 4.0 + t) * 0.1;
+          return uColorA * 0.34 +
+            mix(uColorB, uColorC, vUv.x) * rays * distanceFade * 0.72 +
+            vec3(dust);
+        }
+
+        vec3 foilGlass(vec2 p) {
+          float t = uTime * uSpeed * 0.06;
+          float ribs = sin((vUv.x * 1.35 + vUv.y * 0.42) * 28.0 + t);
+          float lens = smoothstep(0.0, 0.9, 1.0 - abs(ribs));
+          float sheen = smoothstep(0.12, 1.0, fbm(p * 1.8 + t) + vUv.y * 0.35);
+          vec3 color = mix(uColorA, uColorB, sheen * 0.72);
+          color = mix(color, uColorC, lens * 0.42);
+          color += vec3(0.08) * pow(lens, 8.0);
+          return color;
+        }
+
+        vec3 contourLines(vec2 p) {
+          float t = uTime * uSpeed * 0.03;
+          float field = fbm(p * 2.0 + t) + fbm(p * 4.2 - t) * 0.22;
+          float contour = abs(fract(field * 13.0) - 0.5);
+          float line = smoothstep(0.055, 0.0, contour);
+          return mix(uColorA * 0.58, uColorB, vUv.y) +
+            uColorC * line * 0.54;
+        }
+
         void main() {
-          float rim = pow(1.0 - abs(vNormalView.z), 2.45);
-          vec3 glow = mix(uWhite, uPurple, smoothstep(0.08, 0.95, rim));
-          gl_FragColor = vec4(glow, rim * 0.82);
+          vec2 p = (vUv - 0.5) * vec2(uResolution.x / uResolution.y, 1.0);
+          vec3 color = cosmicStars(p);
+          float mode = floor(uMode + 0.5);
+          if (mode == 1.0) color = aurora(p);
+          else if (mode == 2.0) color = fluid(p);
+          else if (mode == 3.0) color = meshGradient(p);
+          else if (mode == 4.0) color = caustics(p);
+          else if (mode == 5.0) color = printGrid(p);
+          else if (mode == 6.0) color = lightRays(p);
+          else if (mode == 7.0) color = foilGlass(p);
+          else if (mode == 8.0) color = contourLines(p);
+          color *= 0.92;
+          color = pow(max(color, 0.0), vec3(0.92));
+          gl_FragColor = vec4(color, 1.0);
         }
       `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide,
-      depthWrite: false,
     });
-    const atmosphere = new THREE.Mesh(
-      new THREE.SphereGeometry(1.34, 96, 64),
-      atmosphereMaterial,
-    );
-    planetGroup.add(atmosphere);
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
 
-    const innerGlow = new THREE.Mesh(
-      new THREE.SphereGeometry(1.16, 64, 48),
-      new THREE.MeshBasicMaterial({
-        color: 0xe7b6ff,
-        transparent: true,
-        opacity: 0.035,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      }),
-    );
-    planetGroup.add(innerGlow);
-
-    const markMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xfffbff,
-      metalness: 0.24,
-      roughness: 0.16,
-      clearcoat: 1,
-      clearcoatRoughness: 0.12,
-      emissive: 0xc45cff,
-      emissiveIntensity: 0.92,
-    });
-    const markGroup = new THREE.Group();
-    markGroup.position.z = 1.52;
-    markGroup.scale.setScalar(1.03);
-    world.add(markGroup);
-
-    const leftLoop = new THREE.Mesh(
-      new THREE.TorusGeometry(0.43, 0.058, 16, 100),
-      markMaterial,
-    );
-    leftLoop.position.x = -0.46;
-    leftLoop.rotation.y = -0.08;
-    leftLoop.rotation.z = 0.06;
-    markGroup.add(leftLoop);
-
-    const rightLoop = new THREE.Mesh(
-      new THREE.TorusGeometry(0.43, 0.058, 16, 100),
-      markMaterial,
-    );
-    rightLoop.position.x = 0.46;
-    rightLoop.rotation.y = 0.08;
-    rightLoop.rotation.z = -0.06;
-    markGroup.add(rightLoop);
-
-    const connector = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.052, 0.72, 8, 18),
-      markMaterial,
-    );
-    connector.rotation.z = -0.67;
-    connector.position.z = 0.06;
-    connector.scale.y = 0.92;
-    markGroup.add(connector);
-
-    const markHalo = new THREE.Mesh(
-      new THREE.TorusGeometry(0.93, 0.006, 8, 160),
-      new THREE.MeshBasicMaterial({
-        color: 0xf5d6ff,
-        transparent: true,
-        opacity: 0.36,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      }),
-    );
-    markHalo.scale.x = 1.55;
-    markHalo.scale.y = 0.74;
-    markHalo.position.z = 0.02;
-    markGroup.add(markHalo);
-
-    const gravityRings = [
-      new THREE.Mesh(
-        new THREE.TorusGeometry(1.52, 0.007, 8, 160),
-        new THREE.MeshBasicMaterial({
-          color: 0xf6e6ff,
-          transparent: true,
-          opacity: 0.25,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-        }),
-      ),
-      new THREE.Mesh(
-        new THREE.TorusGeometry(1.78, 0.004, 8, 180),
-        new THREE.MeshBasicMaterial({
-          color: logoPurple,
-          transparent: true,
-          opacity: 0.36,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-        }),
-      ),
-    ];
-    gravityRings[0].rotation.set(1.13, 0.18, -0.24);
-    gravityRings[1].rotation.set(0.58, 1.02, 0.56);
-    gravityRings.forEach((ring) => world.add(ring));
-
-    const dustCount = 250;
-    const dustPositions = new Float32Array(dustCount * 3);
-    const dustColors = new Float32Array(dustCount * 3);
-    for (let index = 0; index < dustCount; index += 1) {
-      const radius = 1.42 + Math.random() * 1.5;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      dustPositions[index * 3] =
-        radius * Math.sin(phi) * Math.cos(theta);
-      dustPositions[index * 3 + 1] = radius * Math.cos(phi) * 0.72;
-      dustPositions[index * 3 + 2] =
-        radius * Math.sin(phi) * Math.sin(theta);
-      const color = Math.random() > 0.46
-        ? new THREE.Color(0xffffff)
-        : logoPurple.clone().lerp(new THREE.Color(0xffb7ef), 0.58);
-      dustColors[index * 3] = color.r;
-      dustColors[index * 3 + 1] = color.g;
-      dustColors[index * 3 + 2] = color.b;
-    }
-    const dustGeometry = new THREE.BufferGeometry();
-    dustGeometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(dustPositions, 3),
-    );
-    dustGeometry.setAttribute(
-      "color",
-      new THREE.BufferAttribute(dustColors, 3),
-    );
-    const gravityDust = new THREE.Points(
-      dustGeometry,
-      new THREE.PointsMaterial({
-        size: 0.05,
-        sizeAttenuation: true,
-        map: particleTexture,
-        alphaTest: 0.02,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.7,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    world.add(gravityDust);
-
-    const starCount = 900;
-    const starPositions = new Float32Array(starCount * 3);
-    const starColors = new Float32Array(starCount * 3);
-    const starSpeeds = new Float32Array(starCount);
-    for (let index = 0; index < starCount; index += 1) {
-      starPositions[index * 3] = (Math.random() - 0.5) * 22;
-      starPositions[index * 3 + 1] = (Math.random() - 0.5) * 14;
-      starPositions[index * 3 + 2] = (Math.random() - 0.5) * 18 - 2;
-      starSpeeds[index] = 0.0008 + Math.random() * 0.0022;
-      const color = Math.random() > 0.26
-        ? new THREE.Color(0xffffff)
-        : logoPurple.clone().lerp(new THREE.Color(0xffd7ff), 0.72);
-      starColors[index * 3] = color.r;
-      starColors[index * 3 + 1] = color.g;
-      starColors[index * 3 + 2] = color.b;
-    }
-    const starGeometry = new THREE.BufferGeometry();
-    starGeometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(starPositions, 3),
-    );
-    starGeometry.setAttribute(
-      "color",
-      new THREE.BufferAttribute(starColors, 3),
-    );
-    const starField = new THREE.Points(
-      starGeometry,
-      new THREE.PointsMaterial({
-        size: 0.042,
-        sizeAttenuation: true,
-        map: particleTexture,
-        alphaTest: 0.02,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.62,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    scene.add(starField);
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const whiteLight = new THREE.PointLight(0xffffff, 24, 16, 2);
-    whiteLight.position.set(2.8, 2.4, 4.2);
-    scene.add(whiteLight);
-    const purpleLight = new THREE.PointLight(0xc34dff, 24, 15, 2);
-    purpleLight.position.set(-3.2, -1.2, 3.1);
-    scene.add(purpleLight);
-    const rimLight = new THREE.PointLight(0xffd7ff, 20, 14, 2);
-    rimLight.position.set(0.2, 3.2, -3);
-    scene.add(rimLight);
-
-    let pointerX = 0;
-    let pointerY = 0;
-    let successAt = 0;
     let frame = 0;
-    let previousTime = 0;
-
-    function easeOutCubic(value) {
-      return 1 - Math.pow(1 - value, 3);
-    }
+    let lastTime = 0;
+    let mouseX = 0.5;
+    let mouseY = 0.5;
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
       const width = Math.max(1, Math.round(rect.width));
       const height = Math.max(1, Math.round(rect.height));
-      if (
-        canvas.width === Math.round(width * renderer.getPixelRatio()) &&
-        canvas.height === Math.round(height * renderer.getPixelRatio())
-      ) {
-        return;
-      }
+      const pixelWidth = Math.round(width * renderer.getPixelRatio());
+      const pixelHeight = Math.round(height * renderer.getPixelRatio());
+      if (canvas.width === pixelWidth && canvas.height === pixelHeight) return;
       renderer.setSize(width, height, false);
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      const halfHeight =
-        Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) *
-        camera.position.z;
-      const halfWidth = halfHeight * camera.aspect;
-      if (camera.aspect >= 1.2) {
-        world.position.set(-halfWidth * 0.33, halfHeight * 0.18, 0);
-      } else {
-        world.position.set(0, halfHeight * 0.73, 0);
-      }
+      uniforms.uResolution.value.set(width, height);
     }
 
-    function driftStars(delta) {
-      const positions = starGeometry.attributes.position.array;
-      for (let index = 0; index < starCount; index += 1) {
-        positions[index * 3 + 1] -=
-          starSpeeds[index] * delta * 60;
-        positions[index * 3] +=
-          starSpeeds[index] * delta * 8;
-        if (positions[index * 3 + 1] < -7) {
-          positions[index * 3 + 1] = 7;
-          positions[index * 3] = (Math.random() - 0.5) * 22;
-        }
-        if (positions[index * 3] > 11) {
-          positions[index * 3] = -11;
-        }
-      }
-      starGeometry.attributes.position.needsUpdate = true;
-      starField.rotation.z += delta * 0.008;
-    }
-
-    function renderFrame(time = 0) {
+    function render(time = 0) {
       resize();
       const seconds = time * 0.001;
-      const delta = previousTime
-        ? Math.min(0.05, (time - previousTime) * 0.001)
-        : 0.016;
-      previousTime = time;
-
-      const intro = reducedMotion.matches
-        ? 1
-        : easeOutCubic(
-            Math.min(1, (performance.now() - startedAt) / 1400),
-          );
-      const successProgress = successAt
-        ? easeOutCubic(
-            Math.min(1, (performance.now() - successAt) / 620),
-          )
-        : 0;
-      const successScale = 1 - successProgress * 0.34;
-      const responsiveScale = camera.aspect >= 1.2 ? 0.56 : 0.5;
-
-      world.scale.setScalar(
-        (0.28 + intro * 0.72) * responsiveScale * successScale,
-      );
-      world.rotation.x +=
-        (pointerY * 0.18 +
-          Math.sin(seconds * 0.22) * 0.035 -
-          world.rotation.x) *
-        0.045;
-      world.rotation.y +=
-        (pointerX * 0.28 + 0.18 - world.rotation.y) * 0.045;
-      world.rotation.z = Math.sin(seconds * 0.18) * 0.025;
-
-      planetGroup.rotation.y += reducedMotion.matches ? 0 : 0.0013;
-      planetGroup.rotation.x =
-        Math.sin(seconds * 0.34) * 0.045;
-      planetMaterial.emissiveIntensity =
-        0.12 + Math.sin(seconds * 0.82) * 0.03;
-      innerGlow.material.opacity =
-        0.032 + Math.sin(seconds * 1.1) * 0.008;
-
-      markGroup.rotation.x =
-        -pointerY * 0.08 + Math.sin(seconds * 0.5) * 0.035;
-      markGroup.rotation.y =
-        pointerX * 0.12 + Math.sin(seconds * 0.42) * 0.06;
-      markGroup.rotation.z = Math.sin(seconds * 0.28) * 0.045;
-      markMaterial.emissiveIntensity =
-        0.92 + successProgress * 0.45 + Math.sin(seconds * 1.4) * 0.08;
-      markHalo.rotation.z += reducedMotion.matches ? 0 : 0.0015;
-
-      gravityRings.forEach((ring, index) => {
-        ring.rotation.z +=
-          reducedMotion.matches
-            ? 0
-            : (index === 0 ? 0.0011 : -0.0008);
-      });
-      gravityDust.rotation.y += reducedMotion.matches ? 0 : 0.0012;
-      gravityDust.rotation.x = Math.sin(seconds * 0.2) * 0.16;
-
-      if (!reducedMotion.matches) driftStars(delta);
-      starField.material.opacity =
-        0.53 + Math.sin(seconds * 0.72) * 0.07;
-
-      whiteLight.position.x = Math.cos(seconds * 0.38) * 3.1;
-      whiteLight.position.y = Math.sin(seconds * 0.44) * 2.2;
-      purpleLight.position.x = Math.cos(seconds * 0.31 + 2.4) * 3.3;
-      purpleLight.position.y = Math.sin(seconds * 0.36 + 1.2) * 2.1;
-
+      uniforms.uTime.value = seconds;
+      uniforms.uMouse.value.x +=
+        (mouseX - uniforms.uMouse.value.x) * 0.035;
+      uniforms.uMouse.value.y +=
+        (mouseY - uniforms.uMouse.value.y) * 0.035;
       renderer.render(scene, camera);
       frame = renderer.info.render.frame;
       canvas.dataset.sceneReady = "true";
-      canvas.dataset.sceneStyle = "gravity-planet";
+      canvas.dataset.theme = currentTheme.id;
       canvas.dataset.renderFrame = String(frame);
-      gate?.classList.add("login-three-active");
+      lastTime = time;
     }
 
     function animationLoop(time) {
       if (reducedMotion.matches && frame > 0) return;
-      renderFrame(time);
+      render(time);
     }
 
     function syncAnimation() {
@@ -434,44 +409,85 @@ if (canvas) {
         renderer.setAnimationLoop(null);
         return;
       }
-      renderFrame(performance.now());
-      if (!reducedMotion.matches) {
-        renderer.setAnimationLoop(animationLoop);
-      } else {
+      render(performance.now());
+      if (reducedMotion.matches) {
         renderer.setAnimationLoop(null);
+      } else {
+        renderer.setAnimationLoop(animationLoop);
       }
     }
 
+    function applyTheme(theme) {
+      currentTheme = theme;
+      uniforms.uMode.value = theme.mode;
+      uniforms.uVariant.value = theme.variant;
+      uniforms.uDensity.value = theme.density;
+      uniforms.uSpeed.value = theme.speed;
+      uniforms.uSize.value = theme.size;
+      uniforms.uDepth.value = theme.depth;
+      uniforms.uTwinkle.value = theme.twinkle;
+      uniforms.uColorA.value.set(theme.colors[0]);
+      uniforms.uColorB.value.set(theme.colors[1]);
+      uniforms.uColorC.value.set(theme.colors[2]);
+      canvas.dataset.theme = theme.id;
+      renderer.render(scene, camera);
+    }
+
+    window.__qianbianLoginScene = {
+      applyTheme,
+      stats() {
+        return {
+          renderCalls: renderer.info.render.calls,
+          objectCount: scene.children.length,
+          triangles: renderer.info.render.triangles,
+          frame,
+          pixelRatio: renderer.getPixelRatio(),
+          width: canvas.width,
+          height: canvas.height,
+          theme: currentTheme.id,
+        };
+      },
+      samplePixels() {
+        render(performance.now());
+        const gl = renderer.getContext();
+        const width = renderer.domElement.width;
+        const height = renderer.domElement.height;
+        const pixels = new Uint8Array(width * height * 4);
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        let painted = 0;
+        let maxChannel = 0;
+        for (let index = 0; index < pixels.length; index += 64) {
+          const red = pixels[index];
+          const green = pixels[index + 1];
+          const blue = pixels[index + 2];
+          maxChannel = Math.max(maxChannel, red, green, blue);
+          if (red + green + blue > 24) painted += 1;
+        }
+        return { painted, maxChannel, width, height };
+      },
+    };
+
     const resizeObserver = new ResizeObserver(() => {
       resize();
-      renderFrame(performance.now());
+      render(performance.now());
     });
     resizeObserver.observe(canvas);
 
     gate?.addEventListener("pointermove", (event) => {
       if (reducedMotion.matches) return;
       const rect = gate.getBoundingClientRect();
-      pointerX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-      pointerY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+      mouseX = (event.clientX - rect.left) / rect.width;
+      mouseY = (event.clientY - rect.top) / rect.height;
     });
     gate?.addEventListener("pointerleave", () => {
-      pointerX = 0;
-      pointerY = 0;
+      mouseX = 0.5;
+      mouseY = 0.5;
     });
-
-    window.addEventListener("qianbian:login-success", () => {
-      successAt = performance.now();
-      syncAnimation();
+    window.addEventListener("qianbian:login-theme-change", (event) => {
+      const theme = themeMap.get(event.detail?.theme);
+      if (theme) applyTheme(theme);
     });
-    window.addEventListener("qianbian:auth-required", () => {
-      successAt = 0;
-      world.scale.setScalar(1);
-      syncAnimation();
-    });
-    window.addEventListener("qianbian:auth-success", () => {
-      successAt = performance.now();
-      syncAnimation();
-    });
+    window.addEventListener("qianbian:auth-required", syncAnimation);
 
     if (gate) {
       new MutationObserver(syncAnimation).observe(gate, {
@@ -480,53 +496,7 @@ if (canvas) {
       });
     }
 
-    window.__qianbianLoginScene = {
-      stats() {
-        return {
-          renderCalls: renderer.info.render.calls,
-          objectCount: world.children.length + starField.children.length,
-          triangles: renderer.info.render.triangles,
-          points: renderer.info.render.points,
-          frame,
-          pixelRatio: renderer.getPixelRatio(),
-          width: canvas.width,
-          height: canvas.height,
-        };
-      },
-      samplePixels() {
-        renderFrame(performance.now());
-        const gl = renderer.getContext();
-        const width = renderer.domElement.width;
-        const height = renderer.domElement.height;
-        const pixels = new Uint8Array(width * height * 4);
-        gl.readPixels(
-          0,
-          0,
-          width,
-          height,
-          gl.RGBA,
-          gl.UNSIGNED_BYTE,
-          pixels,
-        );
-        let painted = 0;
-        let maxChannel = 0;
-        for (let index = 0; index < pixels.length; index += 32) {
-          const red = pixels[index];
-          const green = pixels[index + 1];
-          const blue = pixels[index + 2];
-          const alpha = pixels[index + 3];
-          maxChannel = Math.max(maxChannel, red, green, blue, alpha);
-          if (alpha > 8 && red + green + blue > 18) painted += 1;
-        }
-        return {
-          painted,
-          maxChannel,
-          width,
-          height,
-        };
-      },
-    };
-
+    applyTheme(currentTheme);
     syncAnimation();
   }
 }
