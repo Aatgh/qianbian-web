@@ -164,7 +164,7 @@ test("login gate stays inside a short desktop viewport", async ({ page }) => {
   expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.viewportHeight);
 });
 
-test("login preview exposes all local themes and a floating login toggle", async ({
+test("login keeps only the fixed default starfield theme", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -188,15 +188,11 @@ test("login preview exposes all local themes and a floating login toggle", async
 
   await expect(page.locator(".login-visual")).toBeHidden();
   await expect(page.locator(".login-panel-wrap")).toBeVisible();
-  await expect(page.locator("#login-theme-toggle")).toBeVisible();
-  await expect(page.locator("#login-tuning-toggle")).toBeVisible();
+  await expect(page.locator("#login-theme-toggle")).toHaveCount(0);
+  await expect(page.locator("#login-tuning-toggle")).toHaveCount(0);
+  await expect(page.locator("#login-theme-panel")).toHaveCount(0);
+  await expect(page.locator("#login-tuning-panel")).toHaveCount(0);
   await expect(page.locator("#login-box-toggle")).toHaveCount(0);
-  expect(
-    (await page.locator("#login-theme-toggle").textContent()).trim(),
-  ).toBe("");
-  expect(
-    (await page.locator("#login-tuning-toggle").textContent()).trim(),
-  ).toBe("");
   await expect(page.locator(".login-panel-kicker")).toHaveCount(0);
   await expect(
     page.locator('script[src*="cdn.aidesigner.ai/effects/runtime"]'),
@@ -210,92 +206,39 @@ test("login preview exposes all local themes and a floating login toggle", async
   await page.locator("#login-gate").click({ position: { x: 500, y: 820 } });
   await expect(page.locator(".login-panel-wrap")).toBeVisible();
 
-  await page.locator("#login-theme-toggle").click();
-  await expect(page.locator("#login-theme-panel")).toBeVisible();
-  await expect(page.locator(".login-theme-option")).toHaveCount(44);
-  await expect(page.locator(".login-theme-group-title")).toHaveCount(8);
-  await expect(page.locator(".login-theme-group-title").first()).toHaveText(
-    "精选主题",
-  );
-  const themePalettes = await page.evaluate(() =>
-    Object.fromEntries(
-      window.QianbianLoginBackground.themes.map((theme) => [
-        theme.id,
-        theme.colors.map((color) => color.toLowerCase()),
-      ]),
-    ),
-  );
-  expect(themePalettes["holo-foil"]).toEqual([
-    "#07070b",
-    "#69f1d3",
-    "#ed82ff",
+  const themeState = await page.evaluate(() => {
+    const api = window.QianbianLoginBackground;
+    return {
+      themes: api.themes.map((theme) => ({
+        id: theme.id,
+        colors: theme.colors.map((color) => color.toLowerCase()),
+      })),
+      groups: window.QianbianLoginThemes?.length || 0,
+      current: api.current,
+      acceptedLegacyTheme: api.setTheme("holo-foil"),
+      afterLegacyTheme: api.current,
+    };
+  });
+  expect(themeState.themes).toEqual([
+    {
+      id: "starfield",
+      colors: ["#9db4ff", "#e8efff", "#ffffff", "#ffd9a8"],
+    },
   ]);
-  expect(themePalettes["silk-waves"]).toEqual([
-    "#05080d",
-    "#93a6b7",
-    "#edf3f7",
-  ]);
-  expect(themePalettes["liquid-metal"]).toEqual([
-    "#050608",
-    "#c2ccd5",
-    "#ad93ff",
-  ]);
-  expect(themePalettes["liquid-glass"]).toEqual([
-    "#ffb45b",
-    "#67e4ff",
-    "#ef6db1",
-  ]);
-  expect(themePalettes.starfield).toEqual([
-    "#01040d",
-    "#ffffff",
-    "#8da9ff",
-  ]);
-  expect(themePalettes["aurora-flow"]).toEqual([
-    "#09040a",
-    "#a62466",
-    "#f6e9ff",
-  ]);
-  await page.locator("#login-gate").click({ position: { x: 1500, y: 820 } });
-  await expect(page.locator("#login-theme-panel")).toBeHidden();
-  await page.locator("#login-theme-toggle").click();
+  expect(themeState.groups).toBe(1);
+  expect(themeState.current).toBe("starfield");
+  expect(themeState.acceptedLegacyTheme).toBe(false);
+  expect(themeState.afterLegacyTheme).toBe("starfield");
 
-  await page.locator('[data-login-theme="holo-foil"]').click();
-  await expect(canvas).toHaveAttribute("data-theme", "holo-foil");
-  await expect(
-    page.locator(
-      '[data-login-theme="holo-foil"] .login-theme-swatch',
-    ),
-  ).toHaveAttribute("data-category", "精选主题");
-
-  await page.locator('[data-login-theme="aurora-flow"]').click();
-  await expect(canvas).toHaveAttribute("data-theme", "aurora-flow");
-  expect(
-    await page.evaluate(() =>
-      localStorage.getItem("qianbian-login-background-theme"),
-    ),
-  ).toBe("aurora-flow");
+  await page.evaluate(() =>
+    localStorage.setItem("qianbian-login-background-theme", "holo-foil"),
+  );
   await page.reload();
   await expect(page.locator("#login-three-canvas")).toHaveAttribute(
     "data-theme",
-    "aurora-flow",
+    "starfield",
   );
   await expect(page.locator(".login-panel-wrap")).toBeVisible();
-
-  await page.locator("#login-tuning-toggle").click();
-  await expect(page.locator("#login-tuning-panel")).toBeVisible();
-  await expect(page.locator("#login-tuning-controls input")).toHaveCount(13);
-  await page.locator("#login-tuning-controls input[type='range']").first().fill("1.4");
-  await page.locator("#login-tuning-controls input[type='color']").first().fill("#112233");
-  const tuning = await page.evaluate(() =>
-    JSON.parse(
-      localStorage.getItem("qianbian-login-background-tuning-v3") || "{}",
-    ),
-  );
-  expect(tuning["aurora-flow"].speed).toBe(1.4);
-  expect(tuning["aurora-flow"].colors[0]).toBe("#112233");
-  await page.locator("#login-tuning-reset").click();
-  await page.locator("#login-gate").click({ position: { x: 1500, y: 820 } });
-  await expect(page.locator("#login-tuning-panel")).toBeHidden();
 
   const dragHandleBox = await page
     .locator(".login-panel-drag-handle")
@@ -331,7 +274,7 @@ test("login preview exposes all local themes and a floating login toggle", async
   ).toBeLessThan(5);
 });
 
-test("theme structures differ beyond color", async ({ page }) => {
+test("default starfield animates as a single theme", async ({ page }) => {
   await page.setViewportSize({ width: 480, height: 270 });
   await openFreshDesktop(page, { starfieldPreview: true });
   await expect(page.locator("#login-three-canvas")).toHaveAttribute(
@@ -362,7 +305,7 @@ test("theme structures differ beyond color", async ({ page }) => {
     };
   });
 
-  expect(result.total).toBe(44);
-  expect(result.unique).toBe(44);
-  expect(result.moving).toBe(44);
+  expect(result.total).toBe(1);
+  expect(result.unique).toBe(1);
+  expect(result.moving).toBe(1);
 });
