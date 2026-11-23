@@ -1,6 +1,14 @@
 import * as THREE from "three";
 
 const LOGO_THEME_PALETTE = ["#09040a", "#a62466", "#f6e9ff"];
+const FEATURED_THEME_COLORS = {
+  "holo-foil": ["#07070b", "#69f1d3", "#ed82ff"],
+  "silk-waves": ["#05080d", "#93a6b7", "#edf3f7"],
+  "liquid-metal": ["#050608", "#c2ccd5", "#ad93ff"],
+  "liquid-glass": ["#ffb45b", "#67e4ff", "#ef6db1"],
+  starfield: ["#01040d", "#ffffff", "#8da9ff"],
+};
+const FEATURED_THEME_IDS = new Set(Object.keys(FEATURED_THEME_COLORS));
 
 const sourceGroups = [
   {
@@ -66,13 +74,19 @@ const sourceGroups = [
       id,
       name,
       mode,
-      colors: [...LOGO_THEME_PALETTE],
+      colors: FEATURED_THEME_COLORS[id]
+        ? [...FEATURED_THEME_COLORS[id]]
+        : [...LOGO_THEME_PALETTE],
       variant,
       speed: 0.72 + (mode % 4) * 0.11,
       density: 0.52 + (variant % 0.5),
       size: 0.72 + variant * 0.38,
       depth: 0.8 + variant,
       twinkle: 0.45 + variant * 0.32,
+      intensity: 1,
+      contrast: 1,
+      glow: 0.18,
+      softness: 0.35,
     }),
   ),
 }));
@@ -124,6 +138,7 @@ const categoryByTheme = {
   keycap: "网格线框",
 };
 const categoryOrder = [
+  "精选主题",
   "星场",
   "极光云气",
   "光影渐变",
@@ -136,7 +151,9 @@ const themes = sourceGroups.flatMap((group) =>
   group.themes.map((theme) => ({ ...theme, group: group.label })),
 );
 themes.forEach((theme) => {
-  theme.category = categoryByTheme[theme.id] || "其他";
+  theme.category = FEATURED_THEME_IDS.has(theme.id)
+    ? "精选主题"
+    : categoryByTheme[theme.id] || "其他";
 });
 const themeGroups = categoryOrder
   .map((category) => ({
@@ -147,7 +164,7 @@ const themeGroups = categoryOrder
   .filter((group) => group.themes.length);
 const themeMap = new Map(themes.map((theme) => [theme.id, theme]));
 const storageKey = "qianbian-login-background-theme";
-const tuningKey = "qianbian-login-background-tuning-v2";
+const tuningKey = "qianbian-login-background-tuning-v3";
 let tuningOverrides = {};
 
 try {
@@ -281,6 +298,10 @@ if (canvas) {
       uSize: { value: currentTheme.size },
       uDepth: { value: currentTheme.depth },
       uTwinkle: { value: currentTheme.twinkle },
+      uIntensity: { value: currentTheme.intensity },
+      uContrast: { value: currentTheme.contrast },
+      uGlow: { value: currentTheme.glow },
+      uSoftness: { value: currentTheme.softness },
       uColorA: { value: new THREE.Color(currentTheme.colors[0]) },
       uColorB: { value: new THREE.Color(currentTheme.colors[1]) },
       uColorC: { value: new THREE.Color(currentTheme.colors[2]) },
@@ -308,6 +329,10 @@ if (canvas) {
         uniform float uSize;
         uniform float uDepth;
         uniform float uTwinkle;
+        uniform float uIntensity;
+        uniform float uContrast;
+        uniform float uGlow;
+        uniform float uSoftness;
         uniform vec2 uResolution;
         uniform vec2 uMouse;
         uniform vec3 uColorA;
@@ -932,8 +957,14 @@ if (canvas) {
           float driftTexture = fbm(p * 1.4 + uTime * uSpeed * 0.045);
           color += mix(uColorB, uColorC, globalDrift) *
             (0.008 + driftTexture * 0.018);
-          color *= 0.92;
-          color = pow(max(color, 0.0), vec3(0.92));
+          color = (color - 0.5) * uContrast + 0.5;
+          color *= uIntensity * 0.92;
+          float glowLuma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+          color += mix(uColorB, uColorC, globalDrift) *
+            smoothstep(0.52, 1.0, glowLuma) *
+            uGlow *
+            0.12;
+          color = pow(max(color, 0.0), vec3(mix(1.18, 0.78, uSoftness)));
           gl_FragColor = vec4(color, 1.0);
         }
       `,
@@ -999,6 +1030,10 @@ if (canvas) {
       uniforms.uSize.value = theme.size;
       uniforms.uDepth.value = theme.depth;
       uniforms.uTwinkle.value = theme.twinkle;
+      uniforms.uIntensity.value = theme.intensity ?? 1;
+      uniforms.uContrast.value = theme.contrast ?? 1;
+      uniforms.uGlow.value = theme.glow ?? 0.18;
+      uniforms.uSoftness.value = theme.softness ?? 0.35;
       uniforms.uColorA.value.set(theme.colors[0]);
       uniforms.uColorB.value.set(theme.colors[1]);
       uniforms.uColorC.value.set(theme.colors[2]);

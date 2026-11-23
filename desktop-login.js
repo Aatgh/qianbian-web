@@ -178,6 +178,10 @@
     { key: "depth", label: "空间深度", min: 0, max: 2.5, step: 0.05 },
     { key: "twinkle", label: "闪烁强度", min: 0, max: 1, step: 0.05 },
     { key: "variant", label: "纹理变化", min: 0, max: 1.5, step: 0.05 },
+    { key: "intensity", label: "画面亮度", min: 0.4, max: 1.8, step: 0.05 },
+    { key: "contrast", label: "画面对比", min: 0.5, max: 1.8, step: 0.05 },
+    { key: "glow", label: "辉光强度", min: 0, max: 1.5, step: 0.05 },
+    { key: "softness", label: "柔和程度", min: 0, max: 1, step: 0.05 },
   ];
 
   function renderTuningControls() {

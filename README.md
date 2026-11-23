@@ -6,6 +6,8 @@
 
 登录视觉包含本地 WebGL 主题库，参考 AIDesigner 与 Vividsites 公开展示的主题重新实现，共 44 个预设并按星场、极光云气、光影渐变、玻璃金属、焦散水面、网格线框和印刷故障分类。所有主题默认使用千变 Logo 的深梅黑、梅红与白紫高光，具体颜色可在主题参数中调整，不依赖第三方背景运行时。
 
+AIDesigner 精选分类置顶展示 Holo Foil、Silk Waves、Liquid Metal、Liquid Glass 和 Starfield，并保留各自参考效果的标准配色；其余主题继续使用 Logo 色板。
+
 ## 页面入口
 
 - 电脑端：`desktop.html`

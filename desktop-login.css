@@ -334,6 +334,21 @@ body.login-locked {
   background-size: 17px 17px, 23px 23px;
 }
 
+.login-theme-swatch[data-category="精选主题"]::before {
+  background:
+    repeating-linear-gradient(
+      112deg,
+      transparent 0 6px,
+      rgba(255, 255, 255, 0.24) 6px 7px
+    ),
+    linear-gradient(
+      135deg,
+      transparent 18%,
+      rgba(255, 255, 255, 0.28) 44%,
+      transparent 72%
+    );
+}
+
 .login-theme-swatch[data-category="极光云气"]::before {
   background:
     linear-gradient(100deg, transparent 12%, rgba(255, 255, 255, 0.48) 22%, transparent 32%),
