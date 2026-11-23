@@ -284,6 +284,7 @@
 
   function beginLoginDrag(event) {
     if (event.button !== 0 || !loginPanelWrap) return;
+    event.preventDefault();
     clearLongPress();
     dragStartX = event.clientX;
     dragStartY = event.clientY;
@@ -294,7 +295,7 @@
       loginPanelWrap.classList.add("is-dragging");
       loginPanelWrap.setPointerCapture?.(dragPointerId);
       navigator.vibrate?.(8);
-    }, reduceMotion.matches ? 0 : 300);
+    }, reduceMotion.matches ? 0 : 220);
   }
 
   function moveLoginDrag(event) {
@@ -303,7 +304,7 @@
         Math.hypot(
           event.clientX - dragStartX,
           event.clientY - dragStartY,
-        ) > 8
+        ) > 18
       ) {
         clearLongPress();
       }

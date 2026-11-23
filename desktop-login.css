@@ -1217,14 +1217,28 @@ body.login-locked {
 
 .login-panel-drag-handle {
   position: absolute;
-  top: 10px;
+  top: 0;
   left: 50%;
-  width: 54px;
+  width: 148px;
+  height: 28px;
+  border-radius: 0 0 14px 14px;
+  background: transparent;
+  transform: translateX(-50%);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.login-panel-drag-handle::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 58px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.2);
   transform: translateX(-50%);
-  pointer-events: none;
 }
 
 .login-panel-head {
@@ -1241,6 +1255,10 @@ body.login-locked {
 }
 
 .login-panel-wrap.is-dragging .login-panel-head {
+  cursor: grabbing;
+}
+
+.login-panel-wrap.is-dragging .login-panel-drag-handle {
   cursor: grabbing;
 }
 
