@@ -28,8 +28,11 @@
   const tuningClose = document.getElementById("login-tuning-close");
   const tuningControls = document.getElementById("login-tuning-controls");
   const tuningReset = document.getElementById("login-tuning-reset");
-  const loginBoxToggle = document.getElementById("login-box-toggle");
   const loginPanelWrap = document.getElementById("login-panel-wrap");
+  const loginPanelHead = gate.querySelector(".login-panel-head");
+  const loginPanelDragHandle = gate.querySelector(
+    ".login-panel-drag-handle",
+  );
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const authKey = "qianbian-desktop-auth";
@@ -55,6 +58,11 @@
   let focusTimer = 0;
   let countdownTimer = 0;
   let countdown = 0;
+  let longPressTimer = 0;
+  let draggingLogin = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragPointerId = null;
 
   function readProfile() {
     try {
@@ -241,28 +249,80 @@
     }
   }
 
-  function syncLoginBoxToggle(open) {
-    if (!loginBoxToggle) return;
-    gate.classList.toggle("login-box-open", open);
-    loginBoxToggle.setAttribute("aria-expanded", String(open));
-    const label = open ? "收起登录框" : "打开登录框";
-    loginBoxToggle.setAttribute("aria-label", label);
-    loginBoxToggle.title = label;
-    loginBoxToggle.innerHTML = `<i data-lucide="user-round"></i><span class="sr-only">${label}</span>`;
-    updateIcons(loginBoxToggle);
-    if (open) {
-      window.requestAnimationFrame(() => {
-        loginPanelWrap?.querySelector("button, input")?.focus();
-      });
-    }
+  function clearLongPress() {
+    window.clearTimeout(longPressTimer);
+    longPressTimer = 0;
   }
 
-  function toggleLoginBox(force) {
-    const open =
-      typeof force === "boolean"
-        ? force
-        : !gate.classList.contains("login-box-open");
-    syncLoginBoxToggle(open);
+  function finishLoginDrag() {
+    clearLongPress();
+    if (!draggingLogin || !loginPanelWrap) {
+      dragPointerId = null;
+      return;
+    }
+    draggingLogin = false;
+    loginPanelWrap.classList.remove("is-dragging");
+    loginPanelWrap.classList.add("is-snapping");
+    loginPanelWrap.style.setProperty("--login-drag-x", "0px");
+    loginPanelWrap.style.setProperty("--login-drag-y", "0px");
+    if (
+      dragPointerId !== null &&
+      loginPanelWrap.hasPointerCapture?.(dragPointerId)
+    ) {
+      loginPanelWrap.releasePointerCapture(dragPointerId);
+    }
+    dragPointerId = null;
+    window.setTimeout(
+      () => {
+        loginPanelWrap.classList.remove("is-snapping");
+        loginPanelWrap.style.removeProperty("--login-drag-x");
+        loginPanelWrap.style.removeProperty("--login-drag-y");
+      },
+      reduceMotion.matches ? 20 : 560,
+    );
+  }
+
+  function beginLoginDrag(event) {
+    if (event.button !== 0 || !loginPanelWrap) return;
+    clearLongPress();
+    dragStartX = event.clientX;
+    dragStartY = event.clientY;
+    dragPointerId = event.pointerId;
+    longPressTimer = window.setTimeout(() => {
+      draggingLogin = true;
+      loginPanelWrap.classList.remove("is-snapping");
+      loginPanelWrap.classList.add("is-dragging");
+      loginPanelWrap.setPointerCapture?.(dragPointerId);
+      navigator.vibrate?.(8);
+    }, reduceMotion.matches ? 0 : 300);
+  }
+
+  function moveLoginDrag(event) {
+    if (!draggingLogin || !loginPanelWrap) {
+      if (
+        Math.hypot(
+          event.clientX - dragStartX,
+          event.clientY - dragStartY,
+        ) > 8
+      ) {
+        clearLongPress();
+      }
+      return;
+    }
+    event.preventDefault();
+    const rect = loginPanelWrap.getBoundingClientRect();
+    const maxX = Math.max(0, window.innerWidth / 2 - rect.width / 2 - 12);
+    const maxY = Math.max(0, window.innerHeight / 2 - rect.height / 2 - 12);
+    const x = Math.max(
+      -maxX,
+      Math.min(maxX, event.clientX - dragStartX),
+    );
+    const y = Math.max(
+      -maxY,
+      Math.min(maxY, event.clientY - dragStartY),
+    );
+    loginPanelWrap.style.setProperty("--login-drag-x", `${x}px`);
+    loginPanelWrap.style.setProperty("--login-drag-y", `${y}px`);
   }
 
   function setLocked(locked) {
@@ -299,7 +359,6 @@
     tuningPanel.hidden = true;
     themeToggle?.setAttribute("aria-expanded", "false");
     tuningToggle?.setAttribute("aria-expanded", "false");
-    syncLoginBoxToggle(true);
     setAccountType("phone");
     hideError();
   }
@@ -564,7 +623,15 @@
     window.QianbianLoginBackground?.resetTuning();
     renderTuningControls();
   });
-  loginBoxToggle?.addEventListener("click", () => toggleLoginBox());
+  [loginPanelHead, loginPanelDragHandle].forEach((handle) => {
+    handle?.addEventListener("pointerdown", beginLoginDrag);
+  });
+  window.addEventListener("pointermove", moveLoginDrag, {
+    passive: false,
+  });
+  window.addEventListener("pointerup", finishLoginDrag);
+  window.addEventListener("pointercancel", finishLoginDrag);
+  window.addEventListener("blur", finishLoginDrag);
   gate.addEventListener("pointermove", syncPointer, { passive: true });
   gate.addEventListener("pointerleave", () => {
     root.style.setProperty("--login-pointer-x", "0px");
@@ -617,11 +684,6 @@
     if (tuningPanel && !tuningPanel.hidden) {
       event.preventDefault();
       toggleTuningPanel(false);
-      return;
-    }
-    if (gate.classList.contains("login-box-open")) {
-      event.preventDefault();
-      toggleLoginBox(false);
     }
   });
 
@@ -644,14 +706,6 @@
     ) {
       toggleTuningPanel(false);
     }
-    if (
-      gate.classList.contains("login-box-open") &&
-      loginPanelWrap &&
-      !path.includes(loginPanelWrap) &&
-      !path.includes(loginBoxToggle)
-    ) {
-      toggleLoginBox(false);
-    }
   });
 
   window.addEventListener("storage", (event) => {
@@ -669,5 +723,5 @@
 
   renderThemeOptions();
   renderTuningControls();
-  syncLoginBoxToggle(true);
+  gate.classList.add("login-box-open");
 })();

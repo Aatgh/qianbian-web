@@ -57,6 +57,22 @@ body.login-locked {
   animation: login-preview-panel-in 420ms var(--login-spring) both;
 }
 
+.login-panel-wrap.is-dragging {
+  animation: none !important;
+  transform: translate(
+      var(--login-drag-x, 0px),
+      var(--login-drag-y, 0px)
+    )
+    scale(1.015) !important;
+  transition: none !important;
+}
+
+.login-panel-wrap.is-snapping {
+  animation: none !important;
+  transform: translate(0, 0) scale(1) !important;
+  transition: transform 560ms var(--login-spring) !important;
+}
+
 @keyframes login-preview-panel-in {
   from {
     opacity: 0;
@@ -1197,6 +1213,35 @@ body.login-locked {
     inset 0 1px 0 rgba(255, 255, 255, 0.11);
   backdrop-filter: blur(34px) saturate(1.35);
   -webkit-backdrop-filter: blur(34px) saturate(1.35);
+}
+
+.login-panel-drag-handle {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 54px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.login-panel-head {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.login-panel-wrap.is-dragging .login-panel {
+  cursor: grabbing;
+  box-shadow:
+    0 48px 130px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.login-panel-wrap.is-dragging .login-panel-head {
+  cursor: grabbing;
 }
 
 .login-panel::before {

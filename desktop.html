@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="desktop.css?v=20261118h" />
     <link rel="stylesheet" href="desktop-refresh.css?v=20261120a" />
     <link rel="stylesheet" href="desktop-workspace.css?v=20261123b" />
-    <link rel="stylesheet" href="desktop-login.css?v=20261123j" />
+    <link rel="stylesheet" href="desktop-login.css?v=20261123k" />
   </head>
   <body class="desktop-reference">
     <div class="login-gate login-starfield-preview login-box-open" id="login-gate" hidden>
@@ -86,17 +86,6 @@
         </button>
       </aside>
 
-      <button
-        class="login-box-toggle"
-        id="login-box-toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="login-panel-wrap"
-      >
-        <i data-lucide="user-round"></i>
-        <span class="sr-only">打开登录框</span>
-      </button>
-
       <header class="login-masthead">
         <div class="login-secure-status">
           <i data-lucide="shield-check"></i>
@@ -138,6 +127,7 @@
 
         <section class="login-panel-wrap" id="login-panel-wrap">
           <div class="login-panel">
+            <span class="login-panel-drag-handle" aria-hidden="true"></span>
             <span class="login-panel-border" aria-hidden="true"></span>
             <div class="login-panel-head">
               <h2 id="login-title">登录框</h2>
@@ -455,6 +445,6 @@
     <script src="data.js?v=20261118a"></script>
     <script src="desktop-api.js?v=20261123b"></script>
     <script src="desktop-app.js?v=20261123c"></script>
-    <script src="desktop-login.js?v=20261123j"></script>
+    <script src="desktop-login.js?v=20261123k"></script>
   </body>
 </html>
