@@ -311,7 +311,7 @@ test("default starfield animates as a single theme", async ({ page }) => {
   expect(result.pixels.maxChannel).toBeGreaterThan(24);
 });
 
-test("direct long press keeps dragging after slight pointer movement", async ({
+test("whole login panel is directly draggable by long press", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -324,11 +324,10 @@ test("direct long press keeps dragging after slight pointer movement", async ({
     );
 
   const wrap = page.locator("#login-panel-wrap");
-  const handleBox = await page
-    .locator(".login-panel-drag-handle")
-    .boundingBox();
-  const startX = handleBox.x + handleBox.width / 2;
-  const startY = handleBox.y + 12;
+  await expect(page.locator(".login-panel-drag-handle")).toHaveCount(0);
+  const panelBox = await page.locator(".login-panel").boundingBox();
+  const startX = panelBox.x + 36;
+  const startY = panelBox.y + 16;
 
   await page.mouse.move(startX, startY);
   await page.mouse.down();
