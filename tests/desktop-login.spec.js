@@ -182,3 +182,44 @@ test("three.js login scene renders on desktop and mobile", async ({ page }) => {
   );
   expect(mobilePixels?.painted).toBeGreaterThan(20);
 });
+
+test("starfield covers the viewport behind a floating login layer", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openFreshDesktop(page);
+
+  const layout = await page.evaluate(() => {
+    const canvas = document
+      .querySelector("#login-three-canvas")
+      .getBoundingClientRect();
+    const panel = document
+      .querySelector(".login-panel")
+      .getBoundingClientRect();
+    const panelStyle = getComputedStyle(
+      document.querySelector(".login-panel"),
+    );
+    const canvasStyle = getComputedStyle(
+      document.querySelector("#login-three-canvas"),
+    );
+    return {
+      viewport: [window.innerWidth, window.innerHeight],
+      canvas: [canvas.left, canvas.top, canvas.width, canvas.height],
+      panel: [panel.left, panel.top, panel.width, panel.height],
+      panelZ: Number(panelStyle.zIndex),
+      canvasZ: Number(canvasStyle.zIndex),
+      wordmarkCount: document.querySelectorAll(".login-wordmark").length,
+    };
+  });
+
+  expect(layout.canvas).toEqual([
+    0,
+    0,
+    layout.viewport[0],
+    layout.viewport[1],
+  ]);
+  expect(layout.panel[0]).toBeGreaterThan(layout.viewport[0] * 0.5);
+  expect(layout.panel[2]).toBeLessThan(layout.viewport[0] * 0.45);
+  expect(layout.panelZ).toBeGreaterThan(layout.canvasZ);
+  expect(layout.wordmarkCount).toBe(0);
+});
