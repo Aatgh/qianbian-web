@@ -563,7 +563,11 @@
       state.backendReady = true;
       return;
     }
-    if (location.protocol === "file:" && !api.explicit) {
+    const staticHost =
+      location.protocol === "file:" ||
+      location.hostname === "github.io" ||
+      location.hostname.endsWith(".github.io");
+    if (staticHost && !api.explicit) {
       state.backendReady = true;
       return;
     }

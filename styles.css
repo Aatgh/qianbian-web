@@ -9330,12 +9330,27 @@ button.phone-row:hover {
   }
 }
 
-/* The mobile preview is presented as a standalone simulator. */
+/* The mobile entry is a real full-screen web app, not a device preview. */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  background: var(--phone-bg);
+}
+
 .app-shell {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
   grid-template-rows: minmax(0, 1fr);
 }
 
 .workspace {
+  display: block;
+  width: 100%;
+  height: 100%;
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -9349,5 +9364,59 @@ button.phone-row:hover {
 #close-catalog,
 #close-inspector,
 #mobile-scrim {
+  display: none !important;
+}
+
+.demo-stage,
+.phone-fit,
+.phone-device,
+.phone-bezel,
+.phone-screen {
+  width: 100%;
+  height: 100%;
+}
+
+.demo-stage {
+  overflow: hidden;
+  background: var(--phone-bg);
+}
+
+.phone-fit {
+  display: block;
+  padding: 0;
+}
+
+.phone-device {
+  zoom: 1;
+  transition: none;
+}
+
+.phone-bezel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--phone-bg);
+  box-shadow: none;
+}
+
+.phone-speaker,
+.home-indicator,
+.stage-grid {
+  display: none !important;
+}
+
+.phone-screen {
+  border-radius: 0;
+}
+
+.phone-screen::after {
+  height: calc(22px + env(safe-area-inset-bottom));
+}
+
+.phone-page {
+  padding-top: env(safe-area-inset-top);
+}
+
+.phone-statusbar {
   display: none !important;
 }
