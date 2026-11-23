@@ -324,3 +324,56 @@ test("whole login panel is directly draggable by long press", async ({
     Math.abs(snappedBox.y + snappedBox.height / 2 - initialCenter.y),
   ).toBeLessThan(5);
 });
+
+test("rounded glass panel keeps its tint stable while dragging", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openFreshDesktop(page, { starfieldPreview: true });
+  await page.locator("#login-gate.is-ready").waitFor();
+  await page
+    .locator(".login-panel-wrap")
+    .evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished)),
+    );
+
+  const readPanelState = () =>
+    page.evaluate(() => {
+      const panel = document.querySelector(".login-panel");
+      const rootStyle = getComputedStyle(document.documentElement);
+      const panelStyle = getComputedStyle(panel);
+      const colorMatch = panelStyle.backgroundColor.match(
+        /rgba?\(([^)]+)\)/,
+      );
+      const colorParts = colorMatch
+        ? colorMatch[1].split(",").map((part) => Number(part.trim()))
+        : [];
+      return {
+        pointerX: rootStyle.getPropertyValue("--login-pointer-x").trim(),
+        pointerY: rootStyle.getPropertyValue("--login-pointer-y").trim(),
+        radius: Number.parseFloat(panelStyle.borderRadius),
+        alpha: colorParts.length === 4 ? colorParts[3] : 1,
+        backdrop: panelStyle.backdropFilter || panelStyle.webkitBackdropFilter,
+      };
+    });
+
+  const before = await readPanelState();
+  expect(before.radius).toBeGreaterThanOrEqual(32);
+  expect(before.alpha).toBeGreaterThanOrEqual(0.76);
+  expect(before.backdrop).toContain("blur");
+
+  const panelBox = await page.locator(".login-panel").boundingBox();
+  const startX = panelBox.x + 36;
+  const startY = panelBox.y + 16;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.waitForTimeout(260);
+  await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
+  const during = await readPanelState();
+  await page.mouse.up();
+
+  expect(during.pointerX).toBe(before.pointerX);
+  expect(during.pointerY).toBe(before.pointerY);
+  expect(during.radius).toBe(before.radius);
+  expect(during.alpha).toBe(before.alpha);
+});
