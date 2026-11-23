@@ -6921,6 +6921,12 @@ export async function run(input, context) {
   function bindEvents() {
     document.addEventListener("click", handleDocumentClick);
     document.addEventListener("keydown", handleKeydown);
+    document.addEventListener("contextmenu", (event) => {
+      if (event.target.closest("input, textarea, [contenteditable='true']")) {
+        return;
+      }
+      event.preventDefault();
+    });
     globalSearch.addEventListener("input", () => {
       state.catalogSearch = globalSearch.value;
       renderCatalog();
@@ -6994,6 +7000,8 @@ export async function run(input, context) {
     });
 
     let swipeStart = null;
+    let swipeHoldTimer = null;
+    const swipePreviewThreshold = 30;
     phoneScreen.addEventListener("pointerdown", (event) => {
       if (!isConversationSurface()) {
         swipeStart = null;
@@ -7001,6 +7009,7 @@ export async function run(input, context) {
       }
       if (event.button !== 0) return;
       if (event.target.closest("button, a, input, textarea, select, [role='button'], [data-no-swipe]")) return;
+      window.clearTimeout(swipeHoldTimer);
       swipeStart = {
         x: event.clientX,
         y: event.clientY,
@@ -7009,13 +7018,23 @@ export async function run(input, context) {
         preview: null,
         width: phoneScreen.clientWidth,
       };
+      swipeHoldTimer = window.setTimeout(() => {
+        if (!swipeStart || swipeStart.preview) return;
+        swipeStart = null;
+      }, 450);
     });
     window.addEventListener("pointermove", (event) => {
       if (!isConversationSurface()) return;
       if (!swipeStart || swipeStart.pointerId !== event.pointerId) return;
       const dx = event.clientX - swipeStart.x;
       const dy = event.clientY - swipeStart.y;
-      if (!swipeStart.preview && swipeStart.canPreview && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.05) {
+      if (
+        !swipeStart.preview &&
+        swipeStart.canPreview &&
+        Math.abs(dx) >= swipePreviewThreshold &&
+        Math.abs(dx) > Math.abs(dy) * 1.2
+      ) {
+        window.clearTimeout(swipeHoldTimer);
         swipeStart.preview = dx < 0 ? "nav" : "history";
         state.mainNavOpen = swipeStart.preview === "nav";
         state.historyOpen = swipeStart.preview === "history";
@@ -7042,6 +7061,7 @@ export async function run(input, context) {
     window.addEventListener("pointerup", (event) => {
       if (!isConversationSurface()) return;
       if (!swipeStart || swipeStart.pointerId !== event.pointerId) return;
+      window.clearTimeout(swipeHoldTimer);
       const dx = event.clientX - swipeStart.x;
       const dy = event.clientY - swipeStart.y;
       const preview = swipeStart.preview;
@@ -7095,6 +7115,7 @@ export async function run(input, context) {
       }
     });
     window.addEventListener("pointercancel", () => {
+      window.clearTimeout(swipeHoldTimer);
       if (swipeStart?.preview) {
         state.mainNavOpen = false;
         state.historyOpen = false;

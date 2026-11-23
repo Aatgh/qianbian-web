@@ -9338,6 +9338,10 @@ body {
   min-height: 100%;
   overflow: hidden;
   background: var(--phone-bg);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .app-shell {
@@ -9407,6 +9411,20 @@ body {
 
 .phone-screen {
   border-radius: 0;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+img,
+svg {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .phone-screen::after {

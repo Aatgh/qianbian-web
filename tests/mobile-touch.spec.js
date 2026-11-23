@@ -67,3 +67,31 @@ test("long press does not leave the mobile interface text-selected", async ({
   }));
   expect(selection).toEqual({ ranges: 0, text: "" });
 });
+
+test("fast horizontal swipe still opens history", async ({ page }) => {
+  await page.goto(mobileUrl);
+  await page.waitForFunction(() => window.__qianbianMobileBackend?.ready);
+
+  const session = await page.context().newCDPSession(page);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [
+      { x: 196, y: 420, radiusX: 2, radiusY: 2, force: 1, id: 1 },
+    ],
+  });
+  await page.waitForTimeout(50);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [
+      { x: 312, y: 422, radiusX: 2, radiusY: 2, force: 1, id: 1 },
+    ],
+  });
+  await page.waitForTimeout(50);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await page.waitForTimeout(320);
+
+  await expect(page.locator(".history-screen")).toHaveCount(1);
+});
