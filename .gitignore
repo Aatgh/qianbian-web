@@ -2,6 +2,8 @@
 .playwright-cli/
 .tools/
 output/
+test-results/
+playwright-report/
 
 # Dependencies and build output
 **/node_modules/
