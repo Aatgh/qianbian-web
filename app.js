@@ -1703,6 +1703,16 @@
                 </div>`
               : ""
           }
+          <div class="phone-list" style="margin:0 14px 14px">
+            <button class="phone-row" data-action="open-desktop-version" type="button">
+              <span class="row-glyph">${icon("monitor")}</span>
+              <span class="phone-row-main">
+                <span class="phone-row-label">电脑版</span>
+                <span class="phone-row-description">在桌面浏览器中打开工作区</span>
+              </span>
+              ${icon("chevron-right", "row-chevron")}
+            </button>
+          </div>
           ${renderActions(page.actions, page.id)}
         </div>
       </div>
@@ -7202,6 +7212,9 @@ export async function run(input, context) {
         renderPhone();
         updateIcons();
         showToast("个人资料已保存", "circle-check");
+      } else if (action === "open-desktop-version") {
+        localStorage.setItem("qianbian-view-preference", "desktop");
+        location.replace(new URL("desktop.html", location.href).href);
       } else if (action === "logout") {
         showDialog("退出登录？", "本地演示不会真正退出任何账号。", "退出登录", action);
       } else if (action === "restart") {

@@ -3941,6 +3941,7 @@ export const skill = {
                     <div class="account-section-head"><strong>账号操作</strong><span>${ACCOUNTS.length} 个账号</span></div>
                     <div class="account-action-row">
                       <button class="account-action-button" data-toggle-account-switch type="button">${icon("users-round")}切换账号</button>
+                      <button class="account-action-button" data-action="open-mobile-version" type="button">${icon("smartphone")}手机版</button>
                       <button class="account-action-button is-danger" data-account-logout type="button">${icon("log-out")}退出登录</button>
                     </div>
                     ${
@@ -6114,6 +6115,11 @@ export const skill = {
     if (event.target.closest("[data-toggle-account-switch]")) {
       state.accountSwitchOpen = !state.accountSwitchOpen;
       renderAccountDialog();
+      return;
+    }
+    if (event.target.closest('[data-action="open-mobile-version"]')) {
+      localStorage.setItem("qianbian-view-preference", "mobile");
+      location.replace(new URL("./?mobile=1", location.href).href);
       return;
     }
     const accountSwitch = event.target.closest("[data-switch-account]");
