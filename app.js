@@ -109,14 +109,12 @@
   const toastRegion = document.getElementById("toast-region");
   const srStatus = document.getElementById("sr-status");
   const ACCENT_IDS = ["a62466"];
+  const AFFINITY_MAX = 80;
   const ACCENT_COLORS = {
     a62466: "#a62466",
   };
   const ACCENT_LABELS = { a62466: "深梅" };
   const storedAccent = localStorage.getItem("dshgo-atlas-accent");
-  const storedTrainingRaw = localStorage.getItem("dshgo-agent-training");
-  const storedTraining = storedTrainingRaw == null ? Number.NaN : Number(storedTrainingRaw);
-  const initialTraining = Number.isFinite(storedTraining) ? Math.min(100, Math.max(0, storedTraining)) : 30;
 
   const state = {
     current: "home",
@@ -126,7 +124,7 @@
     collapsedGroups: new Set(),
     theme: localStorage.getItem("dshgo-atlas-theme") || "light",
     accent: ACCENT_IDS.includes(storedAccent) ? storedAccent : "a62466",
-    agentTraining: initialTraining,
+    agentTraining: 0,
     glass: localStorage.getItem("dshgo-atlas-glass") !== "false",
     reducedMotion: localStorage.getItem("dshgo-atlas-motion") === "true",
     engine: localStorage.getItem("dshgo-atlas-engine") || "running",
@@ -351,6 +349,23 @@
     if (dayKey(date) === dayKey(now)) return `今天 ${clock}`;
     if (dayKey(date) === dayKey(yesterday)) return `昨天 ${clock}`;
     return `${date.getMonth() + 1}月${date.getDate()}日 ${clock}`;
+  }
+
+  function affinityFill(score) {
+    return Math.min(
+      100,
+      (Math.min(AFFINITY_MAX, Math.max(0, Number(score) || 0)) /
+        AFFINITY_MAX) *
+        100,
+    );
+  }
+
+  function affinityBand(score) {
+    const value = Math.min(AFFINITY_MAX, Math.max(0, Number(score) || 0));
+    if (value >= 80) return "高度拟人（上限）";
+    if (value >= 50) return "默契渐成";
+    if (value >= 20) return "正在熟悉";
+    return "初识";
   }
 
   function mapBackendSession(session) {
@@ -718,6 +733,7 @@
       renderPhone();
       updateIcons();
       refreshMobileSessions();
+      refreshMobileAffinity();
     }
   }
 
@@ -731,6 +747,26 @@
         renderPhone();
         updateIcons();
       }
+    } catch {}
+  }
+
+  function applyMobileAffinity(payload) {
+    const score = Number(payload?.score);
+    if (!Number.isFinite(score)) return;
+    state.agentTraining = Math.min(
+      AFFINITY_MAX,
+      Math.max(0, Math.round(score)),
+    );
+    localStorage.removeItem("dshgo-agent-training");
+  }
+
+  async function refreshMobileAffinity() {
+    if (!api || !state.backendConnected) return;
+    try {
+      applyMobileAffinity(await api.affinity());
+      renderControls();
+      renderPhone();
+      updateIcons();
     } catch {}
   }
 
@@ -751,10 +787,11 @@
       await api.health();
       state.backendConnected = true;
       state.network = "online";
-      const [sessions, environments, models, market, installed, mine] =
+      const [sessions, environments, affinity, models, market, installed, mine] =
         await Promise.allSettled([
           api.sessions(),
           api.environments(),
+          api.affinity(),
           api.models(),
           api.skills({ scope: "market" }),
           api.skills({ scope: "installed" }),
@@ -771,6 +808,9 @@
       }
       if (environments.status === "fulfilled") {
         applyMobileEnvironments(environments.value);
+      }
+      if (affinity.status === "fulfilled") {
+        applyMobileAffinity(affinity.value);
       }
       if (models.status === "fulfilled") {
         const modelList = models.value?.models || [];
@@ -804,6 +844,7 @@
       markMobileEnvironmentsUnavailable();
     } finally {
       state.backendReady = true;
+      renderControls();
       renderPhone();
       updateIcons();
     }
@@ -1233,14 +1274,16 @@
 
   function setAgentTraining(value, { notify = false } = {}) {
     const previous = state.agentTraining;
-    const next = Math.min(100, Math.max(0, Math.round(Number(value) || 0)));
+    const next = Math.min(
+      AFFINITY_MAX,
+      Math.max(0, Math.round(Number(value) || 0)),
+    );
     state.agentTraining = next;
-    localStorage.setItem("dshgo-agent-training", String(next));
     renderControls();
     renderPhone();
     updateIcons();
-    if (notify && previous < 100 && next >= 100) {
-      showToast("用户与 Agent 已达到高度契合", "badge-check");
+    if (notify && previous < AFFINITY_MAX && next >= AFFINITY_MAX) {
+      showToast("用户与 Agent 已达到高度拟人上限", "badge-check");
     } else if (notify) {
       showToast(`用户与 Agent 契合度：${next}%`, "activity");
     }
@@ -1855,7 +1898,7 @@
           <span class="assistant-avatar">${icon(options.avatar || "sparkles")}</span>
           <strong>${escapeHtml(options.name || "千变")}</strong>
           <span>${escapeHtml(options.time || "刚刚")}</span>
-          ${state.agentTraining >= 100 ? '<span class="agent-human-badge">契合</span>' : ""}
+          ${state.agentTraining >= AFFINITY_MAX ? '<span class="agent-human-badge">契合</span>' : ""}
         </div>
         <div class="assistant-text">
           ${options.content || ""}
@@ -2309,7 +2352,8 @@
     leftLabel = "对话目录",
   } = {}) {
     const progress = Math.round(state.agentTraining);
-    const isAligned = progress >= 100;
+    const isAligned = progress >= AFFINITY_MAX;
+    const progressFill = affinityFill(progress);
     return `
       <header class="chat-top new-chat-top unified-conversation-nav">
         <button class="phone-icon-button ghost conversation-nav-action" ${leftAttribute} type="button" aria-label="${escapeHtml(
@@ -2317,7 +2361,7 @@
         )}">${conversationNavIcon("history")}</button>
         <button
           class="top-progress-cluster ${isAligned ? "is-complete" : ""}"
-          style="--agent-progress:${progress}%"
+          style="--agent-progress:${progressFill}%"
           data-action="open-affinity"
           type="button"
           aria-label="查看 Agent 契合度，当前 ${progress}%"
@@ -2328,7 +2372,7 @@
             role="progressbar"
             aria-label="用户与 Agent 契合度"
             aria-valuemin="0"
-            aria-valuemax="100"
+            aria-valuemax="${AFFINITY_MAX}"
             aria-valuenow="${progress}"
           >
             <div class="top-progress-logo">
@@ -2587,6 +2631,7 @@
 
   function renderMainNavOverlay() {
     const affinity = Math.round(state.agentTraining);
+    const affinityFillValue = affinityFill(affinity);
     const installedSkills = getActiveSkillItems(
       pages.plugins?.pluginList || [],
     );
@@ -2623,7 +2668,7 @@
             role="progressbar"
             aria-label="用户与 Agent 契合度"
             aria-valuemin="0"
-            aria-valuemax="100"
+            aria-valuemax="${AFFINITY_MAX}"
             aria-valuenow="${affinity}"
           >
             <div class="main-nav-affinity-head">
@@ -2632,7 +2677,7 @@
             </div>
             <span class="main-nav-affinity-label">用户与 Agent 契合度</span>
             <div class="main-nav-affinity-track">
-              <span class="main-nav-affinity-fill" style="width:${affinity}%"></span>
+              <span class="main-nav-affinity-fill" style="width:${affinityFillValue}%"></span>
             </div>
           </div>
           <span class="main-nav-hero-action">${icon("settings-2")}</span>
@@ -3018,8 +3063,8 @@ export async function review(target) {
             <div>
               <span>当前契合度</span>
               <strong>${affinity}%</strong>
-              <div class="skill-settings-progress" role="progressbar" aria-label="当前契合度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${affinity}">
-                <span style="width:${affinity}%"></span>
+              <div class="skill-settings-progress" role="progressbar" aria-label="当前契合度" aria-valuemin="0" aria-valuemax="${AFFINITY_MAX}" aria-valuenow="${affinity}">
+                <span style="width:${affinityFill(affinity)}%"></span>
               </div>
             </div>
           </section>
@@ -5994,8 +6039,8 @@ export async function run(input, context) {
 
   function renderAffinityDialog() {
     const progress = Math.round(state.agentTraining);
-    const stateLabel =
-      progress >= 100 ? "高度拟人" : progress >= 70 ? "默契渐成" : "正在熟悉";
+    const stateLabel = affinityBand(progress);
+    const progressFill = affinityFill(progress);
     return `
       <div class="affinity-layer">
         <button
@@ -6030,10 +6075,10 @@ export async function run(input, context) {
             role="progressbar"
             aria-label="用户与 Agent 契合度"
             aria-valuemin="0"
-            aria-valuemax="100"
+            aria-valuemax="${AFFINITY_MAX}"
             aria-valuenow="${progress}"
           >
-            <span class="affinity-popover-fill" style="width:${progress}%"></span>
+            <span class="affinity-popover-fill" style="width:${progressFill}%"></span>
           </div>
         </section>
       </div>
@@ -6490,15 +6535,7 @@ export async function run(input, context) {
       state.current === "home" ||
       (state.page?.kind === "chat" && state.page?.mode === "empty");
     state.chatDraft = "";
-    const previousTraining = state.agentTraining;
-    state.agentTraining = Math.min(100, state.agentTraining + 4);
-    localStorage.setItem("dshgo-agent-training", String(state.agentTraining));
-    showToast(
-      previousTraining < 100 && state.agentTraining >= 100
-        ? "用户与 Agent 已达到高度契合"
-        : `消息已发送 · 契合度 ${state.agentTraining}%`,
-      state.agentTraining >= 100 ? "badge-check" : "send",
-    );
+    showToast("消息已发送", "send");
     if (api && state.backendConnected) {
       if (wasNewChat) resetBackendChat();
       state.backendChatActive = true;

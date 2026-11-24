@@ -6972,7 +6972,7 @@ export const skill = {
     if (event.key !== "dshgo-agent-training") return;
     const next = Number(event.newValue);
     if (!Number.isFinite(next)) return;
-    state.agentTraining = Math.min(100, Math.max(0, next));
+    state.agentTraining = Math.min(80, Math.max(0, next));
     renderContext();
   });
   window.addEventListener("qianbian:auth-success", (event) => {
