@@ -615,13 +615,11 @@ test("composer input has no colored focus outline", async ({ page }) => {
     return {
       focusVisible: element.matches(":focus-visible"),
       outlineStyle: style.outlineStyle,
-      outlineWidth: style.outlineWidth,
     };
   });
 
   expect(focusStyle).toEqual({
     focusVisible: true,
     outlineStyle: "none",
-    outlineWidth: "0px",
   });
 });

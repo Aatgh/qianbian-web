@@ -5139,6 +5139,10 @@ button.phone-row:hover {
   line-height: 1.5;
 }
 
+.composer-input:focus-visible {
+  outline: none;
+}
+
 .composer-input::placeholder {
   color: var(--phone-muted);
 }
