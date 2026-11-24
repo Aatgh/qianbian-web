@@ -622,6 +622,19 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
     .toMatchObject({ executionTarget: "local" });
 });
 
+test("desktop shows ICP footer", async ({ page }) => {
+  await page.goto(desktopUrl);
+  const footer = page.locator(".icp-footer");
+  await expect(footer).toBeVisible();
+  await expect(footer).toHaveText("湘ICP备2026043985号-3");
+  await expect(footer).toHaveAttribute(
+    "href",
+    "https://beian.miit.gov.cn/",
+  );
+  await expect(footer).toHaveAttribute("target", "_blank");
+  await expect(footer).toHaveAttribute("rel", "noopener noreferrer");
+});
+
 test("desktop streams deltas into the same message node", async ({ page }) => {
   await page.goto(desktopUrl);
   await unlockDesktop(page);

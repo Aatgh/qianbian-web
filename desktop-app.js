@@ -53,17 +53,10 @@
   const DEFAULT_ENVIRONMENTS = [
     {
       id: "local",
-      name: "本机工作区",
+      name: "工作环境读取失败",
       kind: "local",
-      status: "ready",
-      detail: "在当前电脑的千变工作区执行文件、终端与脚本",
-    },
-    {
-      id: "cloud",
-      name: "云电脑",
-      kind: "cloud",
       status: "not_configured",
-      detail: "需要配置远程云主机或容器后才能启用",
+      detail: "无法读取可用工作环境",
     },
   ];
 
@@ -998,7 +991,7 @@
     deletedMemories: new Set(
       Array.isArray(storedDeletedMemories) ? storedDeletedMemories : [],
     ),
-    model: "通用模型 V4",
+    model: "",
     modelId: "2",
     models: [],
     approvalMode: "onRequest",
@@ -1314,7 +1307,7 @@
     const skillCount = document.getElementById("skill-count");
     if (skillCount) skillCount.textContent = String(getActiveSkills().length);
     detailBack.hidden = true;
-    if (engineLabel) engineLabel.textContent = state.model;
+    if (engineLabel) engineLabel.textContent = state.model || "未选择模型";
     if (profileName) profileName.textContent = state.workspaceName;
     if (profileSubtitle) profileSubtitle.textContent = state.accountName;
   }
@@ -1384,12 +1377,21 @@
   }
 
   function applyBackendEnvironments(payload) {
+    const serverDeployment =
+      /^https?:$/.test(location.protocol) &&
+      !["localhost", "127.0.0.1", "0.0.0.0"].includes(location.hostname) &&
+      !/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(
+        location.hostname,
+      );
     const environments = Array.isArray(payload?.environments)
       ? payload.environments
           .filter((environment) => environment?.id)
           .map((environment) => ({
             id: String(environment.id),
-            name: environment.name || environment.id,
+            name:
+              environment.id === "local" && serverDeployment
+                ? "云端工作区"
+                : environment.name || environment.id,
             kind: environment.kind || "local",
             status: environment.status || "not_configured",
             detail: environment.detail || "",
@@ -1869,6 +1871,10 @@
     } catch (error) {
       state.apiAvailable = false;
       state.apiStatus = { connected: false, error: error.message };
+      state.environments = DEFAULT_ENVIRONMENTS.map((environment) => ({
+        ...environment,
+      }));
+      state.executionTarget = "local";
       return;
     }
     const [
@@ -4300,9 +4306,9 @@ export const skill = {
         </button>
       </section>
       <section class="context-section">
-        <div class="context-section-title"><span>运行方式</span><span>本地</span></div>
+        <div class="context-section-title"><span>运行方式</span><span>${escapeHtml(currentEnvironment().name)}</span></div>
         <div class="detail-list">
-          <div class="detail-row">${icon("brain")}<span>模型</span><strong>通用模型 V4</strong></div>
+          <div class="detail-row">${icon("brain")}<span>模型</span><strong>${escapeHtml(state.model || "未选择模型")}</strong></div>
           <div class="detail-row">${icon("folder")}<span>工作区</span><strong>${escapeHtml(state.workspaceName)}</strong></div>
           <div class="detail-row">${icon("shield-check")}<span>权限</span><strong>工作区内修改</strong></div>
         </div>

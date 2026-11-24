@@ -729,3 +729,85 @@ test("mobile streams deltas into the same message node", async ({ page }) => {
   ).toBe("stable");
   expect(await page.evaluate(() => window.__streamIconCalls)).toBe(0);
 });
+
+test("mobile shows ICP footer across app routes", async ({ page }) => {
+  await page.goto(mobileUrl);
+  const footer = page.locator(".icp-footer");
+  await expect(footer).toBeVisible();
+  await expect(footer).toHaveText("湘ICP备2026043985号-3");
+  await expect(footer).toHaveAttribute(
+    "href",
+    "https://beian.miit.gov.cn/",
+  );
+  await expect(footer).toHaveAttribute("target", "_blank");
+  await expect(footer).toHaveAttribute("rel", "noopener noreferrer");
+});
+
+test("mobile groups messages by real dates and shows createdAt times", async ({
+  page,
+}) => {
+  const calls = [];
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(8, 15, 0, 0);
+  const today = new Date();
+  today.setHours(9, 20, 0, 0);
+  await mockBackend(page, calls, {
+    resumeItems: [
+      {
+        itemId: "date-user-1",
+        kind: "userMessage",
+        text: "昨天的问题",
+        createdAt: yesterday.toISOString(),
+        status: "completed",
+      },
+      {
+        itemId: "date-agent-1",
+        kind: "agentMessage",
+        text: "昨天的回答",
+        createdAt: new Date(yesterday.getTime() + 60_000).toISOString(),
+        status: "completed",
+      },
+      {
+        itemId: "date-user-2",
+        kind: "userMessage",
+        text: "今天的问题",
+        createdAt: today.toISOString(),
+        status: "completed",
+      },
+      {
+        itemId: "date-agent-2",
+        kind: "agentMessage",
+        text: "今天的回答",
+        createdAt: new Date(today.getTime() + 60_000).toISOString(),
+        status: "completed",
+      },
+    ],
+  });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+  await page.locator('[data-action="open-history"]').click();
+  await page.locator('[data-session-id="23"]').click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/session/resume"))
+    .toBeTruthy();
+
+  await expect(page.locator(".chat-day")).toHaveText(["昨天", "今天"]);
+  await expect(page.locator(".message-time").nth(0)).toHaveText(
+    "昨天 08:15",
+  );
+  await expect(page.locator(".message-time").nth(1)).toHaveText("09:20");
+  await expect(page.locator(".assistant-meta").nth(0)).toContainText(
+    "昨天 08:16",
+  );
+  await expect(page.locator(".assistant-meta").nth(1)).toContainText(
+    "09:21",
+  );
+  await expect(page.locator("#chat-messages")).not.toContainText("09:41");
+});
+
+test("mobile account page omits fabricated recent activity", async ({ page }) => {
+  await page.goto(mobileUrl.replace("#/home", "#/account"));
+  await expect(page.locator(".account-login-note")).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("最近活动：今天 09:41");
+});

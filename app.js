@@ -150,17 +150,10 @@
     environments: [
       {
         id: "local",
-        name: "本机工作区",
+        name: "工作环境读取失败",
         kind: "local",
-        status: "ready",
-        detail: "在当前电脑执行",
-      },
-      {
-        id: "cloud",
-        name: "云电脑",
-        kind: "cloud",
         status: "not_configured",
-        detail: "需要配置远程云主机",
+        detail: "无法读取可用工作环境",
       },
     ],
     executionTarget: "local",
@@ -170,6 +163,8 @@
     backendTurnId: null,
     backendTyping: false,
     backendModelId: null,
+    backendModelLabel: "",
+    lastActivityAt: null,
     terminalCommandCount: 0,
     catalogOpen: false,
     inspectorOpen: false,
@@ -306,6 +301,58 @@
     });
   }
 
+  function parseChatDate(value) {
+    const date = value ? new Date(value) : null;
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+  }
+
+  function dayKey(date) {
+    if (!date) return "";
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  }
+
+  function formatChatTime(value, status = "") {
+    if (status === "inProgress") return "生成中";
+    const date = parseChatDate(value);
+    if (!date) return "刚刚";
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const clock = date.toLocaleTimeString("zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    if (dayKey(date) === dayKey(now)) return clock;
+    if (dayKey(date) === dayKey(yesterday)) return `昨天 ${clock}`;
+    return `${date.getMonth() + 1}月${date.getDate()}日 ${clock}`;
+  }
+
+  function formatChatDay(value) {
+    const date = parseChatDate(value);
+    if (!date) return "刚刚";
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (dayKey(date) === dayKey(now)) return "今天";
+    if (dayKey(date) === dayKey(yesterday)) return "昨天";
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  }
+
+  function formatRecentActivity(value) {
+    const date = parseChatDate(value);
+    if (!date) return "";
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const clock = date.toLocaleTimeString("zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    if (dayKey(date) === dayKey(now)) return `今天 ${clock}`;
+    if (dayKey(date) === dayKey(yesterday)) return `昨天 ${clock}`;
+    return `${date.getMonth() + 1}月${date.getDate()}日 ${clock}`;
+  }
+
   function mapBackendSession(session) {
     const id = String(session?.sessionId ?? session?.id ?? "");
     return {
@@ -314,6 +361,7 @@
       time: formatBackendTime(session?.updatedAt || session?.createdAt),
       icon: "message-circle",
       kind: "chat",
+      updatedAt: session?.updatedAt || session?.createdAt || "",
       active: Boolean(id && id === state.backendSessionId),
     };
   }
@@ -345,6 +393,7 @@
         kind: item.kind,
         itemId: item.itemId ? String(item.itemId) : "",
         turnId: item.turnId ? String(item.turnId) : "",
+        createdAt: item.createdAt || "",
         role: item.kind === "userMessage" ? "user" : "assistant",
         text: item.text || "",
         status: item.status || "completed",
@@ -359,6 +408,7 @@
         kind: item.kind,
         itemId: item.itemId ? String(item.itemId) : "",
         turnId: item.turnId ? String(item.turnId) : "",
+        createdAt: item.createdAt || "",
         tool: item.tool || "",
         args: item.args || "",
         summary: Array.isArray(item.summary)
@@ -459,12 +509,21 @@
   }
 
   function applyMobileEnvironments(payload) {
+    const serverDeployment =
+      /^https?:$/.test(location.protocol) &&
+      !["localhost", "127.0.0.1", "0.0.0.0"].includes(location.hostname) &&
+      !/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(
+        location.hostname,
+      );
     const environments = Array.isArray(payload?.environments)
       ? payload.environments
           .filter((environment) => environment?.id)
           .map((environment) => ({
             id: String(environment.id),
-            name: environment.name || environment.id,
+            name:
+              environment.id === "local" && serverDeployment
+                ? "云端工作区"
+                : environment.name || environment.id,
             kind: environment.kind || "local",
             status: environment.status || "not_configured",
             detail: environment.detail || "",
@@ -481,6 +540,19 @@
       current?.id ||
       environments.find((environment) => environment.status === "ready")?.id ||
       "local";
+  }
+
+  function markMobileEnvironmentsUnavailable() {
+    state.environments = [
+      {
+        id: "local",
+        name: "工作环境读取失败",
+        kind: "local",
+        status: "not_configured",
+        detail: "无法读取可用工作环境",
+      },
+    ];
+    state.executionTarget = "local";
   }
 
   function currentMobileEnvironment() {
@@ -515,6 +587,8 @@
   function upsertBackendTimelineItem(item) {
     const mapped = mapBackendTimelineItem(item);
     if (!mapped) return;
+    if (!mapped.createdAt) mapped.createdAt = new Date().toISOString();
+    state.lastActivityAt = mapped.createdAt;
     if (!mapped.turnId && state.backendTurnId) {
       mapped.turnId = String(state.backendTurnId);
     }
@@ -551,6 +625,7 @@
     if (method === "turn/started") {
       state.backendTurnId = params.turnId || null;
       state.backendTyping = true;
+      state.lastActivityAt = new Date().toISOString();
       renderPhone();
       return;
     }
@@ -583,6 +658,7 @@
           kind: "agentMessage",
           itemId,
           turnId: state.backendTurnId ? String(state.backendTurnId) : "",
+          createdAt: new Date().toISOString(),
           role: "assistant",
           text: "",
           status: "inProgress",
@@ -689,6 +765,9 @@
           mapBackendSession,
         );
         state.backendSessionsLoaded = true;
+        state.lastActivityAt =
+          state.backendSessions.find((session) => session.updatedAt)
+            ?.updatedAt || state.lastActivityAt;
       }
       if (environments.status === "fulfilled") {
         applyMobileEnvironments(environments.value);
@@ -700,6 +779,7 @@
         state.backendModelId = selected
           ? String(selected.modelId ?? selected.id)
           : null;
+        state.backendModelLabel = selected?.label || selected?.name || "";
       }
       applyMobileSkills({
         market: market.status === "fulfilled" ? market.value : undefined,
@@ -721,6 +801,7 @@
     } catch {
       state.backendConnected = false;
       state.network = "offline";
+      markMobileEnvironmentsUnavailable();
     } finally {
       state.backendReady = true;
       renderPhone();
@@ -1551,6 +1632,7 @@
       { key: "phone", label: "手机号", icon: "smartphone", type: "tel" },
       { key: "region", label: "地区", icon: "map-pin", type: "text" },
     ];
+    const recentActivity = formatRecentActivity(state.lastActivityAt);
     return `
       <div class="phone-page account-page">
         ${statusBar()}
@@ -1613,10 +1695,14 @@
               `
           }
 
-          <div class="account-login-note">
-            ${icon("shield-check")}
-            <span>当前设备已登录，最近活动：今天 09:41</span>
-          </div>
+          ${
+            recentActivity
+              ? `<div class="account-login-note">
+                  ${icon("shield-check")}
+                  <span>当前设备已登录，最近活动：${escapeHtml(recentActivity)}</span>
+                </div>`
+              : ""
+          }
           ${renderActions(page.actions, page.id)}
         </div>
       </div>
@@ -1739,13 +1825,15 @@
     `;
   }
 
-  function renderChatMessageUser(text, name = "") {
+  function renderChatMessageUser(text, name = "", createdAt = "", status = "") {
+    const time = createdAt || status ? formatChatTime(createdAt, status) : "";
     return `
       <div class="user-message">
         <div class="user-bubble">
           ${name ? `<div style="font-size:8px;opacity:.72;margin-bottom:3px">${escapeHtml(name)}</div>` : ""}
           ${escapeHtml(text)}
         </div>
+        ${time ? `<time class="message-time">${escapeHtml(time)}</time>` : ""}
       </div>
     `;
   }
@@ -1903,11 +1991,30 @@
 
   function renderBackendConversation() {
     const turns = window.QianbianTimeline.group(state.backendTimeline);
+    let lastDay = "";
     const messages = turns
       .map((turn) => {
+        const firstDatedItem = turn.items.find((item) => item.createdAt);
+        const currentDay = firstDatedItem?.createdAt
+          ? dayKey(parseChatDate(firstDatedItem.createdAt))
+          : "unknown";
+        const dateSeparator =
+          currentDay !== lastDay
+            ? `<div class="chat-day">${escapeHtml(
+                formatChatDay(firstDatedItem?.createdAt),
+              )}</div>`
+            : "";
+        lastDay = currentDay;
         const userMessages = turn.items
           .filter((item) => item.kind === "userMessage")
-          .map((item) => renderChatMessageUser(item.text))
+          .map((item) =>
+            renderChatMessageUser(
+              item.text,
+              "",
+              item.createdAt,
+              item.status,
+            ),
+          )
           .join("");
         const activity = renderMobileActivityBlock(
           window.QianbianTimeline.activities(turn),
@@ -1918,11 +2025,12 @@
             renderChatMessageAssistant(null, {
               itemId: item.itemId,
               content: renderBackendMarkdown(item.text),
-              time: item.status === "inProgress" ? "生成中" : "刚刚",
+              time: formatChatTime(item.createdAt, item.status),
             }),
           )
           .join("");
         return `
+          ${dateSeparator}
           <section class="backend-turn" data-turn-id="${escapeHtml(turn.id)}">
             ${userMessages}
             ${activity}
@@ -2242,7 +2350,9 @@
                 ? "等待回答"
                 : isBot
                   ? "在线"
-                  : "已连接 · 通用模型 V4";
+                  : state.backendModelLabel
+                    ? `已连接 · ${state.backendModelLabel}`
+                    : "已连接";
     const statusClass =
       state.network === "offline" || state.engine === "error"
         ? "is-error"
@@ -2278,7 +2388,6 @@
         <div class="chat-page">
           ${header}
           <div class="chat-messages" id="chat-messages">
-            <div class="chat-day">今天 09:41</div>
             ${renderChatMessages(page)}
           </div>
           ${renderComposer(page)}
@@ -2298,7 +2407,9 @@
             leftLabel: "关闭目录",
           })}
           <div class="chat-messages">
-            <div class="chat-day">今天 09:41</div>
+            <div class="chat-day">${escapeHtml(
+              formatChatDay(new Date().toISOString()),
+            )}</div>
             ${renderChatMessageUser("先整理全部页面，再把主流程连起来。")}
             ${renderChatMessageAssistant(page, {
               content: "<p>页面目录已整理完成。打开左侧对话目录可以查看会话，也可以从底部进入全部功能与设置。</p>",
@@ -6384,6 +6495,7 @@ export async function run(input, context) {
       state.backendTimeline.push({
         kind: "userMessage",
         turnId: `pending-${Date.now()}`,
+        createdAt: new Date().toISOString(),
         role: "user",
         text,
         status: "inProgress",

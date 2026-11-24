@@ -4544,7 +4544,10 @@ button.phone-row:hover {
 
 .user-message {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   justify-content: flex-end;
+  gap: 3px;
   margin: 0 0 12px;
 }
 
@@ -4557,6 +4560,14 @@ button.phone-row:hover {
   font-size: 12px;
   line-height: 1.55;
   box-shadow: 0 5px 14px rgba(var(--accent-rgb), 0.2);
+}
+
+.message-time {
+  padding-right: 2px;
+  color: var(--phone-muted);
+  font-size: 8px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .assistant-message {
@@ -9644,4 +9655,21 @@ svg {
 
 .phone-statusbar {
   display: none !important;
+}
+
+.icp-footer {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 3px);
+  z-index: 1001;
+  color: var(--phone-muted);
+  font-size: 10px;
+  line-height: 1;
+  text-decoration: none;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+.icp-footer:hover {
+  color: var(--phone-ink);
 }

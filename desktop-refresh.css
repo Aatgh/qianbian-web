@@ -396,6 +396,22 @@ body.context-closed .app-shell {
   height: 11px;
 }
 
+.icp-footer {
+  position: fixed;
+  left: 50%;
+  bottom: 3px;
+  z-index: 1001;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+  text-decoration: none;
+  transform: translateX(-50%);
+}
+
+.icp-footer:hover {
+  color: var(--ink-soft);
+}
+
 .status-pill {
   min-height: 31px;
   border-color: transparent;
