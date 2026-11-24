@@ -326,6 +326,27 @@
     submitButton.setAttribute("aria-busy", String(nextBusy));
   }
 
+  function realAuthEnabled() {
+    return (
+      /^https?:$/.test(location.protocol) &&
+      !location.hostname.endsWith("github.io") &&
+      !["localhost", "127.0.0.1"].includes(location.hostname)
+    );
+  }
+
+  async function postJson(path, payload) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      throw new Error(data.error || data.msg || "请求失败，请稍后再试");
+    }
+    return data;
+  }
+
   function finishLogin({ identifier, type, name, method }) {
     const safeEmail = validEmail(identifier)
       ? identifier
@@ -375,6 +396,10 @@
     completionTimer = window.setTimeout(
       () => {
         hideGate();
+        // 登录后必须重新初始化，否则桌面端首屏仍拿 bridge 服务账号的数据
+        if (realAuthEnabled()) {
+          window.setTimeout(() => location.reload(), 120);
+        }
       },
       reduceMotion.matches ? 180 : 980,
     );
@@ -415,24 +440,51 @@
       return;
     }
 
+    if (!realAuthEnabled()) {
+      setBusy(true);
+      completionTimer = window.setTimeout(
+        () => {
+          finishLogin({
+            identifier,
+            type: accountType,
+            name:
+              accountType === "phone"
+                ? `用户${identifier.slice(-4)}`
+                : identifier.split("@")[0],
+            method: `${accountType}-${loginMode}`,
+          });
+        },
+        reduceMotion.matches ? 80 : 760,
+      );
+      return;
+    }
+
+    if (accountType !== "phone" || loginMode !== "code") {
+      showError("当前仅支持手机号验证码登录，请切换到手机号 + 验证码。");
+      return;
+    }
+
     setBusy(true);
-    completionTimer = window.setTimeout(
-      () => {
+    postJson("/api/auth/login/phone", {
+      phone: identifier,
+      code: codeInput.value.trim(),
+    })
+      .then((data) => {
+        setBusy(false);
         finishLogin({
           identifier,
-          type: accountType,
-          name:
-            accountType === "phone"
-              ? `用户${identifier.slice(-4)}`
-              : identifier.split("@")[0],
-          method: `${accountType}-${loginMode}`,
+          type: "phone",
+          name: data.user?.nickname || `用户${identifier.slice(-4)}`,
+          method: "phone-code",
         });
-      },
-      reduceMotion.matches ? 80 : 760,
-    );
+      })
+      .catch((error) => {
+        setBusy(false);
+        showError(error.message || "验证码登录失败");
+      });
   }
 
-  function startCodeCountdown() {
+  async function startCodeCountdown() {
     const identifier =
       accountType === "phone"
         ? phoneInput.value.trim()
@@ -453,10 +505,32 @@
     }
 
     hideError();
-    showInfo(
-      `验证码已发送到${accountType === "phone" ? "手机号" : "邮箱"} ${identifier}`,
-    );
-    countdown = 30;
+
+    if (realAuthEnabled()) {
+      if (accountType !== "phone") {
+        showError("短信验证码暂只支持手机号登录。");
+        return;
+      }
+      codeButton.disabled = true;
+      codeButton.textContent = "发送中";
+      try {
+        const data = await postJson("/api/auth/sms-code", {
+          phone: identifier,
+        });
+        showInfo(data.message || "验证码已发送");
+      } catch (error) {
+        codeButton.disabled = false;
+        codeButton.textContent = "获取验证码";
+        showError(error.message || "验证码发送失败");
+        return;
+      }
+    } else {
+      showInfo(
+        `验证码已发送到${accountType === "phone" ? "手机号" : "邮箱"} ${identifier}`,
+      );
+    }
+
+    countdown = 60;
     codeButton.disabled = true;
     codeButton.textContent = `${countdown}s`;
     window.clearInterval(countdownTimer);
