@@ -360,6 +360,129 @@ test("desktop app hydrates sessions, models and approval prompts from API", asyn
   await expect(page.locator(".backend-activity")).toContainText("读取完成");
 });
 
+test("desktop groups tool activity by turn above assistant replies", async ({
+  page,
+}) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+
+  await page.evaluate(() => {
+    const handle = window.__qianbianBackend.handleEvent;
+    handle("turn/started", { turnId: "turn-1" });
+    handle("item/completed", {
+      item: {
+        itemId: "user-1",
+        turnId: "turn-1",
+        kind: "userMessage",
+        text: "帮我查怀化天气",
+        status: "completed",
+      },
+    });
+    handle("item/completed", {
+      item: {
+        itemId: "reason-1",
+        turnId: "turn-1",
+        kind: "reasoning",
+        summary: ["确认城市名称"],
+        status: "completed",
+      },
+    });
+    handle("item/completed", {
+      item: {
+        itemId: "tool-1",
+        turnId: "turn-1",
+        kind: "toolCall",
+        tool: "local_weather",
+        args: '{"city":"怀化鹤城区"}',
+        visibleOutput: "怀化 9°C 小雨",
+        status: "completed",
+        done: true,
+      },
+    });
+    handle("item/completed", {
+      item: {
+        itemId: "answer-1",
+        turnId: "turn-1",
+        kind: "agentMessage",
+        text: "怀化明天小雨。",
+        status: "completed",
+      },
+    });
+    handle("turn/completed", {
+      turnId: "turn-1",
+      terminal: "completed",
+    });
+
+    handle("turn/started", { turnId: "turn-2" });
+    handle("item/completed", {
+      item: {
+        itemId: "user-2",
+        turnId: "turn-2",
+        kind: "userMessage",
+        text: "再查一次",
+        status: "completed",
+      },
+    });
+    handle("item/completed", {
+      item: {
+        itemId: "tool-2",
+        turnId: "turn-2",
+        kind: "toolCall",
+        tool: "local_weather",
+        args: '{"city":"怀化"}',
+        visibleOutput: "城市查询失败",
+        status: "failed",
+        done: true,
+      },
+    });
+    handle("item/completed", {
+      item: {
+        itemId: "answer-2",
+        turnId: "turn-2",
+        kind: "agentMessage",
+        text: "这次天气工具没有返回结果。",
+        status: "completed",
+      },
+    });
+    handle("turn/completed", {
+      turnId: "turn-2",
+      terminal: "completed",
+    });
+  });
+
+  const activities = page.locator(".backend-activity");
+  await expect(activities).toHaveCount(2);
+  await expect(activities.nth(0).locator("summary")).toContainText(
+    "调用 1 个工具 · 1 次成功",
+  );
+  await expect(activities.nth(1).locator("summary")).toContainText(
+    "尝试 1 次 · 0 次成功",
+  );
+  await expect(activities.nth(0)).not.toHaveAttribute("open");
+  await expect(activities.nth(1)).not.toHaveAttribute("open");
+
+  const order = await page.evaluate(() =>
+    [...document.querySelectorAll("#message-thread .backend-activity, #message-thread .message-row.assistant")].map(
+      (node) => ({
+        activity: node.classList.contains("backend-activity"),
+        text: node.textContent.replace(/\s+/g, " ").trim(),
+      }),
+    ),
+  );
+  expect(order).toHaveLength(4);
+  expect(order[0]).toMatchObject({ activity: true });
+  expect(order[1]).toMatchObject({ activity: false, text: "千变 怀化明天小雨。" });
+  expect(order[2]).toMatchObject({ activity: true });
+  expect(order[3]).toMatchObject({
+    activity: false,
+    text: "千变 这次天气工具没有返回结果。",
+  });
+
+  await activities.nth(0).locator("summary").click();
+  await expect(activities.nth(0)).toContainText("local_weather");
+  await expect(activities.nth(0)).toContainText("怀化 9°C 小雨");
+});
+
 test("desktop web auto-connects to same-origin API on localhost", async ({
   page,
 }) => {
