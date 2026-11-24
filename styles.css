@@ -4694,6 +4694,94 @@ button.phone-row:hover {
   text-align: left;
 }
 
+.backend-activity {
+  margin: 9px 0 10px;
+  border: 1px solid var(--phone-line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--phone-surface) 76%, transparent);
+}
+
+.backend-activity summary {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: var(--phone-muted);
+  font-size: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.backend-activity summary::-webkit-details-marker {
+  display: none;
+}
+
+.backend-activity summary svg {
+  width: 14px;
+  height: 14px;
+}
+
+.backend-activity summary .backend-activity-chevron {
+  margin-left: auto;
+  transition: transform 160ms ease;
+}
+
+.backend-activity[open] summary .backend-activity-chevron {
+  transform: rotate(90deg);
+}
+
+.backend-activity-list {
+  display: grid;
+  gap: 7px;
+  padding: 0 10px 10px;
+}
+
+.backend-activity-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 7px;
+  padding-top: 7px;
+  border-top: 1px solid var(--phone-line);
+}
+
+.backend-activity-row > svg {
+  width: 13px;
+  height: 13px;
+  color: var(--accent);
+}
+
+.backend-activity-row strong,
+.backend-activity-row small,
+.backend-activity-row code {
+  display: block;
+}
+
+.backend-activity-row strong {
+  color: var(--phone-ink);
+  font-size: 10px;
+}
+
+.backend-activity-row small {
+  margin-top: 2px;
+  color: var(--phone-muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.backend-activity-row code {
+  margin-top: 4px;
+  color: var(--phone-muted);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8px;
+  overflow-wrap: anywhere;
+}
+
+.backend-activity-row.is-failed > svg,
+.backend-activity-row.is-failed strong {
+  color: var(--danger);
+}
+
 .inline-code {
   padding: 1px 4px;
   border: 1px solid var(--phone-line);

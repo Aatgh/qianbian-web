@@ -146,8 +146,7 @@
     backendConnected: false,
     backendSessions: [],
     backendSessionsLoaded: false,
-    backendMessages: [],
-    backendActivities: [],
+    backendTimeline: [],
     backendApprovals: [],
     backendInputs: [],
     backendSessionId: null,
@@ -311,46 +310,68 @@
     state.backendChatActive = false;
     state.backendSessionId = null;
     state.backendTurnId = null;
-    state.backendMessages = [];
-    state.backendActivities = [];
+    state.backendTimeline = [];
     state.backendApprovals = [];
     state.backendInputs = [];
     state.backendTyping = false;
   }
 
-  function mapBackendChatItem(item) {
-    if (!item || !["userMessage", "agentMessage"].includes(item.kind)) {
-      return null;
+  function mapBackendTimelineItem(item) {
+    if (!item) return null;
+    if (["userMessage", "agentMessage"].includes(item.kind)) {
+      return {
+        kind: item.kind,
+        itemId: item.itemId ? String(item.itemId) : "",
+        turnId: item.turnId ? String(item.turnId) : "",
+        role: item.kind === "userMessage" ? "user" : "assistant",
+        text: item.text || "",
+        status: item.status || "completed",
+        done:
+          item.done === undefined
+            ? !/inProgress|running|pending/i.test(item.status || "completed")
+            : item.done === true,
+      };
     }
-    return {
-      itemId: item.itemId ? String(item.itemId) : "",
-      role: item.kind === "userMessage" ? "user" : "assistant",
-      text: item.text || "",
-      status: item.status || "completed",
-      done: item.done !== false,
-    };
+    if (["reasoning", "toolCall"].includes(item.kind)) {
+      return {
+        kind: item.kind,
+        itemId: item.itemId ? String(item.itemId) : "",
+        turnId: item.turnId ? String(item.turnId) : "",
+        tool: item.tool || "",
+        args: item.args || "",
+        summary: Array.isArray(item.summary)
+          ? item.summary
+          : item.summary
+            ? [String(item.summary)]
+            : [],
+        summaryText: item.text || "",
+        visibleOutput: item.visibleOutput || "",
+        status: item.status || "completed",
+        done:
+          item.done === undefined
+            ? !/inProgress|running|pending/i.test(item.status || "completed")
+            : item.done === true,
+      };
+    }
+    return null;
   }
 
-  function mapBackendChatItems(payload) {
+  function mapBackendTimeline(payload) {
     const items = payload?.history?.items || payload?.items || [];
-    return items.map(mapBackendChatItem).filter(Boolean);
-  }
-
-  function mapBackendActivities(payload) {
-    const items = payload?.history?.items || payload?.items || [];
-    return items.filter((item) =>
-      ["reasoning", "toolCall"].includes(item?.kind),
-    );
+    return items.map(mapBackendTimelineItem).filter(Boolean);
   }
 
   function mergeOptimisticBackendMessages(persisted) {
-    const optimistic = state.backendMessages.filter((message) => !message.itemId);
+    const optimistic = state.backendTimeline.filter(
+      (item) => !item.itemId && item.kind === "userMessage",
+    );
     const merged = [...persisted];
     for (const message of optimistic) {
       if (
         !merged.some(
           (candidate) =>
-            candidate.role === message.role && candidate.text === message.text,
+            candidate.kind === "userMessage" &&
+            candidate.text === message.text,
         )
       ) {
         merged.push(message);
@@ -415,39 +436,37 @@
     }
   }
 
-  function upsertBackendMessage(item) {
-    const mapped = mapBackendChatItem(item);
+  function upsertBackendTimelineItem(item) {
+    const mapped = mapBackendTimelineItem(item);
     if (!mapped) return;
+    if (!mapped.turnId && state.backendTurnId) {
+      mapped.turnId = String(state.backendTurnId);
+    }
     let index = mapped.itemId
-      ? state.backendMessages.findIndex(
+      ? state.backendTimeline.findIndex(
           (message) => message.itemId === mapped.itemId,
         )
       : -1;
     if (
       index < 0 &&
-      mapped.role === "user" &&
-      state.backendMessages.at(-1)?.role === "user" &&
-      !state.backendMessages.at(-1)?.itemId &&
-      state.backendMessages.at(-1)?.text === mapped.text
+      mapped.kind === "userMessage" &&
+      state.backendTimeline.at(-1)?.kind === "userMessage" &&
+      !state.backendTimeline.at(-1)?.itemId &&
+      state.backendTimeline.at(-1)?.text === mapped.text
     ) {
-      index = state.backendMessages.length - 1;
+      index = state.backendTimeline.length - 1;
     }
-    if (index >= 0) state.backendMessages[index] = mapped;
-    else state.backendMessages.push(mapped);
-    state.backendTyping = false;
-    renderPhone();
-    updateIcons();
-  }
-
-  function upsertBackendActivity(item) {
-    if (!item) return;
-    const itemId = String(item.itemId || `${item.kind}-${Date.now()}`);
-    const next = { ...item, itemId };
-    const index = state.backendActivities.findIndex(
-      (activity) => activity.itemId === itemId,
-    );
-    if (index >= 0) state.backendActivities[index] = next;
-    else state.backendActivities.push(next);
+    if (index >= 0) {
+      state.backendTimeline[index] = {
+        ...state.backendTimeline[index],
+        ...mapped,
+      };
+    } else {
+      state.backendTimeline.push(mapped);
+    }
+    if (mapped.kind === "agentMessage" && mapped.done) {
+      state.backendTyping = false;
+    }
     renderPhone();
     updateIcons();
   }
@@ -460,37 +479,39 @@
       return;
     }
     if (method === "item/started" || method === "item/completed") {
-      if (["reasoning", "toolCall"].includes(params.item?.kind)) {
-        upsertBackendActivity(params.item);
-      } else {
-        upsertBackendMessage(params.item);
-      }
+      upsertBackendTimelineItem(params.item);
       return;
     }
     if (method === "item/delta") {
       const itemId = String(params.itemId || "");
       if (params.field !== "text") {
-        const activity = state.backendActivities.find(
+        const activity = state.backendTimeline.find(
           (item) => item.itemId === itemId,
         );
         if (activity) {
-          activity.summary = `${activity.summary || ""}${params.delta || ""}`;
+          if (params.field === "output") {
+            activity.visibleOutput = `${activity.visibleOutput || ""}${params.delta || ""}`;
+          } else {
+            activity.summaryText = `${activity.summaryText || ""}${params.delta || ""}`;
+          }
           renderPhone();
         }
         return;
       }
-      let message = state.backendMessages.find(
+      let message = state.backendTimeline.find(
         (item) => item.itemId && item.itemId === itemId,
       );
       if (!message) {
         message = {
+          kind: "agentMessage",
           itemId,
+          turnId: state.backendTurnId ? String(state.backendTurnId) : "",
           role: "assistant",
           text: "",
           status: "inProgress",
           done: false,
         };
-        state.backendMessages.push(message);
+        state.backendTimeline.push(message);
       }
       message.text += params.delta || "";
       message.status = "inProgress";
@@ -631,8 +652,7 @@
     if (!session) return;
     state.backendChatActive = true;
     state.backendSessionId = session.id;
-    state.backendMessages = [];
-    state.backendActivities = [];
+    state.backendTimeline = [];
     state.backendApprovals = [];
     state.backendInputs = [];
     state.backendTyping = Boolean(api && state.backendConnected);
@@ -641,8 +661,7 @@
     if (api && state.backendConnected) {
       try {
         const payload = await api.resumeSession(session.id);
-        state.backendMessages = mapBackendChatItems(payload);
-        state.backendActivities = mapBackendActivities(payload);
+        state.backendTimeline = mapBackendTimeline(payload);
         const pending = Array.isArray(payload?.pendingRequests)
           ? payload.pendingRequests
           : [];
@@ -673,10 +692,9 @@
       ...state.backendSessions.filter((item) => item.id !== mapped.id),
     ];
     state.backendSessionsLoaded = true;
-    state.backendMessages = mergeOptimisticBackendMessages(
-      mapBackendChatItems(payload),
+    state.backendTimeline = mergeOptimisticBackendMessages(
+      mapBackendTimeline(payload),
     );
-    state.backendActivities = mapBackendActivities(payload);
     state.backendApprovals = [];
     state.backendInputs = [];
     return mapped;
@@ -1756,42 +1774,88 @@
       .join("");
   }
 
+  function renderMobileActivityBlock(items) {
+    const summary = window.QianbianTimeline.summarize(items);
+    if (!summary.text) return "";
+    return `
+      <details class="backend-activity">
+        <summary>
+          ${icon("sparkles")}
+          <span>${escapeHtml(summary.text)}</span>
+          ${icon("chevron-right", "backend-activity-chevron")}
+        </summary>
+        <div class="backend-activity-list">
+          ${items
+            .slice(-12)
+            .map((item) => {
+              const failed = window.QianbianTimeline.isFailed(item);
+              const output = window.QianbianTimeline.activityText(item);
+              const status = failed
+                ? "失败"
+                : item.status === "inProgress"
+                  ? "进行中"
+                  : "完成";
+              return `
+                <div class="backend-activity-row ${failed ? "is-failed" : ""}">
+                  ${icon(
+                    item.kind === "toolCall" ? "wrench" : "sparkles",
+                  )}
+                  <span>
+                    <strong>${escapeHtml(
+                      item.tool ||
+                        (item.kind === "reasoning" ? "思考摘要" : "工具调用"),
+                    )}</strong>
+                    <small>${escapeHtml(status)}${output ? ` · ${escapeHtml(output)}` : ""}</small>
+                    ${item.args ? `<code>${escapeHtml(item.args)}</code>` : ""}
+                  </span>
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+      </details>
+    `;
+  }
+
   function renderBackendConversation() {
-    const messages = state.backendMessages
-      .map((message) =>
-        message.role === "user"
-          ? renderChatMessageUser(message.text)
-          : renderChatMessageAssistant(null, {
-              content: renderBackendMarkdown(message.text),
-              time: message.status === "inProgress" ? "生成中" : "刚刚",
-            }),
-      )
-      .join("");
-    const activities = state.backendActivities
-      .map((activity) => {
-        const lines = [
-          activity.summary || activity.text || "",
-          activity.visibleOutput || "",
-        ].filter(Boolean);
-        return renderToolCard(
-          activity.tool || (activity.kind === "reasoning" ? "思考过程" : "工具调用"),
-          activity.status || (activity.done ? "完成" : "进行中"),
-          lines,
+    const turns = window.QianbianTimeline.group(state.backendTimeline);
+    const messages = turns
+      .map((turn) => {
+        const userMessages = turn.items
+          .filter((item) => item.kind === "userMessage")
+          .map((item) => renderChatMessageUser(item.text))
+          .join("");
+        const activity = renderMobileActivityBlock(
+          window.QianbianTimeline.activities(turn),
         );
+        const assistantMessages = turn.items
+          .filter((item) => item.kind === "agentMessage")
+          .map((item) =>
+            renderChatMessageAssistant(null, {
+              content: renderBackendMarkdown(item.text),
+              time: item.status === "inProgress" ? "生成中" : "刚刚",
+            }),
+          )
+          .join("");
+        return `
+          <section class="backend-turn" data-turn-id="${escapeHtml(turn.id)}">
+            ${userMessages}
+            ${activity}
+            ${assistantMessages}
+          </section>
+        `;
       })
       .join("");
-    const thinking =
-      state.backendTyping && !state.backendMessages.at(-1)?.itemId
-        ? `
-          <div class="thinking-pill">
-            <span class="thinking-dots"><span></span><span></span><span></span></span>
-            正在生成
-          </div>
-        `
-        : "";
+    const thinking = state.backendTyping
+      ? `
+        <div class="thinking-pill">
+          <span class="thinking-dots"><span></span><span></span><span></span></span>
+          正在生成
+        </div>
+      `
+      : "";
     return `
       ${messages}
-      ${activities}
       ${thinking}
       ${renderMobileBackendApprovals()}
       ${renderMobileBackendQuestions()}
@@ -6190,7 +6254,9 @@ export async function run(input, context) {
     if (api && state.backendConnected) {
       if (wasNewChat) resetBackendChat();
       state.backendChatActive = true;
-      state.backendMessages.push({
+      state.backendTimeline.push({
+        kind: "userMessage",
+        turnId: `pending-${Date.now()}`,
         role: "user",
         text,
         status: "inProgress",

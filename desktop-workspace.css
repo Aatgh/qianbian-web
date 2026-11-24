@@ -3206,6 +3206,15 @@ body.settings-sheet-open {
   height: 14px;
 }
 
+.backend-activity summary .backend-activity-chevron {
+  margin-left: auto;
+  transition: transform 160ms ease;
+}
+
+.backend-activity[open] summary .backend-activity-chevron {
+  transform: rotate(90deg);
+}
+
 .backend-activity-list {
   display: grid;
   gap: 7px;
@@ -3243,6 +3252,20 @@ body.settings-sheet-open {
   font-size: 8px;
   line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.backend-activity-row code {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8px;
+  overflow-wrap: anywhere;
+}
+
+.backend-activity-row.is-failed > svg,
+.backend-activity-row.is-failed strong {
+  color: var(--danger);
 }
 
 .backend-question-options {

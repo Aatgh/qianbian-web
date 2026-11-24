@@ -20,6 +20,22 @@ async function mockBackend(page, calls, options = {}) {
       updatedAt: "2026-11-23T11:13:55.000+08:00",
     },
   ];
+  const resumeItems = options.resumeItems || [
+    {
+      itemId: "m-1",
+      kind: "userMessage",
+      text: "今天日照天气怎么样？",
+      status: "completed",
+      done: true,
+    },
+    {
+      itemId: "m-2",
+      kind: "agentMessage",
+      text: "日照今天晴，适合出行。",
+      status: "completed",
+      done: true,
+    },
+  ];
   await page.route("http://backend.test/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -123,22 +139,7 @@ async function mockBackend(page, calls, options = {}) {
           },
           history: {
             mode: "inline",
-            items: [
-              {
-                itemId: "m-1",
-                kind: "userMessage",
-                text: "今天日照天气怎么样？",
-                status: "completed",
-                done: true,
-              },
-              {
-                itemId: "m-2",
-                kind: "agentMessage",
-                text: "日照今天晴，适合出行。",
-                status: "completed",
-                done: true,
-              },
-            ],
+            items: resumeItems,
           },
           pendingRequests: [],
         },
@@ -476,7 +477,7 @@ test("mobile groups tool activity by turn above assistant replies", async ({
   page,
 }) => {
   const calls = [];
-  await mockBackend(page, calls);
+  await mockBackend(page, calls, { resumeItems: [] });
   await page.goto(mobileUrl);
   await waitForMobileBackend(page);
 

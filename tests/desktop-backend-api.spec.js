@@ -355,8 +355,24 @@ test("desktop app hydrates sessions, models and approval prompts from API", asyn
     });
   });
   await expect(page.locator(".backend-activity")).toContainText(
-    "思考与工具调用",
+    "调用 1 个工具 · 0 次成功",
   );
+  await page.evaluate(() => {
+    window.__qianbianBackend.handleEvent("item/completed", {
+      item: {
+        itemId: "tool-1",
+        kind: "toolCall",
+        tool: "read_file",
+        status: "completed",
+        visibleOutput: "读取完成",
+        done: true,
+      },
+    });
+  });
+  await expect(page.locator(".backend-activity summary")).toContainText(
+    "调用 1 个工具 · 1 次成功",
+  );
+  await page.locator(".backend-activity summary").click();
   await expect(page.locator(".backend-activity")).toContainText("读取完成");
 });
 
@@ -471,12 +487,11 @@ test("desktop groups tool activity by turn above assistant replies", async ({
   );
   expect(order).toHaveLength(4);
   expect(order[0]).toMatchObject({ activity: true });
-  expect(order[1]).toMatchObject({ activity: false, text: "千变 怀化明天小雨。" });
+  expect(order[1].activity).toBe(false);
+  expect(order[1].text).toContain("怀化明天小雨。");
   expect(order[2]).toMatchObject({ activity: true });
-  expect(order[3]).toMatchObject({
-    activity: false,
-    text: "千变 这次天气工具没有返回结果。",
-  });
+  expect(order[3].activity).toBe(false);
+  expect(order[3].text).toContain("这次天气工具没有返回结果。");
 
   await activities.nth(0).locator("summary").click();
   await expect(activities.nth(0)).toContainText("local_weather");

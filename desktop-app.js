@@ -881,7 +881,6 @@
     activeSession: null,
     historyPanelQuery: "",
     messages: [],
-    backendActivity: [],
     typing: false,
     draft: localStorage.getItem("qianbian-desktop-draft") || "",
     theme: storedTheme === "dark" ? "dark" : "light",
@@ -1371,16 +1370,44 @@
     SESSIONS.splice(0, SESSIONS.length, ...mapped);
   }
 
-  function mapBackendItem(item) {
-    if (!item || !["userMessage", "agentMessage"].includes(item.kind)) {
-      return null;
+  function mapBackendTimelineItem(item) {
+    if (!item) return null;
+    if (["userMessage", "agentMessage"].includes(item.kind)) {
+      return {
+        kind: item.kind,
+        role: item.kind === "userMessage" ? "user" : "assistant",
+        text: item.text || "",
+        itemId: item.itemId ? String(item.itemId) : undefined,
+        turnId: item.turnId ? String(item.turnId) : "",
+        status: item.status || "completed",
+        done:
+          item.done === undefined
+            ? !/inProgress|running|pending/i.test(item.status || "completed")
+            : item.done === true,
+      };
     }
-    return {
-      role: item.kind === "userMessage" ? "user" : "assistant",
-      text: item.text || item.visibleOutput || "",
-      itemId: item.itemId ? String(item.itemId) : undefined,
-      status: item.status || "completed",
-    };
+    if (["reasoning", "toolCall"].includes(item.kind)) {
+      return {
+        kind: item.kind,
+        itemId: item.itemId ? String(item.itemId) : "",
+        turnId: item.turnId ? String(item.turnId) : "",
+        tool: item.tool || "",
+        args: item.args || "",
+        summary: Array.isArray(item.summary)
+          ? item.summary
+          : item.summary
+            ? [String(item.summary)]
+            : [],
+        summaryText: item.text || "",
+        visibleOutput: item.visibleOutput || "",
+        status: item.status || "completed",
+        done:
+          item.done === undefined
+            ? !/inProgress|running|pending/i.test(item.status || "completed")
+            : item.done === true,
+      };
+    }
+    return null;
   }
 
   function extractBackendItems(payload) {
@@ -1389,8 +1416,10 @@
     return [];
   }
 
-  function hydrateMessagesFromBackend(payload) {
-    return extractBackendItems(payload).map(mapBackendItem).filter(Boolean);
+  function hydrateTimelineFromBackend(payload) {
+    return extractBackendItems(payload)
+      .map(mapBackendTimelineItem)
+      .filter(Boolean);
   }
 
   function preserveLocalUserMessages(hydrated, existing) {
@@ -1406,49 +1435,12 @@
     return [...hydrated, ...localOnly];
   }
 
-  function hydrateActivityFromBackend(payload) {
-    return extractBackendItems(payload)
-      .filter((item) =>
-        ["reasoning", "toolCall"].includes(item.kind),
-      )
-      .map((item) => ({
-        itemId: String(item.itemId || ""),
-        kind: item.kind,
-        tool: item.tool || "",
-        summary:
-          item.visibleOutput ||
-          (Array.isArray(item.summary) ? item.summary.join("\n") : "") ||
-          item.text ||
-          "",
-        status: item.status || "completed",
-      }));
-  }
-
-  function upsertBackendActivity(item) {
-    if (!item || !["reasoning", "toolCall"].includes(item.kind)) return;
-    const itemId = String(item.itemId || "");
-    const activity = {
-      itemId,
-      kind: item.kind,
-      tool: item.tool || "",
-      summary:
-        item.visibleOutput ||
-        (Array.isArray(item.summary) ? item.summary.join("\n") : "") ||
-        item.text ||
-        "",
-      status: item.status || "completed",
-    };
-    const index = state.backendActivity.findIndex(
-      (entry) => entry.itemId === itemId,
-    );
-    if (index >= 0) state.backendActivity[index] = activity;
-    else state.backendActivity.push(activity);
-    render();
-  }
-
-  function upsertBackendMessage(item) {
-    const mapped = mapBackendItem(item);
+  function upsertBackendTimelineItem(item) {
+    const mapped = mapBackendTimelineItem(item);
     if (!mapped) return;
+    if (!mapped.turnId && state.activeTurnId) {
+      mapped.turnId = String(state.activeTurnId);
+    }
     const itemId = mapped.itemId;
     let index = itemId
       ? state.messages.findIndex((message) => message.itemId === itemId)
@@ -1462,9 +1454,14 @@
     ) {
       index = state.messages.length - 1;
     }
-    if (index >= 0) state.messages[index] = { ...mapped };
-    else state.messages.push(mapped);
-    state.typing = false;
+    if (index >= 0) {
+      state.messages[index] = { ...state.messages[index], ...mapped };
+    } else {
+      state.messages.push(mapped);
+    }
+    if (mapped.kind === "agentMessage" && mapped.done) {
+      state.typing = false;
+    }
     render();
   }
 
@@ -1657,21 +1654,21 @@
       return;
     }
     if (method === "item/started") {
-      if (["reasoning", "toolCall"].includes(params.item?.kind)) {
-        upsertBackendActivity(params.item);
-      } else {
-        upsertBackendMessage(params.item);
-      }
+      upsertBackendTimelineItem(params.item);
       return;
     }
     if (method === "item/delta") {
       const itemId = String(params.itemId || "");
       if (params.field !== "text") {
-        const activity = state.backendActivity.find(
+        const activity = state.messages.find(
           (item) => item.itemId === itemId,
         );
         if (activity) {
-          activity.summary += params.delta || "";
+          if (params.field === "output") {
+            activity.visibleOutput = `${activity.visibleOutput || ""}${params.delta || ""}`;
+          } else {
+            activity.summaryText = `${activity.summaryText || ""}${params.delta || ""}`;
+          }
           render();
         }
         return;
@@ -1696,11 +1693,7 @@
       return;
     }
     if (method === "item/completed") {
-      if (["reasoning", "toolCall"].includes(params.item?.kind)) {
-        upsertBackendActivity(params.item);
-      } else {
-        upsertBackendMessage(params.item);
-      }
+      upsertBackendTimelineItem(params.item);
       return;
     }
     if (method === "approval/requested") {
@@ -1950,33 +1943,72 @@
     `;
   }
 
+  function renderBackendActivityBlock(items) {
+    const summary = window.QianbianTimeline.summarize(items);
+    if (!summary.text) return "";
+    return `
+      <details class="backend-activity">
+        <summary>
+          ${icon("brain-circuit")}
+          <span>${escapeHtml(summary.text)}</span>
+          ${icon("chevron-right", "backend-activity-chevron")}
+        </summary>
+        <div class="backend-activity-list">
+          ${items
+            .slice(-12)
+            .map((item) => {
+              const failed = window.QianbianTimeline.isFailed(item);
+              const output = window.QianbianTimeline.activityText(item);
+              const status = failed
+                ? "失败"
+                : item.status === "inProgress"
+                  ? "进行中"
+                  : "完成";
+              return `
+                <div class="backend-activity-row ${failed ? "is-failed" : ""}">
+                  ${icon(
+                    item.kind === "toolCall" ? "wrench" : "sparkles",
+                  )}
+                  <span>
+                    <strong>${escapeHtml(
+                      item.tool ||
+                        (item.kind === "reasoning" ? "思考摘要" : "工具调用"),
+                    )}</strong>
+                    <small>${escapeHtml(status)}${output ? ` · ${escapeHtml(output)}` : ""}</small>
+                    ${item.args ? `<code>${escapeHtml(item.args)}</code>` : ""}
+                  </span>
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+      </details>
+    `;
+  }
+
   function renderChatThread() {
-    const messages = state.messages
-      .map((message, index) => renderMessage(message, index))
+    const turns = window.QianbianTimeline.group(state.messages);
+    const messages = turns
+      .map((turn) => {
+        const userMessages = turn.items
+          .filter((item) => item.kind === "userMessage")
+          .map((item) => renderMessage(item, state.messages.indexOf(item)))
+          .join("");
+        const activityItems = window.QianbianTimeline.activities(turn);
+        const activity = renderBackendActivityBlock(activityItems);
+        const assistantMessages = turn.items
+          .filter((item) => item.kind === "agentMessage")
+          .map((item) => renderMessage(item, state.messages.indexOf(item)))
+          .join("");
+        return `
+          <section class="backend-turn" data-turn-id="${escapeHtml(turn.id)}">
+            ${userMessages}
+            ${activity}
+            ${assistantMessages}
+          </section>
+        `;
+      })
       .join("");
-    const activity = state.backendActivity.length
-      ? `
-        <details class="backend-activity">
-          <summary>${icon("brain-circuit")}思考与工具调用 (${state.backendActivity.length})</summary>
-          <div class="backend-activity-list">
-            ${state.backendActivity
-              .slice(-12)
-              .map(
-                (item) => `
-                  <div class="backend-activity-row">
-                    ${icon(item.kind === "toolCall" ? "wrench" : "sparkles")}
-                    <span>
-                      <strong>${escapeHtml(item.tool || (item.kind === "reasoning" ? "思考摘要" : "工具调用"))}</strong>
-                      <small>${escapeHtml(item.summary || item.status)}</small>
-                    </span>
-                  </div>
-                `,
-              )
-              .join("")}
-          </div>
-        </details>
-      `
-      : "";
     const typing = state.typing
       ? `
         <article class="message-row assistant">
@@ -1993,7 +2025,6 @@
     return `
       <div class="message-thread" id="message-thread">
         <div class="thread-meta">今天</div>
-        ${activity}
         ${messages}
         ${typing}
       </div>
@@ -2022,7 +2053,7 @@
   }
 
   function renderChatView() {
-    return state.messages.length || state.typing || state.backendActivity.length
+    return state.messages.length || state.typing
       ? renderChatThread()
       : renderEmptyChat();
   }
@@ -4981,7 +5012,6 @@ export const skill = {
   function startNewChat() {
     state.activeSession = null;
     state.messages = [];
-    state.backendActivity = [];
     state.typing = false;
     state.draft = "";
     state.detail = null;
@@ -5016,8 +5046,7 @@ export const skill = {
         if (payload?.session?.title) {
           session.title = payload.session.title;
         }
-        state.messages = hydrateMessagesFromBackend(payload);
-        state.backendActivity = hydrateActivityFromBackend(payload);
+        state.messages = hydrateTimelineFromBackend(payload);
         const pending = Array.isArray(payload?.pendingRequests)
           ? payload.pendingRequests
           : [];
@@ -5056,10 +5085,9 @@ export const skill = {
     state.activeSession = mapped.id;
     state.modelId = payload.modelId || state.modelId;
     state.messages = preserveLocalUserMessages(
-      hydrateMessagesFromBackend(payload),
+      hydrateTimelineFromBackend(payload),
       state.messages,
     );
-    state.backendActivity = hydrateActivityFromBackend(payload);
     return mapped;
   }
 
@@ -5157,7 +5185,13 @@ export const skill = {
       document.getElementById("desktop-composer-input")?.focus();
       return;
     }
-    state.messages.push({ role: "user", text });
+    const localTurnId = `pending-${Date.now()}`;
+    state.messages.push({
+      kind: "userMessage",
+      role: "user",
+      text,
+      turnId: localTurnId,
+    });
     state.agentTraining = Math.min(100, state.agentTraining + 4);
     localStorage.setItem("dshgo-agent-training", String(state.agentTraining));
     renderContext();
@@ -5204,7 +5238,12 @@ export const skill = {
       } else if (lower.includes("先") || lower.includes("下一个")) {
         reply = "可以。我先处理最关键的一步，并把结果整理成可以直接确认的状态。";
       }
-      state.messages.push({ role: "assistant", text: reply });
+      state.messages.push({
+        kind: "agentMessage",
+        role: "assistant",
+        text: reply,
+        turnId: localTurnId,
+      });
       render();
     }, 720);
   }
