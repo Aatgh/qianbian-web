@@ -167,6 +167,9 @@
     health(signal) {
       return request("/health", { signal });
     },
+    environments(signal) {
+      return request("/environments", { signal });
+    },
     sessions(params = {}, signal) {
       return request(`/sessions${query(params)}`, { signal });
     },

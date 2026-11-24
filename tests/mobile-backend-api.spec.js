@@ -681,6 +681,7 @@ test("mobile streams deltas into the same message node", async ({ page }) => {
   });
   await page.waitForSelector(
     '[data-message-item-id="stream-message"] .assistant-text',
+    { state: "attached" },
   );
   await page.evaluate(() => {
     const node = document.querySelector(
@@ -688,6 +689,12 @@ test("mobile streams deltas into the same message node", async ({ page }) => {
     );
     node.dataset.streamMarker = "stable";
     window.__streamIconCalls = 0;
+    window.__streamFrames = [];
+    window.__streamOriginalRaf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback) => {
+      window.__streamFrames.push(callback);
+      return window.__streamFrames.length;
+    };
     const original = window.lucide.createIcons.bind(window.lucide);
     window.lucide.createIcons = (...args) => {
       window.__streamIconCalls += 1;
@@ -706,7 +713,12 @@ test("mobile streams deltas into the same message node", async ({ page }) => {
     '[data-message-item-id="stream-message"] .assistant-text',
   ).textContent();
   expect(beforeFrame.trim()).toBe("");
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  await page.evaluate(() => {
+    const frames = window.__streamFrames;
+    window.__streamFrames = [];
+    window.requestAnimationFrame = window.__streamOriginalRaf;
+    frames.forEach((callback) => callback(performance.now()));
+  });
   await expect(
     page.locator('[data-message-item-id="stream-message"] .assistant-text'),
   ).toContainText("你好，世界");

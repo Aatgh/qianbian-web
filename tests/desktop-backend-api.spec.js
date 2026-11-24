@@ -604,6 +604,9 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
   const environment = page.locator("#desktop-environment-select");
   await expect(environment).toHaveValue("local");
   await expect(environment.locator('option[value="cloud"]')).toBeDisabled();
+  await expect(page.locator("#header-environment")).toContainText(
+    "本机工作区",
+  );
 
   await page.locator("#desktop-composer-input").fill("检查本机工作区");
   await page.locator("#composer-send").click();
@@ -645,6 +648,12 @@ test("desktop streams deltas into the same message node", async ({ page }) => {
     );
     node.dataset.streamMarker = "stable";
     window.__streamIconCalls = 0;
+    window.__streamFrames = [];
+    window.__streamOriginalRaf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback) => {
+      window.__streamFrames.push(callback);
+      return window.__streamFrames.length;
+    };
     const original = window.lucide.createIcons.bind(window.lucide);
     window.lucide.createIcons = (...args) => {
       window.__streamIconCalls += 1;
@@ -663,7 +672,12 @@ test("desktop streams deltas into the same message node", async ({ page }) => {
     '[data-message-item-id="stream-message"] .message-bubble',
   ).textContent();
   expect(beforeFrame).toBe("");
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  await page.evaluate(() => {
+    const frames = window.__streamFrames;
+    window.__streamFrames = [];
+    window.requestAnimationFrame = window.__streamOriginalRaf;
+    frames.forEach((callback) => callback(performance.now()));
+  });
   await expect(
     page.locator('[data-message-item-id="stream-message"] .message-bubble'),
   ).toContainText("你好，世界");

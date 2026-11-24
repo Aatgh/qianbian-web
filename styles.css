@@ -5106,6 +5106,38 @@ button.phone-row:hover {
   -webkit-backdrop-filter: blur(28px) saturate(1.35);
 }
 
+.composer-environment {
+  display: inline-flex;
+  width: 68px;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: var(--phone-surface-soft);
+  color: var(--phone-muted);
+}
+
+.composer-environment svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+
+.composer-environment select {
+  min-width: 0;
+  width: 48px;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+  color: var(--phone-ink);
+  font-size: 8px;
+  text-overflow: ellipsis;
+}
+
 .composer-plus,
 .composer-voice {
   display: grid;

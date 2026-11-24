@@ -50,6 +50,23 @@
     settings: { title: "设置", breadcrumb: "设置" },
   };
 
+  const DEFAULT_ENVIRONMENTS = [
+    {
+      id: "local",
+      name: "本机工作区",
+      kind: "local",
+      status: "ready",
+      detail: "在当前电脑的千变工作区执行文件、终端与脚本",
+    },
+    {
+      id: "cloud",
+      name: "云电脑",
+      kind: "cloud",
+      status: "not_configured",
+      detail: "需要配置远程云主机或容器后才能启用",
+    },
+  ];
+
   const MARKET_SKILLS = [
     {
       id: "daily-meals",
@@ -987,6 +1004,10 @@
     approvalMode: "onRequest",
     apiAvailable: false,
     apiStatus: null,
+    environments: DEFAULT_ENVIRONMENTS.map((environment) => ({
+      ...environment,
+    })),
+    executionTarget: "local",
     sessionLoading: false,
     activeTurnId: null,
     pendingApprovals: [],
@@ -1068,6 +1089,11 @@
   let mediaRecorder = null;
   let lastWideLayout = window.innerWidth > 1280;
   let viewportRenderFrame = 0;
+  let streamTextFrame = 0;
+  let scrollFrame = 0;
+  let scrollTimer = null;
+  let lastScrollAt = 0;
+  const pendingStreamItemIds = new Set();
   let skillSearchTimer = null;
   let settingsSheetEntering = false;
   let skillMarketEntering = false;
@@ -1355,6 +1381,62 @@
       schedule,
       enabled: automation.enabled !== false,
     };
+  }
+
+  function applyBackendEnvironments(payload) {
+    const environments = Array.isArray(payload?.environments)
+      ? payload.environments
+          .filter((environment) => environment?.id)
+          .map((environment) => ({
+            id: String(environment.id),
+            name: environment.name || environment.id,
+            kind: environment.kind || "local",
+            status: environment.status || "not_configured",
+            detail: environment.detail || "",
+          }))
+      : [];
+    if (!environments.length) return;
+    state.environments = environments;
+    const selected = environments.find(
+      (environment) =>
+        environment.id === state.executionTarget &&
+        environment.status === "ready",
+    );
+    state.executionTarget =
+      selected?.id ||
+      environments.find((environment) => environment.status === "ready")?.id ||
+      "local";
+  }
+
+  function currentEnvironment() {
+    return (
+      state.environments.find(
+        (environment) => environment.id === state.executionTarget,
+      ) ||
+      state.environments[0] ||
+      DEFAULT_ENVIRONMENTS[0]
+    );
+  }
+
+  function environmentOptions() {
+    return state.environments
+      .map((environment) => {
+        const unavailable = environment.status !== "ready";
+        const suffix = unavailable ? " · 待配置" : "";
+        return `<option value="${escapeHtml(environment.id)}" ${unavailable ? "disabled" : ""} ${environment.id === state.executionTarget ? "selected" : ""}>${escapeHtml(environment.name + suffix)}</option>`;
+      })
+      .join("");
+  }
+
+  function setExecutionTarget(id) {
+    const environment = state.environments.find(
+      (candidate) => candidate.id === String(id),
+    );
+    if (!environment || environment.status !== "ready") return;
+    state.executionTarget = environment.id;
+    renderComposer();
+    renderContext();
+    syncChrome();
   }
 
   function getVisibleAutomations() {
@@ -1676,19 +1758,25 @@
       let message = state.messages.find(
         (item) => item.itemId && item.itemId === itemId,
       );
+      let created = false;
       if (!message) {
         message = {
+          kind: "agentMessage",
           role: "assistant",
           text: "",
           itemId,
+          turnId: state.activeTurnId ? String(state.activeTurnId) : "",
           status: "inProgress",
+          done: false,
         };
         state.messages.push(message);
+        created = true;
       }
       if (params.field === "text") {
         message.text += params.delta || "";
         state.typing = false;
-        render();
+        if (created) render();
+        else scheduleStreamingMessageUpdate(itemId);
       }
       return;
     }
@@ -1785,6 +1873,7 @@
     }
     const [
       sessionsResult,
+      environmentsResult,
       modelsResult,
       marketResult,
       installedResult,
@@ -1793,6 +1882,7 @@
     ] =
       await Promise.allSettled([
         api.sessions(),
+        api.environments(),
         api.models(),
         api.skills({ scope: "market" }),
         api.skills({ scope: "installed" }),
@@ -1801,6 +1891,9 @@
       ]);
     if (sessionsResult.status === "fulfilled") {
       replaceBackendSessions(sessionsResult.value?.sessions);
+    }
+    if (environmentsResult.status === "fulfilled") {
+      applyBackendEnvironments(environmentsResult.value);
     }
     if (modelsResult.status === "fulfilled") {
       syncBackendModels(modelsResult.value);
@@ -1919,7 +2012,7 @@
     const userAvatar =
       state.accountAvatar || "assets/brand/qianbian-tile.png";
     return `
-      <article class="message-row ${isUser ? "user" : "assistant"}">
+      <article class="message-row ${isUser ? "user" : "assistant"}" data-message-item-id="${escapeHtml(message.itemId || "")}">
         ${
           isUser
             ? ""
@@ -1941,6 +2034,43 @@
         }
       </article>
     `;
+  }
+
+  function scheduleThreadScrollToBottom() {
+    if (scrollFrame || scrollTimer) return;
+    const wait = Math.max(0, 100 - (performance.now() - lastScrollAt));
+    scrollTimer = window.setTimeout(() => {
+      scrollTimer = null;
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = 0;
+        const thread = document.getElementById("message-thread");
+        if (thread) viewScroll.scrollTop = viewScroll.scrollHeight;
+        lastScrollAt = performance.now();
+      });
+    }, wait);
+  }
+
+  function scheduleStreamingMessageUpdate(itemId) {
+    pendingStreamItemIds.add(String(itemId));
+    if (streamTextFrame) return;
+    streamTextFrame = window.requestAnimationFrame(() => {
+      streamTextFrame = 0;
+      const ids = [...pendingStreamItemIds];
+      pendingStreamItemIds.clear();
+      for (const id of ids) {
+        const message = state.messages.find((item) => item.itemId === id);
+        const bubble = document.querySelector(
+          `[data-message-item-id="${CSS.escape(id)}"] .message-bubble`,
+        );
+        if (message && bubble) {
+          bubble.innerHTML = formatParagraphs(message.text);
+        }
+      }
+      document.querySelectorAll(".message-row.is-typing").forEach((node) => {
+        node.remove();
+      });
+      scheduleThreadScrollToBottom();
+    });
   }
 
   function renderBackendActivityBlock(items) {
@@ -2011,7 +2141,7 @@
       .join("");
     const typing = state.typing
       ? `
-        <article class="message-row assistant">
+        <article class="message-row assistant is-typing">
           <span class="message-avatar"><img src="assets/brand/qianbian-tile.png" alt="" /></span>
           <div class="message-content">
             <div class="message-author">千变</div>
@@ -4060,6 +4190,13 @@ export const skill = {
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
+    const environment = currentEnvironment();
+    const environmentBadge = document.getElementById("header-environment");
+    if (environmentBadge) {
+      environmentBadge.innerHTML = `${icon(
+        environment.kind === "cloud" ? "cloud" : "monitor",
+      )}${escapeHtml(environment.name)}`;
+    }
 
     let content = "";
     if (detailInfo) content = renderDetailView();
@@ -4073,10 +4210,7 @@ export const skill = {
       window.requestAnimationFrame(syncChatAlignment);
     }
     if (view === "chat" && (state.messages.length || state.typing)) {
-      window.requestAnimationFrame(() => {
-        const thread = document.getElementById("message-thread");
-        if (thread) viewScroll.scrollTop = viewScroll.scrollHeight;
-      });
+      scheduleThreadScrollToBottom();
     }
   }
 
@@ -4091,6 +4225,12 @@ export const skill = {
     composerHost.innerHTML = `
       <div class="desktop-composer-stack ${open ? "is-open" : ""} ${open && state.composerOpening ? "is-opening" : ""}">
         <div class="desktop-composer-surface">
+          <label class="composer-environment" title="${escapeHtml(currentEnvironment().detail || "工作环境")}">
+            ${icon(currentEnvironment().kind === "cloud" ? "cloud" : "monitor")}
+            <select id="desktop-environment-select" aria-label="工作环境">
+              ${environmentOptions()}
+            </select>
+          </label>
           <button class="composer-plus ${open ? "is-open" : ""}" id="composer-plus" type="button" aria-label="${open ? "关闭添加内容" : "添加内容"}" aria-expanded="${open}">
             ${icon(open ? "x" : "plus")}
           </button>
@@ -5075,6 +5215,7 @@ export const skill = {
       modelId: state.modelId,
       approvalMode: state.approvalMode || "onRequest",
       workspaceRoot: state.workspaceRoot,
+      executionTarget: state.executionTarget,
     });
     const session = payload?.session;
     if (!session?.sessionId) {
@@ -5102,6 +5243,14 @@ export const skill = {
   }
 
   function bindComposerInput() {
+    const environmentSelect = document.getElementById(
+      "desktop-environment-select",
+    );
+    if (environmentSelect) {
+      environmentSelect.addEventListener("change", () => {
+        setExecutionTarget(environmentSelect.value);
+      });
+    }
     const input = document.getElementById("desktop-composer-input");
     if (!input) return;
     const resize = () => {
@@ -5210,6 +5359,7 @@ export const skill = {
           text,
           modelId: state.modelId,
           images: [],
+          executionTarget: state.executionTarget,
         });
         state.activeTurnId = payload?.turnId || null;
       } catch (error) {

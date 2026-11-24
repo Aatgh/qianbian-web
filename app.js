@@ -147,6 +147,23 @@
     backendSessions: [],
     backendSessionsLoaded: false,
     backendTimeline: [],
+    environments: [
+      {
+        id: "local",
+        name: "本机工作区",
+        kind: "local",
+        status: "ready",
+        detail: "在当前电脑执行",
+      },
+      {
+        id: "cloud",
+        name: "云电脑",
+        kind: "cloud",
+        status: "not_configured",
+        detail: "需要配置远程云主机",
+      },
+    ],
+    executionTarget: "local",
     backendApprovals: [],
     backendInputs: [],
     backendSessionId: null,
@@ -197,6 +214,11 @@
   let pendingSheetAnimation = null;
   let sheetCloseTimer = null;
   let sheetClosing = false;
+  let streamTextFrame = 0;
+  let chatScrollFrame = 0;
+  let chatScrollTimer = null;
+  let lastChatScrollAt = 0;
+  const pendingStreamItemIds = new Set();
 
   function isPageVisible(id) {
     return visiblePageIds.has(id);
@@ -436,6 +458,60 @@
     }
   }
 
+  function applyMobileEnvironments(payload) {
+    const environments = Array.isArray(payload?.environments)
+      ? payload.environments
+          .filter((environment) => environment?.id)
+          .map((environment) => ({
+            id: String(environment.id),
+            name: environment.name || environment.id,
+            kind: environment.kind || "local",
+            status: environment.status || "not_configured",
+            detail: environment.detail || "",
+          }))
+      : [];
+    if (!environments.length) return;
+    state.environments = environments;
+    const current = environments.find(
+      (environment) =>
+        environment.id === state.executionTarget &&
+        environment.status === "ready",
+    );
+    state.executionTarget =
+      current?.id ||
+      environments.find((environment) => environment.status === "ready")?.id ||
+      "local";
+  }
+
+  function currentMobileEnvironment() {
+    return (
+      state.environments.find(
+        (environment) => environment.id === state.executionTarget,
+      ) || state.environments[0]
+    );
+  }
+
+  function mobileEnvironmentOptions() {
+    return state.environments
+      .map((environment) => {
+        const unavailable = environment.status !== "ready";
+        return `<option value="${escapeHtml(environment.id)}" ${unavailable ? "disabled" : ""} ${environment.id === state.executionTarget ? "selected" : ""}>${escapeHtml(
+          environment.name + (unavailable ? " · 待配置" : ""),
+        )}</option>`;
+      })
+      .join("");
+  }
+
+  function setMobileExecutionTarget(id) {
+    const environment = state.environments.find(
+      (candidate) => candidate.id === String(id),
+    );
+    if (!environment || environment.status !== "ready") return;
+    state.executionTarget = environment.id;
+    renderPhone();
+    updateIcons();
+  }
+
   function upsertBackendTimelineItem(item) {
     const mapped = mapBackendTimelineItem(item);
     if (!mapped) return;
@@ -501,6 +577,7 @@
       let message = state.backendTimeline.find(
         (item) => item.itemId && item.itemId === itemId,
       );
+      let created = false;
       if (!message) {
         message = {
           kind: "agentMessage",
@@ -512,11 +589,13 @@
           done: false,
         };
         state.backendTimeline.push(message);
+        created = true;
       }
       message.text += params.delta || "";
       message.status = "inProgress";
       state.backendTyping = false;
-      renderPhone();
+      if (created) renderPhone();
+      else scheduleStreamingMessageUpdate(itemId);
       return;
     }
     if (method === "approval/requested") {
@@ -596,9 +675,10 @@
       await api.health();
       state.backendConnected = true;
       state.network = "online";
-      const [sessions, models, market, installed, mine] =
+      const [sessions, environments, models, market, installed, mine] =
         await Promise.allSettled([
           api.sessions(),
+          api.environments(),
           api.models(),
           api.skills({ scope: "market" }),
           api.skills({ scope: "installed" }),
@@ -609,6 +689,9 @@
           mapBackendSession,
         );
         state.backendSessionsLoaded = true;
+      }
+      if (environments.status === "fulfilled") {
+        applyMobileEnvironments(environments.value);
       }
       if (models.status === "fulfilled") {
         const modelList = models.value?.models || [];
@@ -681,6 +764,7 @@
     const payload = await api.startSession({
       modelId: state.backendModelId || undefined,
       approvalMode: "onRequest",
+      executionTarget: state.executionTarget,
     });
     const session = payload?.session;
     if (!session?.sessionId) throw new Error("后端未返回会话 ID");
@@ -1668,7 +1752,7 @@
 
   function renderChatMessageAssistant(page, options = {}) {
     return `
-      <div class="assistant-message">
+      <div class="assistant-message" data-message-item-id="${escapeHtml(options.itemId || "")}">
         <div class="assistant-meta">
           <span class="assistant-avatar">${icon(options.avatar || "sparkles")}</span>
           <strong>${escapeHtml(options.name || "千变")}</strong>
@@ -1832,6 +1916,7 @@
           .filter((item) => item.kind === "agentMessage")
           .map((item) =>
             renderChatMessageAssistant(null, {
+              itemId: item.itemId,
               content: renderBackendMarkdown(item.text),
               time: item.status === "inProgress" ? "生成中" : "刚刚",
             }),
@@ -2054,6 +2139,12 @@
       : `<button class="composer-plus" data-sheet="plus" type="button" aria-label="添加内容">${icon("plus")}</button>`;
     return `
       <div class="phone-composer">
+        <label class="composer-environment" title="${escapeHtml(currentMobileEnvironment().detail || "工作环境")}">
+          ${icon(currentMobileEnvironment().kind === "cloud" ? "cloud" : "monitor")}
+          <select id="mobile-environment-select" aria-label="工作环境">
+            ${mobileEnvironmentOptions()}
+          </select>
+        </label>
         ${leftButton}
         <textarea class="composer-input" id="chat-input" rows="1" placeholder="发消息给千变">${escapeHtml(
           state.chatDraft,
@@ -5981,9 +6072,7 @@ export async function run(input, context) {
     syncSheetMotion(animateSheet);
     pendingSheetAnimation = null;
     bindLocalInputs();
-    window.requestAnimationFrame(() => {
-      scrollChatToBottom();
-    });
+    scheduleChatScrollToBottom();
   }
 
   function bindLocalInputs() {
@@ -6078,6 +6167,12 @@ export async function run(input, context) {
       });
     });
     const chatInput = document.getElementById("chat-input");
+    const environmentSelect = document.getElementById("mobile-environment-select");
+    if (environmentSelect) {
+      environmentSelect.addEventListener("change", () => {
+        setMobileExecutionTarget(environmentSelect.value);
+      });
+    }
     if (chatInput) {
       chatInput.addEventListener("input", () => {
         state.chatDraft = chatInput.value;
@@ -6103,13 +6198,45 @@ export async function run(input, context) {
     }
   }
 
-  function scrollChatToBottom() {
-    const messages = document.getElementById("chat-messages");
-    if (messages) {
-      window.requestAnimationFrame(() => {
-        messages.scrollTop = messages.scrollHeight;
+  function scheduleChatScrollToBottom() {
+    if (chatScrollFrame || chatScrollTimer) return;
+    const wait = Math.max(0, 100 - (performance.now() - lastChatScrollAt));
+    chatScrollTimer = window.setTimeout(() => {
+      chatScrollTimer = null;
+      chatScrollFrame = window.requestAnimationFrame(() => {
+        chatScrollFrame = 0;
+        const messages = document.getElementById("chat-messages");
+        if (messages) messages.scrollTop = messages.scrollHeight;
+        lastChatScrollAt = performance.now();
       });
-    }
+    }, wait);
+  }
+
+  function scheduleStreamingMessageUpdate(itemId) {
+    pendingStreamItemIds.add(String(itemId));
+    if (streamTextFrame) return;
+    streamTextFrame = window.requestAnimationFrame(() => {
+      streamTextFrame = 0;
+      const ids = [...pendingStreamItemIds];
+      pendingStreamItemIds.clear();
+      for (const id of ids) {
+        const message = state.backendTimeline.find(
+          (item) => item.itemId === id,
+        );
+        const textNode = document.querySelector(
+          `[data-message-item-id="${CSS.escape(id)}"] .assistant-text`,
+        );
+        if (message && textNode) {
+          textNode.innerHTML = renderBackendMarkdown(message.text);
+        }
+      }
+      document.querySelectorAll(".thinking-pill").forEach((node) => node.remove());
+      scheduleChatScrollToBottom();
+    });
+  }
+
+  function scrollChatToBottom() {
+    scheduleChatScrollToBottom();
     const terminal = document.getElementById("terminal-body");
     if (terminal) {
       window.requestAnimationFrame(() => {
@@ -6272,6 +6399,7 @@ export async function run(input, context) {
           text,
           modelId: state.backendModelId,
           images: [],
+          executionTarget: state.executionTarget,
         });
         state.backendTurnId = payload?.turnId || null;
       } catch (error) {
