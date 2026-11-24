@@ -498,6 +498,33 @@ test("desktop groups tool activity by turn above assistant replies", async ({
   await expect(activities.nth(0)).toContainText("怀化 9°C 小雨");
 });
 
+test("desktop composer input has no colored focus outline", async ({ page }) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  await page.waitForSelector("#desktop-composer-input");
+
+  const input = page.locator("#desktop-composer-input");
+  await input.focus();
+  const focusStyle = await input.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      focusVisible: element.matches(":focus-visible"),
+      outlineStyle: style.outlineStyle,
+      boxShadow: style.boxShadow,
+      borderStyle: style.borderStyle,
+      borderWidth: style.borderWidth,
+    };
+  });
+
+  expect(focusStyle).toEqual({
+    focusVisible: true,
+    outlineStyle: "none",
+    boxShadow: "none",
+    borderStyle: "none",
+    borderWidth: "0px",
+  });
+});
+
 test("desktop web auto-connects to same-origin API on localhost", async ({
   page,
 }) => {
