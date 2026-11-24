@@ -129,6 +129,7 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     const api = window.QianbianApi;
     api.setBase("http://frontend.test/api");
     await api.health();
+    await api.environments();
     await api.sessions();
     await api.startSession({
       modelId: "2",
@@ -187,6 +188,7 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
   }));
   expect(simplified).toEqual([
     { method: "GET", pathname: "/health", search: "" },
+    { method: "GET", pathname: "/environments", search: "" },
     { method: "GET", pathname: "/sessions", search: "" },
     { method: "POST", pathname: "/session/start", search: "" },
     { method: "POST", pathname: "/session/resume", search: "" },
@@ -523,6 +525,154 @@ test("desktop composer input has no colored focus outline", async ({ page }) => 
     borderStyle: "none",
     borderWidth: "0px",
   });
+});
+
+test("desktop environment switcher gates cloud and sends executionTarget", async ({
+  page,
+}) => {
+  const calls = [];
+  await page.route("http://backend.test/api/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const pathname = url.pathname.replace(/^\/api/, "");
+    if (request.method() !== "OPTIONS") {
+      calls.push({
+        pathname,
+        body: request.postData() ? JSON.parse(request.postData()) : null,
+      });
+    }
+    if (pathname === "/health") return route.fulfill({ json: { ok: true } });
+    if (pathname === "/environments") {
+      return route.fulfill({
+        json: {
+          environments: [
+            {
+              id: "local",
+              name: "本机工作区",
+              kind: "local",
+              status: "ready",
+              detail: "在当前电脑执行",
+            },
+            {
+              id: "cloud",
+              name: "云电脑",
+              kind: "cloud",
+              status: "not_configured",
+              detail: "需要配置远程云主机",
+            },
+          ],
+        },
+      });
+    }
+    if (pathname === "/sessions") return route.fulfill({ json: { sessions: [] } });
+    if (pathname === "/models") {
+      return route.fulfill({
+        json: {
+          models: [{ modelId: "2", label: "DeepSeek Chat", isDefault: true }],
+        },
+      });
+    }
+    if (pathname === "/skills") return route.fulfill({ json: { skills: [] } });
+    if (pathname === "/skills/mine") return route.fulfill({ json: { skills: [] } });
+    if (pathname === "/automations") {
+      return route.fulfill({ json: { automations: [] } });
+    }
+    if (pathname === "/events") {
+      return route.fulfill({
+        contentType: "text/event-stream",
+        body: 'event: status\ndata: {"connected":true,"mock":false}\n\n',
+      });
+    }
+    if (pathname === "/session/start") {
+      return route.fulfill({
+        json: {
+          session: { sessionId: "24", title: "新对话" },
+          history: { mode: "inline", items: [] },
+        },
+      });
+    }
+    if (pathname === "/turn") {
+      return route.fulfill({
+        json: { disposition: "started", turnId: "turn-1" },
+      });
+    }
+    return route.fulfill({ json: {} });
+  });
+
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  const environment = page.locator("#desktop-environment-select");
+  await expect(environment).toHaveValue("local");
+  await expect(environment.locator('option[value="cloud"]')).toBeDisabled();
+
+  await page.locator("#desktop-composer-input").fill("检查本机工作区");
+  await page.locator("#composer-send").click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/session/start"))
+    .toBeTruthy();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/turn"))
+    .toBeTruthy();
+  expect(calls.find((call) => call.pathname === "/session/start").body)
+    .toMatchObject({ executionTarget: "local" });
+  expect(calls.find((call) => call.pathname === "/turn").body)
+    .toMatchObject({ executionTarget: "local" });
+});
+
+test("desktop streams deltas into the same message node", async ({ page }) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  await page.evaluate(() => {
+    const handle = window.__qianbianBackend.handleEvent;
+    handle("turn/started", { turnId: "stream-turn" });
+    handle("item/started", {
+      item: {
+        itemId: "stream-message",
+        turnId: "stream-turn",
+        kind: "agentMessage",
+        text: "",
+        status: "inProgress",
+        done: false,
+      },
+    });
+  });
+  await page.waitForSelector(
+    '[data-message-item-id="stream-message"] .message-bubble',
+  );
+  await page.evaluate(() => {
+    const node = document.querySelector(
+      '[data-message-item-id="stream-message"]',
+    );
+    node.dataset.streamMarker = "stable";
+    window.__streamIconCalls = 0;
+    const original = window.lucide.createIcons.bind(window.lucide);
+    window.lucide.createIcons = (...args) => {
+      window.__streamIconCalls += 1;
+      return original(...args);
+    };
+    const handle = window.__qianbianBackend.handleEvent;
+    for (const delta of ["你", "好", "，世界"]) {
+      handle("item/delta", {
+        itemId: "stream-message",
+        field: "text",
+        delta,
+      });
+    }
+  });
+  const beforeFrame = await page.locator(
+    '[data-message-item-id="stream-message"] .message-bubble',
+  ).textContent();
+  expect(beforeFrame).toBe("");
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  await expect(
+    page.locator('[data-message-item-id="stream-message"] .message-bubble'),
+  ).toContainText("你好，世界");
+  expect(
+    await page.locator('[data-message-item-id="stream-message"]').getAttribute(
+      "data-stream-marker",
+    ),
+  ).toBe("stable");
+  expect(await page.evaluate(() => window.__streamIconCalls)).toBe(0);
 });
 
 test("desktop web auto-connects to same-origin API on localhost", async ({

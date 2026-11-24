@@ -58,6 +58,29 @@ async function mockBackend(page, calls, options = {}) {
     if (pathname === "/health") {
       return route.fulfill({ headers, json: { status: "ok" } });
     }
+    if (pathname === "/environments") {
+      return route.fulfill({
+        headers,
+        json: {
+          environments: [
+            {
+              id: "local",
+              name: "本机工作区",
+              kind: "local",
+              status: "ready",
+              detail: "在当前电脑执行",
+            },
+            {
+              id: "cloud",
+              name: "云电脑",
+              kind: "cloud",
+              status: "not_configured",
+              detail: "需要配置远程云主机",
+            },
+          ],
+        },
+      });
+    }
     if (pathname === "/sessions") {
       return route.fulfill({
         headers,
@@ -190,6 +213,10 @@ test("mobile hydrates backend sessions, skills and streamed replies", async ({
   await waitForMobileBackend(page);
 
   expect(await page.evaluate(() => Boolean(window.QianbianApi))).toBe(true);
+  await expect(page.locator("#mobile-environment-select")).toHaveValue("local");
+  await expect(
+    page.locator('#mobile-environment-select option[value="cloud"]'),
+  ).toBeDisabled();
   expect(
     await page.evaluate(() =>
       window.APP_DATA.pages["plugin-market"].marketItems.map(
@@ -221,7 +248,10 @@ test("mobile hydrates backend sessions, skills and streamed replies", async ({
     sessionId: "24",
     text: "今天日照天气怎么样？",
     modelId: "2",
+    executionTarget: "local",
   });
+  expect(calls.find((call) => call.pathname === "/session/start").body)
+    .toMatchObject({ executionTarget: "local" });
 
   await page.evaluate(() => {
     const backend = window.__qianbianMobileBackend;
@@ -622,4 +652,68 @@ test("composer input has no colored focus outline", async ({ page }) => {
     focusVisible: true,
     outlineStyle: "none",
   });
+});
+
+test("mobile streams deltas into the same message node", async ({ page }) => {
+  const calls = [];
+  await mockBackend(page, calls, { resumeItems: [] });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+  await page.locator('[data-action="open-history"]').click();
+  await page.locator('[data-session-id="23"]').click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/session/resume"))
+    .toBeTruthy();
+
+  await page.evaluate(() => {
+    const handle = window.__qianbianMobileBackend.handleEvent;
+    handle("turn/started", { turnId: "stream-turn" });
+    handle("item/started", {
+      item: {
+        itemId: "stream-message",
+        turnId: "stream-turn",
+        kind: "agentMessage",
+        text: "",
+        status: "inProgress",
+        done: false,
+      },
+    });
+  });
+  await page.waitForSelector(
+    '[data-message-item-id="stream-message"] .assistant-text',
+  );
+  await page.evaluate(() => {
+    const node = document.querySelector(
+      '[data-message-item-id="stream-message"]',
+    );
+    node.dataset.streamMarker = "stable";
+    window.__streamIconCalls = 0;
+    const original = window.lucide.createIcons.bind(window.lucide);
+    window.lucide.createIcons = (...args) => {
+      window.__streamIconCalls += 1;
+      return original(...args);
+    };
+    const handle = window.__qianbianMobileBackend.handleEvent;
+    for (const delta of ["你", "好", "，世界"]) {
+      handle("item/delta", {
+        itemId: "stream-message",
+        field: "text",
+        delta,
+      });
+    }
+  });
+  const beforeFrame = await page.locator(
+    '[data-message-item-id="stream-message"] .assistant-text',
+  ).textContent();
+  expect(beforeFrame.trim()).toBe("");
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  await expect(
+    page.locator('[data-message-item-id="stream-message"] .assistant-text'),
+  ).toContainText("你好，世界");
+  expect(
+    await page.locator('[data-message-item-id="stream-message"]').getAttribute(
+      "data-stream-marker",
+    ),
+  ).toBe("stable");
+  expect(await page.evaluate(() => window.__streamIconCalls)).toBe(0);
 });
