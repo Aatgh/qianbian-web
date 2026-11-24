@@ -4,7 +4,7 @@ const { test, expect } = require("@playwright/test");
 const apiBase = "http://backend.test/api";
 const mobileUrl = `file:///${path
   .resolve(__dirname, "..", "index.html")
-  .replaceAll("\\", "/")}?api=${encodeURIComponent(apiBase)}#/home`;
+  .replaceAll("\\", "/")}?mobile=1&api=${encodeURIComponent(apiBase)}#/home`;
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
