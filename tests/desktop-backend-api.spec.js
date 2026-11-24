@@ -130,6 +130,7 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     api.setBase("http://frontend.test/api");
     await api.health();
     await api.environments();
+    await api.affinity();
     await api.sessions();
     await api.startSession({
       modelId: "2",
@@ -189,6 +190,7 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
   expect(simplified).toEqual([
     { method: "GET", pathname: "/health", search: "" },
     { method: "GET", pathname: "/environments", search: "" },
+    { method: "GET", pathname: "/affinity", search: "" },
     { method: "GET", pathname: "/sessions", search: "" },
     { method: "POST", pathname: "/session/start", search: "" },
     { method: "POST", pathname: "/session/resume", search: "" },

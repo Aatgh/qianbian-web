@@ -81,6 +81,18 @@ async function mockBackend(page, calls, options = {}) {
         },
       });
     }
+    if (pathname === "/affinity") {
+      return route.fulfill({
+        headers,
+        json: {
+          score: 80,
+          autoScore: 80,
+          calibration: 50,
+          band: "高度拟人",
+          components: { M: 100, E: 100, F: 100, A: 100, T: 14 },
+        },
+      });
+    }
     if (pathname === "/sessions") {
       return route.fulfill({
         headers,
@@ -810,4 +822,30 @@ test("mobile account page omits fabricated recent activity", async ({ page }) =>
   await page.goto(mobileUrl.replace("#/home", "#/account"));
   await expect(page.locator(".account-login-note")).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("最近活动：今天 09:41");
+});
+
+test("mobile affinity comes from backend and never exceeds 80", async ({
+  page,
+}) => {
+  const calls = [];
+  await mockBackend(page, calls);
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/affinity"))
+    .toBeTruthy();
+
+  const slider = page.locator("#agent-training");
+  await expect(slider).toHaveValue("80");
+  await expect(slider).toHaveAttribute("max", "80");
+  await expect(
+    page.locator('[data-action="open-affinity"] [role="progressbar"]'),
+  ).toHaveAttribute("aria-valuenow", "80");
+  await expect(
+    page.locator('[data-action="open-affinity"] [role="progressbar"]'),
+  ).toHaveAttribute("aria-valuemax", "80");
+
+  await page.locator("#chat-input").fill("再聊一句");
+  await page.locator('[data-action="send-message"]').click();
+  await expect(page.locator("#agent-training")).toHaveValue("80");
 });
