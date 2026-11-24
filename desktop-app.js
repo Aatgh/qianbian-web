@@ -1010,9 +1010,7 @@
     contextUsage: null,
     tokenUsage: null,
     questionSelections: new Map(),
-    agentTraining: Number.isFinite(storedAffinity)
-      ? Math.min(100, Math.max(0, storedAffinity))
-      : 30,
+    agentTraining: 0,
     currentAccountId: storedAccountProfile.accountId || "main",
     accountName:
       storedAccountProfile.name ||
@@ -1833,6 +1831,18 @@
       state.activeTurnId = null;
       render();
       refreshBackendSessions();
+      if (api) {
+        api
+          .affinity()
+          .then((affinity) => {
+            const score = Number(affinity?.score);
+            if (Number.isFinite(score)) {
+              state.agentTraining = Math.min(80, Math.max(0, score));
+              renderContext();
+            }
+          })
+          .catch(() => {});
+      }
     }
   }
 
@@ -1885,6 +1895,7 @@
       installedResult,
       mineResult,
       automationsResult,
+      affinityResult,
     ] =
       await Promise.allSettled([
         api.sessions(),
@@ -1894,6 +1905,7 @@
         api.skills({ scope: "installed" }),
         api.mineSkills(),
         api.automations(),
+        api.affinity(),
       ]);
     if (sessionsResult.status === "fulfilled") {
       replaceBackendSessions(sessionsResult.value?.sessions);
@@ -1922,6 +1934,13 @@
     } else {
       state.backendAutomations = [];
       state.automationsState = "unavailable";
+    }
+    if (affinityResult.status === "fulfilled") {
+      const score = Number(affinityResult.value?.score);
+      if (Number.isFinite(score)) {
+        state.agentTraining = Math.min(80, Math.max(0, score));
+        renderContext();
+      }
     }
     api.connectEvents({
       onStatus(status) {
@@ -5348,8 +5367,6 @@ export const skill = {
       text,
       turnId: localTurnId,
     });
-    state.agentTraining = Math.min(100, state.agentTraining + 4);
-    localStorage.setItem("dshgo-agent-training", String(state.agentTraining));
     renderContext();
     state.draft = "";
     state.composerOpen = false;
@@ -6130,6 +6147,7 @@ export const skill = {
     if (event.target.closest("[data-account-logout]")) {
       state.loggedIn = false;
       localStorage.removeItem("qianbian-desktop-auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
       persistAccountProfile();
       state.accountDialogOpen = false;
       state.accountSwitchOpen = false;
