@@ -170,6 +170,9 @@
     environments(signal) {
       return request("/environments", { signal });
     },
+    affinity(signal) {
+      return request("/affinity", { signal });
+    },
     sessions(params = {}, signal) {
       return request(`/sessions${query(params)}`, { signal });
     },
