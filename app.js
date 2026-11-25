@@ -172,6 +172,7 @@
     pairingFormOpen: false,
     pairingType: "windows",
     pairingName: "",
+    devicePermissionId: null,
     deviceRevision: 0,
     deviceTasks: [],
     deviceTasksLoaded: false,
@@ -2266,10 +2267,13 @@
       approval.executionTarget && typeof approval.executionTarget === "object"
         ? approval.executionTarget
         : {};
+    const targetId = String(
+      typeof approval.executionTarget === "object"
+        ? target.deviceId || target.id || approval.deviceId || ""
+        : approval.executionTarget || approval.deviceId || "",
+    );
     const targetDevice = state.devices.find(
-      (device) =>
-        device.id ===
-        String(target.deviceId || target.id || approval.deviceId || ""),
+      (device) => device.id === targetId,
     );
     const deviceName =
       target.name ||
@@ -2560,6 +2564,56 @@
     `;
   }
 
+  function renderMobileDevicePermissions() {
+    if (!state.devicePermissionId) return "";
+    const device = state.devices.find(
+      (item) => item.id === String(state.devicePermissionId),
+    );
+    if (!device) return "";
+    const permissions =
+      device.permissions && typeof device.permissions === "object"
+        ? device.permissions
+        : {};
+    const roots = Array.isArray(permissions.allowedRoots)
+      ? permissions.allowedRoots
+      : Array.isArray(permissions.roots)
+        ? permissions.roots
+        : [];
+    const terminal =
+      permissions.terminal === true || device.capabilities.includes("terminal");
+    const screenshot =
+      permissions.screenshot === true ||
+      device.capabilities.includes("screenshot");
+    return `
+      <section class="mobile-device-permissions" data-device-permissions>
+        <div class="mobile-device-permissions-head">
+          <div>
+            <strong>设备权限</strong>
+            <span>${escapeHtml(device.name)}</span>
+          </div>
+          <button data-action="close-device-permissions" type="button" aria-label="关闭权限卡片">${icon(
+            "x",
+          )}</button>
+        </div>
+        <div class="mobile-device-permission-summary">
+          <span>${icon("folder-lock")}授权目录</span>
+          <strong>${escapeHtml(
+            roots.length ? roots.join(" / ") : "未上报授权目录",
+          )}</strong>
+        </div>
+        <div class="mobile-device-permission-chips">
+          <span class="${terminal ? "is-enabled" : ""}">${
+            terminal ? "终端已授权" : "终端未授权"
+          }</span>
+          <span class="${screenshot ? "is-enabled" : ""}">${
+            screenshot ? "截图已开放" : "截图未开放"
+          }</span>
+        </div>
+        <small>权限配置接口准备中，当前仅展示设备上报的权限摘要。</small>
+      </section>
+    `;
+  }
+
   function renderMobileDevicesOverlay() {
     const pairing = state.pairing;
     const devices = state.devices
@@ -2604,6 +2658,13 @@
                     )}</button>
                   `
                   : `
+                    <button data-action="show-device-permissions" data-device-id="${escapeHtml(
+                      device.id,
+                    )}" type="button" aria-label="查看 ${escapeHtml(
+                      device.name,
+                    )} 的权限" title="设备权限">${icon(
+                      "shield-check",
+                    )}</button>
                     <button data-action="edit-device" data-device-id="${escapeHtml(
                       device.id,
                     )}" type="button" aria-label="重命名 ${escapeHtml(
@@ -2722,6 +2783,7 @@
                 : `<div class="mobile-devices-loading">正在读取设备…</div>`)
             }
           </div>
+          ${renderMobileDevicePermissions()}
           ${renderMobileDeviceTasks()}
           <a class="mobile-devices-help" data-device-download-link href="${escapeHtml(
             mobileConnectorPageUrl(),
@@ -7917,6 +7979,7 @@ export async function run(input, context) {
         state.deviceError = "";
         state.deviceEditingId = null;
         state.pairingFormOpen = false;
+        state.devicePermissionId = null;
         state.deviceTasks = [];
         state.deviceTasksLoaded = false;
         state.deviceTasksError = "";
@@ -7937,6 +8000,15 @@ export async function run(input, context) {
         state.pairing = null;
         state.deviceEditingId = null;
         state.pairingFormOpen = false;
+        state.devicePermissionId = null;
+        renderPhone();
+        updateIcons();
+      } else if (action === "show-device-permissions") {
+        state.devicePermissionId = actionTarget.dataset.deviceId;
+        renderPhone();
+        updateIcons();
+      } else if (action === "close-device-permissions") {
+        state.devicePermissionId = null;
         renderPhone();
         updateIcons();
       } else if (action === "edit-device") {
@@ -8051,6 +8123,9 @@ export async function run(input, context) {
             state.deviceTasks = state.deviceTasks.filter(
               (task) => task.deviceId !== deviceId,
             );
+            if (state.devicePermissionId === deviceId) {
+              state.devicePermissionId = null;
+            }
             applyMobileDevices({ devices: state.devices });
             renderControls();
             renderPhone();

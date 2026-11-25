@@ -286,7 +286,8 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
           platform: "Windows 11",
           status: "0",
           capabilitiesJson: '["files","terminal"]',
-          permissionsJson: null,
+          permissionsJson:
+            '{"allowedRoots":["D:/workspace"],"terminal":true,"screenshot":false}',
         },
       ],
     });

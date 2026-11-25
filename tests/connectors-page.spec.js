@@ -133,7 +133,10 @@ test("connectors page recovers from a manifest error", async ({ page }) => {
   );
   fail = false;
   await page.locator("[data-retry-releases]").click();
-  await expect(page.locator(".connector-release-card")).toHaveCount(1);
+  await expect(
+    page.locator('.connector-release-card[data-platform="windows"]'),
+  ).toHaveCount(1);
+  await expect(page.locator("[data-connector-pending]")).toHaveCount(1);
 });
 
 test("connectors page explains when the release API is not available", async ({
@@ -188,6 +191,12 @@ test("connectors page marks unsigned Windows builds and pending Android", async 
 
   const windows = page.locator(
     '.connector-release-card[data-platform="windows"]',
+  );
+  await expect(page.locator("#connector-channel-status")).toContainText(
+    "测试版可用",
+  );
+  await expect(page.locator("#connector-channel-status")).not.toContainText(
+    "稳定版下载",
   );
   await expect(windows).toContainText("0.1.0-test");
   await expect(windows).toContainText("87.6 MB");

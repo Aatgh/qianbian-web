@@ -329,6 +329,26 @@ main {
   line-height: 1.5;
 }
 
+.connector-unsigned-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0 18px 14px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--warning) 24%, var(--line));
+  border-radius: 7px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.connector-unsigned-warning svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
 .release-download {
   display: flex;
   min-height: 46px;
@@ -429,6 +449,35 @@ main {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.5;
+}
+
+.connector-release-card.is-pending {
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.connector-release-card.is-pending .release-version-row strong,
+.connector-release-card.is-pending .release-channel {
+  color: var(--muted);
+}
+
+.release-pending-copy {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  margin: 0 18px 18px;
+  padding: 0 13px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.release-pending-copy svg {
+  width: 15px;
+  height: 15px;
 }
 
 .connectors-loading,

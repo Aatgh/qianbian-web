@@ -10201,6 +10201,107 @@ svg {
   text-align: right;
 }
 
+.mobile-device-permissions {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--phone-line));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--success) 5%, var(--phone-surface));
+}
+
+.mobile-device-permissions-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobile-device-permissions-head strong,
+.mobile-device-permissions-head span {
+  display: block;
+}
+
+.mobile-device-permissions-head strong {
+  font-size: 11px;
+}
+
+.mobile-device-permissions-head span {
+  margin-top: 2px;
+  color: var(--phone-muted);
+  font-size: 9px;
+}
+
+.mobile-device-permissions-head button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--phone-muted);
+}
+
+.mobile-device-permissions-head button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mobile-device-permission-summary {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid var(--phone-line);
+  border-radius: 9px;
+  background: var(--phone-surface);
+}
+
+.mobile-device-permission-summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--phone-muted);
+  font-size: 9px;
+}
+
+.mobile-device-permission-summary svg {
+  width: 12px;
+  height: 12px;
+}
+
+.mobile-device-permission-summary strong {
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.mobile-device-permission-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.mobile-device-permission-chips span {
+  padding: 4px 7px;
+  border: 1px solid var(--phone-line);
+  border-radius: 6px;
+  background: var(--phone-surface);
+  color: var(--phone-muted);
+  font-size: 8px;
+}
+
+.mobile-device-permission-chips span.is-enabled {
+  border-color: color-mix(in srgb, var(--success) 24%, var(--phone-line));
+  background: color-mix(in srgb, var(--success) 9%, var(--phone-surface));
+  color: var(--success);
+}
+
+.mobile-device-permissions > small {
+  color: var(--phone-muted);
+  font-size: 8px;
+  line-height: 1.55;
+}
+
 .task-status {
   padding: 3px 6px;
   border-radius: 999px;

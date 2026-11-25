@@ -89,7 +89,11 @@
     const status = normalizeStatus(firstValue(task.status, task.state));
     const type = String(firstValue(task.type, task.taskType, "unknown"));
     const payload = parseJson(
-      firstValue(task.payloadJson, task.payload),
+      firstValue(task.payloadJson, task.payload_json, task.payload),
+      {},
+    );
+    const result = parseJson(
+      firstValue(task.resultJson, task.result_json, task.result),
       {},
     );
     return {
@@ -103,10 +107,19 @@
       statusLabel: status.label,
       tone: status.tone,
       payload,
-      createdAt: String(firstValue(task.createdAt, task.created_at, "")),
+      result,
+      createdAt: String(
+        firstValue(task.createdAt, task.created_at, task.create_time, ""),
+      ),
       startedAt: String(firstValue(task.startedAt, task.started_at, "")),
       completedAt: String(
-        firstValue(task.completedAt, task.completed_at, ""),
+        firstValue(
+          task.completedAt,
+          task.completed_at,
+          task.finished_at,
+          task.finishedAt,
+          "",
+        ),
       ),
       durationMs: Number(
         firstValue(task.durationMs, task.duration_ms, task.elapsedMs, NaN),

@@ -3088,6 +3088,113 @@ body.settings-sheet-open {
   text-align: right;
 }
 
+.account-device-permissions {
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--success) 22%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--success) 5%, var(--surface));
+}
+
+.account-device-permissions-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.account-device-permissions-head strong,
+.account-device-permissions-head span {
+  display: block;
+}
+
+.account-device-permissions-head strong {
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.account-device-permissions-head span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-permissions-head button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.account-device-permissions-head button:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.account-device-permissions-head button svg {
+  width: 13px;
+  height: 13px;
+}
+
+.account-device-permission-summary {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.account-device-permission-summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-permission-summary svg {
+  width: 12px;
+  height: 12px;
+}
+
+.account-device-permission-summary strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.account-device-permission-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.account-device-permission-chips span {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-permission-chips span.is-enabled {
+  border-color: color-mix(in srgb, var(--success) 22%, var(--line));
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.account-device-permissions > small {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.55;
+}
+
 .account-device-download {
   display: inline-flex;
   width: fit-content;

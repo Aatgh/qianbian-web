@@ -3,6 +3,7 @@
 
   const releaseList = document.getElementById("release-list");
   const releaseUpdated = document.getElementById("release-updated");
+  const channelStatus = document.getElementById("connector-channel-status");
   const api = window.QianbianApi;
 
   function escapeHtml(value) {
@@ -46,6 +47,7 @@
       platform,
       channel: release?.channel || "stable",
       version: String(release?.version || "—"),
+      name: release?.name || "",
       downloadUrl:
         release?.downloadUrl || release?.url || release?.download?.url || "",
       fileName: release?.fileName || release?.filename || "",
@@ -58,6 +60,7 @@
       systemRequirements:
         release?.systemRequirements || release?.requirements || "",
       publishedAt: release?.publishedAt || release?.updatedAt || "",
+      signed: release?.signed !== false,
       releaseNotes,
     };
   }
@@ -134,6 +137,11 @@
         <p class="release-system">${escapeHtml(
           release.systemRequirements || "系统要求以千变发布说明为准。",
         )}</p>
+        ${
+          release.signed === false
+            ? `<div class="connector-unsigned-warning">${window.lucide ? '<i data-lucide="shield-alert"></i>' : ""}未签名测试版，Windows 可能提示发布者不明。</div>`
+            : ""
+        }
         <a class="release-download ${
           downloadUrl ? "" : "is-disabled"
         }" data-download-release href="${escapeHtml(downloadUrl || "#")}" ${
@@ -161,8 +169,30 @@
     `;
   }
 
+  function pendingReleaseMarkup() {
+    return `
+      <article class="connector-release-card is-pending" data-platform="android" data-connector-pending>
+        <header class="release-card-head">
+          <span class="release-icon"><i data-lucide="smartphone"></i></span>
+          <div>
+            <h3>千变 for Android</h3>
+            <p>手机连接服务</p>
+          </div>
+          <span class="release-channel">待发布</span>
+        </header>
+        <div class="release-version-row">
+          <strong>待发布</strong>
+          <span>暂未提供 Android 安装包</span>
+        </div>
+        <p class="release-system">Android V1 安装包发布后会显示版本、下载地址和校验值。</p>
+        <div class="release-pending-copy">${window.lucide ? '<i data-lucide="clock-3"></i>' : ""}等待连接器发布到 OSS</div>
+      </article>
+    `;
+  }
+
   function renderReleases(releases) {
     if (!releases.length) {
+      if (channelStatus) channelStatus.textContent = "暂无版本";
       releaseUpdated.textContent = "暂无可用版本";
       releaseList.setAttribute("aria-busy", "false");
       releaseList.innerHTML = `
@@ -185,13 +215,29 @@
         String(left.publishedAt),
       );
     });
-    releaseUpdated.textContent = `${releases.length} 个可下载版本`;
+    const missingAndroid = !releases.some(
+      (release) => release.platform === "android",
+    );
+    const testOnly =
+      releases.some(
+        (release) => release.channel === "test" || release.signed === false,
+      ) && !releases.some((release) => release.channel === "stable");
+    if (channelStatus) {
+      channelStatus.textContent = testOnly ? "测试版可用" : "稳定版下载";
+    }
+    releaseUpdated.textContent = `${releases.length} 个可下载版本${
+      missingAndroid ? " · Android 待发布" : ""
+    }`;
     releaseList.setAttribute("aria-busy", "false");
-    releaseList.innerHTML = releases.map(releaseMarkup).join("");
+    releaseList.innerHTML = [
+      ...releases.map(releaseMarkup),
+      missingAndroid ? pendingReleaseMarkup() : "",
+    ].join("");
     window.lucide?.createIcons();
   }
 
   function renderError(message) {
+    if (channelStatus) channelStatus.textContent = "版本服务异常";
     releaseUpdated.textContent = "版本读取失败";
     releaseList.setAttribute("aria-busy", "false");
     releaseList.innerHTML = `
@@ -209,6 +255,7 @@
   }
 
   function renderReleasePending() {
+    if (channelStatus) channelStatus.textContent = "版本服务准备中";
     releaseUpdated.textContent = "版本接口尚未开放";
     releaseList.setAttribute("aria-busy", "false");
     releaseList.innerHTML = `

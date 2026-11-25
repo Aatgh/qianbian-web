@@ -1009,6 +1009,7 @@
     devicePairingFormOpen: false,
     devicePairType: "windows",
     devicePairName: "",
+    devicePermissionId: null,
     deviceRevision: 0,
     deviceTasks: [],
     deviceTasksLoaded: false,
@@ -1932,10 +1933,13 @@
       approval.executionTarget && typeof approval.executionTarget === "object"
         ? approval.executionTarget
         : {};
+    const targetId = String(
+      typeof approval.executionTarget === "object"
+        ? target.deviceId || target.id || approval.deviceId || ""
+        : approval.executionTarget || approval.deviceId || "",
+    );
     const targetDevice = state.devices.find(
-      (device) =>
-        device.id ===
-        String(target.deviceId || target.id || approval.deviceId || ""),
+      (device) => device.id === targetId,
     );
     const deviceName =
       target.name ||
@@ -4343,6 +4347,56 @@ export const skill = {
     `;
   }
 
+  function renderAccountDevicePermissions() {
+    if (!state.devicePermissionId) return "";
+    const device = state.devices.find(
+      (item) => item.id === String(state.devicePermissionId),
+    );
+    if (!device) return "";
+    const permissions =
+      device.permissions && typeof device.permissions === "object"
+        ? device.permissions
+        : {};
+    const roots = Array.isArray(permissions.allowedRoots)
+      ? permissions.allowedRoots
+      : Array.isArray(permissions.roots)
+        ? permissions.roots
+        : [];
+    const terminal =
+      permissions.terminal === true || device.capabilities.includes("terminal");
+    const screenshot =
+      permissions.screenshot === true ||
+      device.capabilities.includes("screenshot");
+    return `
+      <div class="account-device-permissions" data-device-permissions>
+        <div class="account-device-permissions-head">
+          <div>
+            <strong>设备权限</strong>
+            <span>${escapeHtml(device.name)}</span>
+          </div>
+          <button data-close-device-permissions type="button" aria-label="关闭权限卡片">${icon(
+            "x",
+          )}</button>
+        </div>
+        <div class="account-device-permission-summary">
+          <span>${icon("folder-lock")}授权目录</span>
+          <strong>${escapeHtml(
+            roots.length ? roots.join(" / ") : "未上报授权目录",
+          )}</strong>
+        </div>
+        <div class="account-device-permission-chips">
+          <span class="${terminal ? "is-enabled" : ""}">${
+            terminal ? "终端已授权" : "终端未授权"
+          }</span>
+          <span class="${screenshot ? "is-enabled" : ""}">${
+            screenshot ? "截图已开放" : "截图未开放"
+          }</span>
+        </div>
+        <small>权限配置接口准备中，当前仅展示设备上报的权限摘要。</small>
+      </div>
+    `;
+  }
+
   function renderAccountDialog() {
     if (!accountDialogHost) return;
     if (!state.accountDialogOpen) {
@@ -4387,6 +4441,13 @@ export const skill = {
                     )}</button>
                   `
                   : `
+                    <button class="account-device-icon-button" data-show-device-permissions="${escapeHtml(
+                      device.id,
+                    )}" type="button" aria-label="查看 ${escapeHtml(
+                      device.name,
+                    )} 的权限" title="设备权限">${icon(
+                      "shield-check",
+                    )}</button>
                     <button class="account-device-icon-button" data-edit-device="${escapeHtml(
                       device.id,
                     )}" type="button" aria-label="重命名 ${escapeHtml(
@@ -4489,6 +4550,7 @@ export const skill = {
             }</p>`
           }
         </div>
+        ${renderAccountDevicePermissions()}
         ${renderAccountDeviceTasks()}
         <a class="account-device-download" data-open-connectors href="${escapeHtml(
           connectorPageUrl(),
@@ -6729,6 +6791,20 @@ export const skill = {
       renderAccountDialog();
       return;
     }
+    const showPermissionsButton = event.target.closest(
+      "[data-show-device-permissions]",
+    );
+    if (showPermissionsButton) {
+      state.devicePermissionId =
+        showPermissionsButton.dataset.showDevicePermissions;
+      renderAccountDialog();
+      return;
+    }
+    if (event.target.closest("[data-close-device-permissions]")) {
+      state.devicePermissionId = null;
+      renderAccountDialog();
+      return;
+    }
     const editDeviceButton = event.target.closest("[data-edit-device]");
     if (editDeviceButton) {
       state.deviceEditingId = editDeviceButton.dataset.editDevice;
@@ -6862,6 +6938,9 @@ export const skill = {
           state.deviceTasks = state.deviceTasks.filter(
             (task) => task.deviceId !== deviceId,
           );
+          if (state.devicePermissionId === deviceId) {
+            state.devicePermissionId = null;
+          }
           applyBackendDevices({ devices: state.devices });
           renderAccountDialog();
           renderComposer();

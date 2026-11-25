@@ -319,7 +319,7 @@ test("desktop API forwards complete device status events", async ({ page }) => {
     .toMatchObject({
       method: "device/status",
       params: {
-        devices: [{ id: 1, status: "0" }],
+        devices: [{ id: 1, status: "offline" }],
       },
     });
 });
