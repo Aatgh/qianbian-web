@@ -2453,68 +2453,41 @@ button.phone-row:hover {
   font-variant-numeric: tabular-nums;
 }
 
-.skill-share-pill {
-  position: sticky;
-  bottom: 8px;
-  z-index: 5;
+.skill-share-fab {
+  position: fixed;
+  right: calc(18px + env(safe-area-inset-right));
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  z-index: 130;
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 24px;
-  align-items: center;
-  width: 100%;
-  min-height: 48px;
-  margin-top: 18px;
-  padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--phone-ink) 16%, transparent);
-  border-radius: 999px;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--phone-surface) 24%, transparent),
-      color-mix(in srgb, var(--phone-surface) 8%, transparent)
-    );
-  color: var(--phone-ink);
-  box-shadow:
-    0 14px 34px rgba(8, 14, 12, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(24px) saturate(1.35);
-  -webkit-backdrop-filter: blur(24px) saturate(1.35);
-  transition:
-    border-color 150ms ease,
-    transform 120ms ease;
-}
-
-.skill-share-pill:hover,
-.skill-share-pill:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 48%, var(--phone-line));
-}
-
-.skill-share-pill:active {
-  transform: scale(0.985);
-}
-
-.skill-share-plus {
-  display: grid;
+  width: 56px;
+  height: 56px;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, white);
   border-radius: 50%;
-  background: var(--phone-surface-soft);
-  color: var(--accent-ink);
+  background: var(--accent);
+  color: var(--accent-on);
+  box-shadow:
+    0 16px 34px rgba(149, 31, 99, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
 }
 
-.skill-share-plus svg {
-  width: 14px;
-  height: 14px;
+.skill-share-fab svg {
+  width: 23px;
+  height: 23px;
 }
 
-.skill-share-text {
-  overflow: hidden;
-  font-size: 10px;
-  font-weight: 600;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.skill-share-fab:hover {
+  box-shadow:
+    0 19px 40px rgba(149, 31, 99, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+  transform: translateY(-2px);
+}
+
+.skill-share-fab:active {
+  transform: scale(0.96);
 }
 
 .skill-settings-layer {

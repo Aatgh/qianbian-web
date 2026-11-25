@@ -387,6 +387,15 @@ test("mobile publish action floats at the bottom of skill space", async ({
   await expect(publish).toBeVisible();
   await expect(publish).toHaveAttribute("aria-label", "发布技能");
   await expect(page.locator(".skill-share-pill")).toHaveCount(0);
+  await page.waitForFunction(() => {
+    const button = document.querySelector(".skill-share-fab");
+    const box = button?.getBoundingClientRect();
+    return (
+      box &&
+      Math.abs(innerWidth - box.right - 18) < 2 &&
+      Math.abs(innerHeight - box.bottom - 64) < 2
+    );
+  });
 
   const geometry = await page.evaluate(() => {
     const publishButton = document.querySelector(".skill-share-fab");
@@ -415,7 +424,7 @@ test("mobile publish action floats at the bottom of skill space", async ({
   expect(geometry.publishBottom).toBeLessThanOrEqual(geometry.handleTop);
 
   await publish.click();
-  await expect(page.locator(".publish-skill-page")).toBeVisible();
+  await expect(page.locator(".skill-builder-page")).toBeVisible();
 });
 
 test("mobile renders backend approvals and user questions", async ({ page }) => {

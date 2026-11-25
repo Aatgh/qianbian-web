@@ -3566,14 +3566,13 @@
           </div>
         </section>
         <button
-          class="skill-share-pill"
+          class="skill-share-fab"
           data-nav="publish-skill"
           type="button"
-          aria-label="点击分享你的 Agent Skill"
+          aria-label="发布技能"
+          title="发布技能"
         >
-          <span class="skill-share-plus">${icon("plus")}</span>
-          <span class="skill-share-text">点击分享你的 Agent Skill</span>
-          <span class="skill-share-spacer" aria-hidden="true"></span>
+          ${icon("plus")}
         </button>
         <div class="main-nav-handle" aria-hidden="true"></div>
       </section>
