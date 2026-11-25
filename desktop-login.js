@@ -51,6 +51,9 @@
   let dragStartX = 0;
   let dragStartY = 0;
   let dragPointerId = null;
+  let dragFrame = 0;
+  let dragTargetX = 0;
+  let dragTargetY = 0;
 
   function readProfile() {
     try {
@@ -90,6 +93,8 @@
 
   function finishLoginDrag() {
     clearLongPress();
+    window.cancelAnimationFrame(dragFrame);
+    dragFrame = 0;
     if (!draggingLogin || !loginPanelWrap) {
       dragPointerId = null;
       return;
@@ -123,6 +128,8 @@
     dragPending = true;
     dragStartX = event.clientX;
     dragStartY = event.clientY;
+    dragTargetX = 0;
+    dragTargetY = 0;
     dragPointerId = event.pointerId;
     longPressTimer = window.setTimeout(() => {
       draggingLogin = true;
@@ -137,19 +144,32 @@
     if (!draggingLogin || !loginPanelWrap) return;
     if (dragPointerId !== null && event.pointerId !== dragPointerId) return;
     event.preventDefault();
+    const latest =
+      event.getCoalescedEvents?.().at(-1) || event;
     const rect = loginPanelWrap.getBoundingClientRect();
     const maxX = Math.max(0, window.innerWidth / 2 - rect.width / 2 - 12);
     const maxY = Math.max(0, window.innerHeight / 2 - rect.height / 2 - 12);
-    const x = Math.max(
+    dragTargetX = Math.max(
       -maxX,
-      Math.min(maxX, event.clientX - dragStartX),
+      Math.min(maxX, latest.clientX - dragStartX),
     );
-    const y = Math.max(
+    dragTargetY = Math.max(
       -maxY,
-      Math.min(maxY, event.clientY - dragStartY),
+      Math.min(maxY, latest.clientY - dragStartY),
     );
-    loginPanelWrap.style.setProperty("--login-drag-x", `${x}px`);
-    loginPanelWrap.style.setProperty("--login-drag-y", `${y}px`);
+    if (dragFrame) return;
+    dragFrame = window.requestAnimationFrame(() => {
+      dragFrame = 0;
+      if (!draggingLogin || !loginPanelWrap) return;
+      loginPanelWrap.style.setProperty(
+        "--login-drag-x",
+        `${dragTargetX}px`,
+      );
+      loginPanelWrap.style.setProperty(
+        "--login-drag-y",
+        `${dragTargetY}px`,
+      );
+    });
   }
 
   function setLocked(locked) {
@@ -172,6 +192,8 @@
     window.clearInterval(countdownTimer);
     countdown = 0;
     busy = false;
+    window.cancelAnimationFrame(dragFrame);
+    dragFrame = 0;
     loginPanelWrap?.classList.remove(
       "has-dragged",
       "is-dragging",

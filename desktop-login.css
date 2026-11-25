@@ -59,18 +59,14 @@ body.login-locked {
 
 .login-panel-wrap.is-dragging {
   animation: none !important;
-  transform: translate3d(
-    var(--login-drag-x, 0px),
-    var(--login-drag-y, 0px),
-    0
-  ) !important;
+  translate: var(--login-drag-x, 0px) var(--login-drag-y, 0px);
   transition: none !important;
 }
 
 .login-panel-wrap.is-snapping {
   animation: none !important;
-  transform: translate3d(0, 0, 0) !important;
-  transition: transform 460ms var(--login-spring) !important;
+  translate: 0 0;
+  transition: translate 460ms var(--login-spring) !important;
 }
 
 .login-panel-wrap.has-dragged {
@@ -1198,6 +1194,8 @@ body.login-locked {
   opacity: 0;
   perspective: 1100px;
   transform: translate3d(30px, 12px, 0) rotateY(-5deg);
+  translate: 0 0;
+  will-change: translate;
 }
 
 .login-gate.is-ready .login-panel-wrap {
