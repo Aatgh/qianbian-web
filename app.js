@@ -169,6 +169,9 @@
     pairing: null,
     deviceError: "",
     deviceEditingId: null,
+    pairingFormOpen: false,
+    pairingType: "windows",
+    pairingName: "",
     deviceRevision: 0,
     terminalCommandCount: 0,
     catalogOpen: false,
@@ -595,8 +598,7 @@
           device.status === "online" && !device.paused
             ? "ready"
             : "not_configured",
-        detail:
-          device.platform === "android" ? "手机连接器" : "Windows 连接器",
+        detail: `${device.platform} 连接器`,
         device,
       })),
     ];
@@ -631,20 +633,65 @@
   }
 
   function normalizeMobileDevice(device) {
-    const status = String(device.status || "offline");
-    const paused = device.paused === true || status === "paused";
+    const platformValue = String(device.platform || "").trim();
+    const platformKey = platformValue.toLowerCase();
+    const typeValue = String(
+      device.type ||
+        device.deviceType ||
+        (["windows", "android"].includes(platformKey) ? platformValue : ""),
+    ).toLowerCase();
+    const type = typeValue === "android" ? "android" : "windows";
+    const rawStatus = String(device.status ?? "0").toLowerCase();
+    const paused =
+      device.paused === true ||
+      rawStatus === "2" ||
+      rawStatus === "paused";
+    const status = paused
+      ? "paused"
+      : ["1", "online"].includes(rawStatus)
+        ? "online"
+        : "offline";
+    const parsedCapabilities = parseMobileDeviceJson(
+      device.capabilitiesJson || device.capabilities,
+      [],
+    );
+    const parsedPermissions = parseMobileDeviceJson(
+      device.permissionsJson || device.permissions,
+      {},
+    );
     return {
       id: String(device.id),
       name: device.name || "未命名设备",
-      platform: device.platform || device.kind || "windows",
+      type,
+      platform:
+        platformValue && !["windows", "android"].includes(platformKey)
+          ? platformValue
+          : type === "android"
+            ? "Android"
+            : "Windows",
       status,
       paused,
       lastSeenAt: device.lastSeenAt || "",
-      permissions: device.permissions || {},
-      capabilities: Array.isArray(device.capabilities)
-        ? device.capabilities
+      permissions:
+        parsedPermissions && typeof parsedPermissions === "object"
+          ? parsedPermissions
+          : {},
+      capabilities: Array.isArray(parsedCapabilities)
+        ? parsedCapabilities.map(String)
         : [],
     };
+  }
+
+  function parseMobileDeviceJson(value, fallback) {
+    if (Array.isArray(value) || (value && typeof value === "object")) {
+      return value;
+    }
+    if (typeof value !== "string" || !value.trim()) return fallback;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
   }
 
   function devicePlatformLabel(platform) {
@@ -889,11 +936,18 @@
       return;
     }
     if (method === "device/status") {
+      state.deviceRevision += 1;
+      if (Array.isArray(params.devices)) {
+        applyMobileDevices(params);
+        renderControls();
+        renderPhone();
+        updateIcons();
+        return;
+      }
       const device = state.devices.find(
         (item) => item.id === String(params.deviceId || params.id || ""),
       );
       if (device) {
-        state.deviceRevision += 1;
         device.status = params.status || device.status;
         if (typeof params.paused === "boolean") {
           device.paused = params.paused;
@@ -2318,7 +2372,7 @@
             device.paused ? "is-paused" : ""
           }" data-device-id="${escapeHtml(device.id)}">
             <span class="mobile-device-icon">${icon(
-              device.platform === "android" ? "smartphone" : "laptop",
+              device.type === "android" ? "smartphone" : "laptop",
             )}</span>
             <div class="mobile-device-copy">
               ${
@@ -2392,6 +2446,41 @@
         </header>
         <div class="mobile-devices-body">
           ${
+            state.pairingFormOpen
+              ? `
+                <section class="mobile-device-pair-form" data-device-pair-form>
+                  <div class="mobile-device-pair-form-head">
+                    <strong>添加设备</strong>
+                    <span>二维码和配对码由服务端生成</span>
+                  </div>
+                  <label>
+                    <span>设备类型</span>
+                    <select data-device-pair-type>
+                      <option value="windows" ${
+                        state.pairingType === "windows" ? "selected" : ""
+                      }>千变 for Windows</option>
+                      <option value="android" ${
+                        state.pairingType === "android" ? "selected" : ""
+                      }>千变 for Android</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>设备名称</span>
+                    <input data-device-pair-name value="${escapeHtml(
+                      state.pairingName,
+                    )}" placeholder="例如：我的笔记本" />
+                  </label>
+                  <div class="mobile-device-pair-form-actions">
+                    <button class="is-primary" data-action="submit-device-pair" type="button">${icon(
+                      "qr-code",
+                    )}生成配对码</button>
+                    <button data-action="cancel-device-pair" type="button">取消</button>
+                  </div>
+                </section>
+              `
+              : ""
+          }
+          ${
             pairing
               ? `
                 <section class="mobile-device-pair-card">
@@ -2402,7 +2491,11 @@
                   <canvas class="device-pair-qr" data-qr-payload="${escapeHtml(
                     pairing.qrPayload || pairing.pairingCode || "",
                   )}" width="176" height="176"></canvas>
-                  <p>在千变 for Windows / Android 中输入配对码，保持当前页面打开。</p>
+                  <p>在${
+                    pairing.type === "android"
+                      ? "千变 for Android"
+                      : "千变 for Windows"
+                  }中输入配对码，保持当前页面打开。</p>
                   <button data-action="copy-pair-code" type="button">${icon(
                     "copy",
                   )}复制配对码</button>
@@ -6676,6 +6769,19 @@ export async function run(input, context) {
     });
     const chatInput = document.getElementById("chat-input");
     const environmentSelect = document.getElementById("mobile-environment-select");
+    const pairNameInput = document.querySelector("[data-device-pair-name]");
+    const pairTypeSelect = document.querySelector("[data-device-pair-type]");
+    if (pairNameInput) {
+      pairNameInput.addEventListener("input", () => {
+        state.pairingName = pairNameInput.value;
+      });
+    }
+    if (pairTypeSelect) {
+      pairTypeSelect.addEventListener("change", () => {
+        state.pairingType =
+          pairTypeSelect.value === "android" ? "android" : "windows";
+      });
+    }
     if (environmentSelect) {
       environmentSelect.addEventListener("change", () => {
         setMobileExecutionTarget(environmentSelect.value);
@@ -7610,6 +7716,7 @@ export async function run(input, context) {
         state.pairing = null;
         state.deviceError = "";
         state.deviceEditingId = null;
+        state.pairingFormOpen = false;
         renderPhone();
         updateIcons();
         if (!api || !state.backendConnected) {
@@ -7624,6 +7731,7 @@ export async function run(input, context) {
         state.devicesOpen = false;
         state.pairing = null;
         state.deviceEditingId = null;
+        state.pairingFormOpen = false;
         renderPhone();
         updateIcons();
       } else if (action === "edit-device") {
@@ -7666,11 +7774,48 @@ export async function run(input, context) {
           showToast("登录后可添加设备", "circle-alert");
           return;
         }
+        state.pairingFormOpen = !state.pairingFormOpen;
         state.deviceError = "";
+        if (state.pairingFormOpen) {
+          state.pairing = null;
+          state.pairingType = "windows";
+          state.pairingName = "";
+        }
+        renderPhone();
+        updateIcons();
+        if (state.pairingFormOpen) {
+          window.requestAnimationFrame(() =>
+            phoneScreen.querySelector("[data-device-pair-name]")?.focus(),
+          );
+        }
+      } else if (action === "cancel-device-pair") {
+        state.pairingFormOpen = false;
+        state.deviceError = "";
+        renderPhone();
+        updateIcons();
+      } else if (action === "submit-device-pair") {
+        if (!api || !state.backendConnected) {
+          showToast("登录后可添加设备", "circle-alert");
+          return;
+        }
+        const form = phoneScreen.querySelector("[data-device-pair-form]");
+        const type =
+          form?.querySelector("[data-device-pair-type]")?.value === "android"
+            ? "android"
+            : "windows";
+        const name =
+          form?.querySelector("[data-device-pair-name]")?.value.trim() || "";
+        const payload = { type };
+        if (name) payload.name = name;
         api
-          .startDevicePairing()
+          .startDevicePairing(payload)
           .then((pairing) => {
-            state.pairing = pairing;
+            state.pairing = {
+              ...pairing,
+              type: pairing?.type || type,
+            };
+            state.pairingFormOpen = false;
+            state.pairingName = "";
             renderPhone();
             updateIcons();
           })

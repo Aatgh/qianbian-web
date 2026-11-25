@@ -2744,6 +2744,69 @@ body.settings-sheet-open {
   gap: 8px;
 }
 
+.account-device-pair-form {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+.account-device-pair-form-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.account-device-pair-form-head strong {
+  color: var(--ink);
+  font-size: 10px;
+}
+
+.account-device-pair-form-head span,
+.account-device-pair-form label > span {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-pair-form label {
+  display: grid;
+  gap: 5px;
+}
+
+.account-device-pair-form input,
+.account-device-pair-form select {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 10px;
+}
+
+.account-device-pair-form input:focus-visible,
+.account-device-pair-form select:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--line));
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.account-device-pair-form-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.account-device-pair-form-actions .workspace-primary-button,
+.account-device-pair-form-actions .secondary-button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 9px;
+}
+
 .account-device-row {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;

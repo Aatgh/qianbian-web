@@ -208,6 +208,19 @@
     window.lucide?.createIcons();
   }
 
+  function renderReleasePending() {
+    releaseUpdated.textContent = "版本接口尚未开放";
+    releaseList.setAttribute("aria-busy", "false");
+    releaseList.innerHTML = `
+      <div class="connectors-empty" data-release-pending role="status">
+        <i data-lucide="package-open"></i>
+        <strong>安装包版本接口尚未开放</strong>
+        <span>设备连接能力已可使用。连接器安装包发布后，Windows 和 Android 版本会自动显示在这里。</span>
+      </div>
+    `;
+    window.lucide?.createIcons();
+  }
+
   async function loadReleases() {
     releaseList.setAttribute("aria-busy", "true");
     releaseUpdated.textContent = "正在读取版本清单";
@@ -226,6 +239,10 @@
       const payload = await api.connectorReleases();
       renderReleases(releaseItems(payload).map((item) => normalizeRelease(item)));
     } catch (error) {
+      if (error?.status === 404) {
+        renderReleasePending();
+        return;
+      }
       renderError(error?.message || "版本服务暂时不可用");
     }
   }

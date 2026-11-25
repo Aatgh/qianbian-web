@@ -9830,10 +9830,87 @@ svg {
 }
 
 .mobile-device-pair-card,
+.mobile-device-pair-form,
 .mobile-device-card,
 .mobile-devices-help {
   border: 1px solid var(--phone-line);
   background: var(--phone-surface);
+}
+
+.mobile-device-pair-form {
+  display: grid;
+  gap: 11px;
+  margin-bottom: 14px;
+  padding: 16px;
+  border-radius: 14px;
+}
+
+.mobile-device-pair-form-head {
+  display: grid;
+  gap: 3px;
+}
+
+.mobile-device-pair-form-head strong {
+  font-size: 13px;
+}
+
+.mobile-device-pair-form-head span,
+.mobile-device-pair-form label > span {
+  color: var(--phone-muted);
+  font-size: 9px;
+}
+
+.mobile-device-pair-form label {
+  display: grid;
+  gap: 5px;
+}
+
+.mobile-device-pair-form input,
+.mobile-device-pair-form select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--phone-line);
+  border-radius: 9px;
+  outline: 0;
+  background: var(--phone-surface);
+  color: var(--phone-ink);
+  font-size: 12px;
+}
+
+.mobile-device-pair-form input:focus-visible,
+.mobile-device-pair-form select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.mobile-device-pair-form-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.mobile-device-pair-form-actions button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 12px;
+  border-radius: 9px;
+  background: var(--phone-surface-soft);
+  color: var(--phone-ink);
+  font-size: 10px;
+}
+
+.mobile-device-pair-form-actions button.is-primary {
+  background: var(--accent);
+  color: var(--accent-on);
+}
+
+.mobile-device-pair-form-actions svg {
+  width: 14px;
+  height: 14px;
 }
 
 .mobile-device-pair-card {

@@ -137,6 +137,14 @@
       }
     });
 
+    source.addEventListener("device/status", (event) => {
+      try {
+        handlers.onEvent?.("device/status", JSON.parse(event.data));
+      } catch (error) {
+        handlers.onError?.(error);
+      }
+    });
+
     source.onerror = (event) => handlers.onError?.(event);
     return source;
   }
@@ -196,8 +204,12 @@
     devices(signal) {
       return request("/devices", { signal });
     },
-    startDevicePairing(signal) {
-      return request("/devices/pair/start", { method: "POST", signal });
+    startDevicePairing(payload = {}, signal) {
+      return request("/devices/pair/start", {
+        method: "POST",
+        body: payload,
+        signal,
+      });
     },
     updateDevice(id, payload, signal) {
       return request(`/devices/${encodeURIComponent(id)}`, {

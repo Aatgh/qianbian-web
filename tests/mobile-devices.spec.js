@@ -193,12 +193,12 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
   await page.locator("[data-device-pair-type]").selectOption("android");
   await page.locator("[data-device-pair-name]").fill("随身手机");
   await page.locator('[data-action="submit-device-pair"]').click();
-  expect(
-    calls.find((call) => call.pathname === "/devices/pair/start"),
-  ).toMatchObject({
-    method: "POST",
-    body: { type: "android", name: "随身手机" },
-  });
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/devices/pair/start"))
+    .toMatchObject({
+      method: "POST",
+      body: { type: "android", name: "随身手机" },
+    });
   await expect(devices).toContainText("7YKN85");
   await expect(devices.locator(".device-pair-qr")).toHaveAttribute(
     "data-qr-payload",

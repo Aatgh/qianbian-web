@@ -726,7 +726,8 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
   await page.locator("[data-device-pair-name]").fill("新设备");
   await page.locator("[data-submit-device-pair]").click();
   await expect(page.locator(".account-device-pair")).toContainText("135790");
-  expect(calls.find((call) => call.pathname === "/devices/pair/start").body)
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/devices/pair/start")?.body)
     .toEqual({ type: "windows", name: "新设备" });
 });
 
@@ -843,6 +844,9 @@ test("desktop manages device name, pause state and pairing QR", async ({
   await expect(page.locator("[data-device-pair-form]")).toBeVisible();
   await page.locator("[data-device-pair-name]").fill("设计工作站");
   await page.locator("[data-submit-device-pair]").click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/devices/pair/start")?.body)
+    .toEqual({ type: "windows", name: "设计工作站" });
 
   const pairingQr = page.locator(".account-device-pair .device-pair-qr");
   await expect(pairingQr).toHaveAttribute(

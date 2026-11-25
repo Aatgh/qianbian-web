@@ -253,61 +253,17 @@ V1 锁定边界：Windows 文件 + 终端 + 审批，Android 基础设备状态�
 - 前端设备列表 / 配对 UI
 - 验收：网页能看到一台设备在线，能解绑
 
-### 阶段 A 前端接口约定（已实现）
+### 阶段 A 前端接口接入（已按后端契约实现）
 
-设备列表返回 `status: online | offline`；暂停使用独立布尔字段，不与在线状态混用。
+后端接口以 `docs/device-connector-api.md` 为准。前端已完成以下映射和交互：
 
-```json
-{
-  "devices": [
-    {
-      "id": "device-1",
-      "name": "工作笔记本",
-      "platform": "windows",
-      "status": "online",
-      "paused": false,
-      "lastSeenAt": "2026-11-25T10:30:00+08:00",
-      "permissions": { "roots": ["D:/workspace"] },
-      "capabilities": ["files", "terminal"]
-    }
-  ]
-}
-```
+- `POST /api/devices/pair/start` 提交 `{ "type": "windows | android", "name": "设备名" }`，名称可选。
+- `GET /api/devices` 使用 `type` 选择设备图标，使用 `platform` 展示系统版本。
+- 后端状态 `0 / 1 / 2` 分别映射为前端离线、在线、已暂停；`capabilitiesJson` 和 `permissionsJson` 在前端安全解析。
+- `PATCH /api/devices/{id}` 提交 `{ "name": ... }` 或 `{ "paused": ... }`，前端兼容空响应和返回设备对象。
+- SSE `device/status` 直接推送完整 `devices` 数组，前端更新设备列表、状态和工作环境选择器，不轮询。
 
-改名和暂停继续使用 `PATCH /api/devices/{id}`：
-
-```json
-{ "name": "设计笔记本" }
-```
-
-```json
-{ "paused": true }
-```
-
-响应推荐返回 `{ "device": { ... } }`。前端也兼容直接返回设备对象和 `{ "item": { ... } }`。SSE `device/status` 可携带 `paused` 更新；暂停设备会立即从可选执行环境中移除。
-
-版本清单读取 `GET /api/connectors/releases`，下载页为 `connectors.html`：
-
-```json
-{
-  "releases": [
-    {
-      "platform": "windows",
-      "channel": "stable",
-      "version": "0.2.0",
-      "fileName": "Qianbian-Setup-0.2.0.exe",
-      "downloadUrl": "https://download.example/connectors/windows/stable/0.2.0/Qianbian-Setup-0.2.0.exe",
-      "sha256": "89abcdef...",
-      "size": 48234496,
-      "publishedAt": "2026-11-25T10:00:00+08:00",
-      "systemRequirements": "Windows 10 22H2 或更高版本",
-      "releaseNotes": ["新增设备暂停与恢复", "改进终端审批"]
-    }
-  ]
-}
-```
-
-前端不硬编码 OSS 域名，只使用接口返回的 `downloadUrl`。
+`GET /api/connectors/releases` 后端尚未提供。`connectors.html` 已保留版本清单接入逻辑，接口返回 `404` 时展示“安装包版本接口尚未开放”，接口上线后无需修改前端即可显示 Windows / Android 安装包。
 
 ### 阶段 B：Windows 文件 + 终端
 
