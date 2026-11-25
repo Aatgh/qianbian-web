@@ -60,17 +60,24 @@
 **千变 for Android**
 
 - 配对绑定
-- 无障碍服务：点击、滑动、返回、打开 App、填表
-- 截图/读取当前界面
+- 设备在线状态与能力上报
+- 设备权限摘要和任务审批
 - 前台常驻通知，一键停止
-- 复用现有 XiaoPaiWake 的无障碍和 Shizuku 能力
 - 默认禁止支付、银行、删除系统数据
+
+**账号与设备管理**
+
+- 手机端 V1 接入真实手机号短信验证码登录
+- 桌面端与手机端共享当前用户 Cookie / 会话
+- 「我的设备」页面支持设备列表、配对、解绑和审批
 
 ### V2 再做
 
 - Windows 桌面 GUI：截图、鼠标、键盘、窗口操作
 - 视觉模型识别屏幕
 - 手机屏幕实时预览
+- Android 无障碍操作：点击、滑动、返回、打开 App、填表
+- Android 截图/读取当前界面，复用 XiaoPaiWake 的无障碍和 Shizuku 能力
 - 断网任务排队
 - macOS / Linux
 - iOS（能力有限，走 Shortcuts/分享扩展）
@@ -226,6 +233,14 @@ ExecutionTarget
 
 V1 锁定边界：Windows 文件 + 终端 + 审批，Android 基础设备状态与后续无障碍能力准备，设备列表/配对/解绑，SSE 在线状态，按需截图。桌面 GUI、实时预览、iOS、自动更新进入后续阶段。
 
+### 前端补充确认（2026-11-25）
+
+1. **Android V1：** 只做配对、在线状态、能力上报、权限摘要和审批，不做打开 App、点击、滑动、填表或截图读取；无障碍操作整体进入 V2。
+2. **手机端登录：** V1 必须接入真实手机号短信验证码登录，否则不开放配对和审批。复用平台现有的 `/api/auth/sms-code`、`/api/auth/login/phone`、`/api/auth/me`、`/api/auth/logout` 和 HttpOnly Cookie 会话。
+3. **构建与签名：** 前端不持有任何签名密钥。Windows 安装包由公司/发布负责人提供代码签名证书，由 CI 完成签名；Android keystore 由 Android/发布负责人提供并存入密钥管理服务，由 CI 构建签名。CI 统一使用 GitHub Actions。
+4. **安装包托管：** 国内下载最终选择阿里云 OSS。CI 将 Windows/Android 安装包发布到 `connectors/{platform}/{channel}/{version}/{filename}`，并生成 `connectors/latest.json`。前端通过 `/api/connectors/releases` 读取版本、下载地址、SHA256、系统要求和更新说明，不硬编码 OSS 域名。
+5. **截图隐私：** V1 截图只临时返回当前会话，不落库、不进入 transcript、不写入审计参数，轮次结束后清理缓存。授权默认“一次”，可选“本会话”，不提供设备级永久截图授权。审批字段使用 `captureScope: once|session` 和 `retention: ephemeral`，审计只记录操作元数据。
+
 ---
 
 ## 7. 实施顺序（确认后）
@@ -234,6 +249,7 @@ V1 锁定边界：Windows 文件 + 终端 + 审批，Android 基础设备状态�
 
 - 设备表、配对码、设备令牌
 - WSS 网关、心跳、在线状态
+- 手机端真实短信登录
 - 前端设备列表 / 配对 UI
 - 验收：网页能看到一台设备在线，能解绑
 
@@ -250,7 +266,7 @@ V1 锁定边界：Windows 文件 + 终端 + 审批，Android 基础设备状态�
 - 视觉/UI Automation
 - 验收：打开浏览器搜索、整理桌面、填写表单
 
-### 阶段 D：Android 连接器
+### 阶段 D：Android 无障碍能力（V1 后）
 
 - 无障碍服务、截图、点击
 - 前台通知、停止按钮
