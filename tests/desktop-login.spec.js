@@ -419,6 +419,7 @@ test("login background contains a zoomable particle galaxy", async ({ page }) =>
   const initialZoom = await page.evaluate(
     () => window.QianbianLoginGalaxy.zoom,
   );
+  expect(initialZoom).toBeGreaterThan(1.2);
   await page.locator(".login-panel").hover();
   await page.mouse.wheel(0, -420);
   await expect
