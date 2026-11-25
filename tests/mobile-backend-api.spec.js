@@ -302,7 +302,7 @@ test("mobile hydrates backend sessions, skills and streamed replies", async ({
   );
 });
 
-test("mobile environment control sits beside the header action", async ({
+test("mobile environment control sits beside history settings", async ({
   page,
 }) => {
   const calls = [];
@@ -310,31 +310,28 @@ test("mobile environment control sits beside the header action", async ({
   await page.setViewportSize({ width: 430, height: 932 });
   await page.goto(mobileUrl);
   await waitForMobileBackend(page);
+  await page.locator('[data-action="open-history"]').click();
 
-  const environment = page.locator(
-    ".conversation-nav-actions #mobile-environment-select",
-  );
+  const environment = page.locator(".history-footer #mobile-environment-select");
   await expect(environment).toBeVisible();
   await expect(environment).toHaveValue("local");
+  await expect(
+    page.locator(".unified-conversation-nav #mobile-environment-select"),
+  ).toHaveCount(0);
   await expect(page.locator(".phone-composer #mobile-environment-select")).toHaveCount(
     0,
   );
 
   const geometry = await page.evaluate(() => {
     const environmentSelect = document.querySelector(
-      ".conversation-nav-actions #mobile-environment-select",
+      ".history-footer #mobile-environment-select",
     );
-    const environment = environmentSelect?.closest(".conversation-environment");
-    const action = document.querySelector(
-      '.conversation-nav-actions [data-action="open-main-nav"]',
-    );
-    const progress = document.querySelector(".top-progress-cluster");
+    const environment = environmentSelect?.closest(".history-environment");
+    const action = document.querySelector(".history-settings-trigger");
     const environmentBox = environment?.getBoundingClientRect();
     const actionBox = action?.getBoundingClientRect();
-    const progressBox = progress?.getBoundingClientRect();
     return {
       environmentRight: environmentBox?.right ?? NaN,
-      environmentLeft: environmentBox?.left ?? NaN,
       environmentCenter: environmentBox
         ? environmentBox.top + environmentBox.height / 2
         : NaN,
@@ -342,7 +339,10 @@ test("mobile environment control sits beside the header action", async ({
       actionCenter: actionBox
         ? actionBox.top + actionBox.height / 2
         : NaN,
-      progressRight: progressBox?.right ?? NaN,
+      footerRight: document
+        .querySelector(".history-footer")
+        ?.getBoundingClientRect().right ?? NaN,
+      actionRight: actionBox?.right ?? NaN,
     };
   });
   expect(geometry.environmentRight).toBeLessThan(geometry.actionLeft);
@@ -350,26 +350,24 @@ test("mobile environment control sits beside the header action", async ({
   expect(
     Math.abs(geometry.environmentCenter - geometry.actionCenter),
   ).toBeLessThan(1);
-  expect(geometry.environmentLeft).toBeGreaterThanOrEqual(
-    geometry.progressRight,
-  );
+  expect(geometry.actionRight).toBeLessThanOrEqual(geometry.footerRight);
 
   await page.setViewportSize({ width: 360, height: 780 });
   const compactGeometry = await page.evaluate(() => {
     const environment = document
-      .querySelector(".conversation-nav-actions #mobile-environment-select")
-      ?.closest(".conversation-environment")
+      .querySelector(".history-footer #mobile-environment-select")
+      ?.closest(".history-environment")
       ?.getBoundingClientRect();
-    const progress = document
-      .querySelector(".top-progress-cluster")
+    const settings = document
+      .querySelector(".history-settings-trigger")
       ?.getBoundingClientRect();
     return {
-      environmentLeft: environment?.left ?? NaN,
-      progressRight: progress?.right ?? NaN,
+      environmentRight: environment?.right ?? NaN,
+      settingsLeft: settings?.left ?? NaN,
     };
   });
-  expect(compactGeometry.environmentLeft).toBeGreaterThanOrEqual(
-    compactGeometry.progressRight,
+  expect(compactGeometry.environmentRight).toBeLessThan(
+    compactGeometry.settingsLeft,
   );
 });
 
