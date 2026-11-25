@@ -302,6 +302,77 @@ test("mobile hydrates backend sessions, skills and streamed replies", async ({
   );
 });
 
+test("mobile environment control sits beside the header action", async ({
+  page,
+}) => {
+  const calls = [];
+  await mockBackend(page, calls);
+  await page.setViewportSize({ width: 430, height: 932 });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+
+  const environment = page.locator(
+    ".conversation-nav-actions #mobile-environment-select",
+  );
+  await expect(environment).toBeVisible();
+  await expect(environment).toHaveValue("local");
+  await expect(page.locator(".phone-composer #mobile-environment-select")).toHaveCount(
+    0,
+  );
+
+  const geometry = await page.evaluate(() => {
+    const environmentSelect = document.querySelector(
+      ".conversation-nav-actions #mobile-environment-select",
+    );
+    const environment = environmentSelect?.closest(".conversation-environment");
+    const action = document.querySelector(
+      '.conversation-nav-actions [data-action="open-main-nav"]',
+    );
+    const progress = document.querySelector(".top-progress-cluster");
+    const environmentBox = environment?.getBoundingClientRect();
+    const actionBox = action?.getBoundingClientRect();
+    const progressBox = progress?.getBoundingClientRect();
+    return {
+      environmentRight: environmentBox?.right ?? NaN,
+      environmentLeft: environmentBox?.left ?? NaN,
+      environmentCenter: environmentBox
+        ? environmentBox.top + environmentBox.height / 2
+        : NaN,
+      actionLeft: actionBox?.left ?? NaN,
+      actionCenter: actionBox
+        ? actionBox.top + actionBox.height / 2
+        : NaN,
+      progressRight: progressBox?.right ?? NaN,
+    };
+  });
+  expect(geometry.environmentRight).toBeLessThan(geometry.actionLeft);
+  expect(geometry.actionLeft - geometry.environmentRight).toBeLessThan(12);
+  expect(
+    Math.abs(geometry.environmentCenter - geometry.actionCenter),
+  ).toBeLessThan(1);
+  expect(geometry.environmentLeft).toBeGreaterThanOrEqual(
+    geometry.progressRight,
+  );
+
+  await page.setViewportSize({ width: 360, height: 780 });
+  const compactGeometry = await page.evaluate(() => {
+    const environment = document
+      .querySelector(".conversation-nav-actions #mobile-environment-select")
+      ?.closest(".conversation-environment")
+      ?.getBoundingClientRect();
+    const progress = document
+      .querySelector(".top-progress-cluster")
+      ?.getBoundingClientRect();
+    return {
+      environmentLeft: environment?.left ?? NaN,
+      progressRight: progress?.right ?? NaN,
+    };
+  });
+  expect(compactGeometry.environmentLeft).toBeGreaterThanOrEqual(
+    compactGeometry.progressRight,
+  );
+});
+
 test("mobile renders backend approvals and user questions", async ({ page }) => {
   const calls = [];
   await mockBackend(page, calls);
