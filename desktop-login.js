@@ -20,8 +20,6 @@
   const codeButton = gate.querySelector(".login-code-button");
   const legalButtons = gate.querySelectorAll(".login-legal button");
   const fieldElements = gate.querySelectorAll(".login-field");
-  const loginPanelWrap = document.getElementById("login-panel-wrap");
-  const loginPanel = gate.querySelector(".login-panel");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const authKey = "qianbian-desktop-auth";
@@ -48,12 +46,6 @@
   let focusTimer = 0;
   let countdownTimer = 0;
   let countdown = 0;
-  let longPressTimer = 0;
-  let dragPending = false;
-  let draggingLogin = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  let dragPointerId = null;
 
   function readProfile() {
     try {
@@ -83,76 +75,6 @@
         "aria-hidden": "true",
       },
     });
-  }
-
-  function clearLongPress() {
-    window.clearTimeout(longPressTimer);
-    longPressTimer = 0;
-    dragPending = false;
-  }
-
-  function finishLoginDrag() {
-    clearLongPress();
-    if (!draggingLogin || !loginPanelWrap) {
-      dragPointerId = null;
-      return;
-    }
-    draggingLogin = false;
-    loginPanelWrap.classList.remove("is-dragging");
-    loginPanelWrap.classList.add("is-snapping");
-    loginPanelWrap.style.setProperty("--login-drag-x", "0px");
-    loginPanelWrap.style.setProperty("--login-drag-y", "0px");
-    if (
-      dragPointerId !== null &&
-      loginPanelWrap.hasPointerCapture?.(dragPointerId)
-    ) {
-      loginPanelWrap.releasePointerCapture(dragPointerId);
-    }
-    dragPointerId = null;
-    window.setTimeout(
-      () => {
-        loginPanelWrap.classList.remove("is-snapping");
-        loginPanelWrap.style.removeProperty("--login-drag-x");
-        loginPanelWrap.style.removeProperty("--login-drag-y");
-      },
-      reduceMotion.matches ? 20 : 560,
-    );
-  }
-
-  function beginLoginDrag(event) {
-    if (event.button !== 0 || !loginPanelWrap) return;
-    event.preventDefault();
-    clearLongPress();
-    dragPending = true;
-    dragStartX = event.clientX;
-    dragStartY = event.clientY;
-    dragPointerId = event.pointerId;
-    longPressTimer = window.setTimeout(() => {
-      draggingLogin = true;
-      loginPanelWrap.classList.remove("is-snapping");
-      loginPanelWrap.classList.add("is-dragging");
-      loginPanelWrap.setPointerCapture?.(dragPointerId);
-      navigator.vibrate?.(8);
-    }, reduceMotion.matches ? 0 : 220);
-  }
-
-  function moveLoginDrag(event) {
-    if (!draggingLogin || !loginPanelWrap) return;
-    if (dragPointerId !== null && event.pointerId !== dragPointerId) return;
-    event.preventDefault();
-    const rect = loginPanelWrap.getBoundingClientRect();
-    const maxX = Math.max(0, window.innerWidth / 2 - rect.width / 2 - 12);
-    const maxY = Math.max(0, window.innerHeight / 2 - rect.height / 2 - 12);
-    const x = Math.max(
-      -maxX,
-      Math.min(maxX, event.clientX - dragStartX),
-    );
-    const y = Math.max(
-      -maxY,
-      Math.min(maxY, event.clientY - dragStartY),
-    );
-    loginPanelWrap.style.setProperty("--login-drag-x", `${x}px`);
-    loginPanelWrap.style.setProperty("--login-drag-y", `${y}px`);
   }
 
   function setLocked(locked) {
@@ -539,14 +461,6 @@
     }, 1000);
   }
 
-  function syncPointer(event) {
-    if (reduceMotion.matches || dragPending || draggingLogin) return;
-    const x = event.clientX / window.innerWidth - 0.5;
-    const y = event.clientY / window.innerHeight - 0.5;
-    root.style.setProperty("--login-pointer-x", `${x * 24}px`);
-    root.style.setProperty("--login-pointer-y", `${y * 20}px`);
-  }
-
   function togglePasswordVisibility() {
     const visible = passwordInput.type === "text";
     passwordInput.type = visible ? "password" : "text";
@@ -562,24 +476,6 @@
   }
 
   form.addEventListener("submit", handleSubmit);
-  loginPanel?.addEventListener("pointerdown", (event) => {
-    if (event.target.closest("input, textarea, select, button, a, label")) {
-      return;
-    }
-    beginLoginDrag(event);
-  });
-  window.addEventListener("pointermove", moveLoginDrag, {
-    passive: false,
-  });
-  window.addEventListener("pointerup", finishLoginDrag);
-  window.addEventListener("pointercancel", finishLoginDrag);
-  window.addEventListener("blur", finishLoginDrag);
-  gate.addEventListener("pointermove", syncPointer, { passive: true });
-  gate.addEventListener("pointerleave", () => {
-    if (dragPending || draggingLogin) return;
-    root.style.setProperty("--login-pointer-x", "0px");
-    root.style.setProperty("--login-pointer-y", "0px");
-  });
 
   fieldElements.forEach((field) => {
     const input = field.querySelector("input");
