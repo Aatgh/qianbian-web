@@ -315,4 +315,14 @@ test("mobile shows device task progress and refresh", async ({ page }) => {
         calls.filter((call) => call.pathname === "/devices/1/tasks").length,
     )
     .toBeGreaterThan(beforeRefresh);
+  const afterManualRefresh = calls.filter(
+    (call) => call.pathname === "/devices/1/tasks",
+  ).length;
+  await expect
+    .poll(
+      () =>
+        calls.filter((call) => call.pathname === "/devices/1/tasks").length,
+      { timeout: 7000 },
+    )
+    .toBeGreaterThan(afterManualRefresh);
 });

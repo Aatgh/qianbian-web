@@ -1047,6 +1047,16 @@ test("desktop shows live device task progress", async ({ page }) => {
         calls.filter((call) => call.pathname === "/devices/1/tasks").length,
     )
     .toBeGreaterThan(beforeRefresh);
+  const afterManualRefresh = calls.filter(
+    (call) => call.pathname === "/devices/1/tasks",
+  ).length;
+  await expect
+    .poll(
+      () =>
+        calls.filter((call) => call.pathname === "/devices/1/tasks").length,
+      { timeout: 7000 },
+    )
+    .toBeGreaterThan(afterManualRefresh);
 });
 
 test("desktop shows ICP footer", async ({ page }) => {
