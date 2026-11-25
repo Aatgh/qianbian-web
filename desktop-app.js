@@ -2398,7 +2398,7 @@
       <div class="chat-empty">
         <div class="empty-inner">
           <h2>一句话，<strong>千变万化。</strong></h2>
-          <p>说出目标，千变会整理上下文、调用技能，并和你一起把事情推进到完成。</p>
+          <p>多和千变聊聊，聊得越多，它就越懂你，慢慢长成另一个你。</p>
         </div>
       </div>
     `;

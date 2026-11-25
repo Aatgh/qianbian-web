@@ -674,7 +674,7 @@ test("desktop empty state omits suggestion shortcuts", async ({ page }) => {
     "一句话，千变万化。",
   );
   await expect(page.locator(".empty-inner > p")).toContainText(
-    "说出目标，千变会整理上下文",
+    "多和千变聊聊，聊得越多，它就越懂你，慢慢长成另一个你。",
   );
   await expect(page.locator(".suggestion-grid")).toHaveCount(0);
   await expect(page.locator("[data-suggestion]")).toHaveCount(0);
