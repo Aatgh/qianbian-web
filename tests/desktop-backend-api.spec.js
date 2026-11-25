@@ -136,7 +136,7 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     await api.loginPhone({ phone: "13800000000", code: "123456" });
     await api.logout();
     await api.devices();
-    await api.startDevicePairing();
+    await api.startDevicePairing({ type: "windows", name: "我的笔记本" });
     await api.updateDevice("device-1", { name: "我的笔记本" });
     await api.deleteDevice("device-1");
     await api.connectorReleases();
@@ -246,6 +246,13 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
 
   expect(result.base).toBe("http://frontend.test/api");
   expect(result.exportSize).toBeGreaterThan(0);
+  const pairingCall = calls.find(
+    (call) => call.pathname === "/devices/pair/start",
+  );
+  expect(JSON.parse(pairingCall.body)).toEqual({
+    type: "windows",
+    name: "我的笔记本",
+  });
   const startCall = calls.find((call) => call.pathname === "/session/start");
   expect(JSON.parse(startCall.body)).toEqual({
     modelId: "2",
@@ -256,6 +263,50 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     (call) => call.pathname === "/skills/publish",
   );
   expect(publishCall.contentType).toContain("multipart/form-data");
+});
+
+test("desktop API forwards complete device status events", async ({ page }) => {
+  await page.route("http://frontend.test/", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<!doctype html><html><body></body></html>",
+    }),
+  );
+  await page.route("http://frontend.test/api/events", (route) =>
+    route.fulfill({
+      headers: {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+      },
+      body: [
+        "event: device/status",
+        'data: {"devices":[{"id":1,"name":"工作笔记本","type":"windows","platform":"Windows 11","status":"0","capabilitiesJson":"[]","permissionsJson":null}]}',
+        "",
+        "",
+      ].join("\n"),
+    }),
+  );
+
+  await page.goto("http://frontend.test/");
+  await page.addScriptTag({ path: apiScriptPath });
+  await page.evaluate(() => {
+    window.QianbianApi.setBase("http://frontend.test/api");
+    window.__deviceStatusEvent = null;
+    window.__deviceEvents = window.QianbianApi.connectEvents({
+      onEvent(method, params) {
+        window.__deviceStatusEvent = { method, params };
+      },
+    });
+  });
+
+  await expect
+    .poll(() => page.evaluate(() => window.__deviceStatusEvent))
+    .toMatchObject({
+      method: "device/status",
+      params: {
+        devices: [{ id: 1, status: "0" }],
+      },
+    });
 });
 
 test("desktop app hydrates sessions, models and approval prompts from API", async ({
@@ -589,11 +640,13 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
         json: {
           devices: [
             {
-              id: "desktop-device",
+              id: 1,
               name: "工作笔记本",
-              platform: "windows",
-              status: "online",
-              capabilities: ["files", "terminal"],
+              type: "windows",
+              platform: "Windows 11",
+              status: "1",
+              capabilitiesJson: '["files","terminal"]',
+              permissionsJson: null,
             },
           ],
         },
@@ -604,7 +657,9 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
         json: {
           pairingCode: "135790",
           expiresAt: "2026-11-25T12:00:00+08:00",
-          qrPayload: "qianbian://pair?code=135790",
+          qrPayload:
+            '{"type":"qianbian-device","code":"135790","server":"https://agiqianbian.com"}',
+          type: "windows",
         },
       });
     }
@@ -668,7 +723,11 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
   await page.locator("#account-menu-button").click();
   await expect(page.locator(".account-device-row")).toContainText("工作笔记本");
   await page.locator("[data-start-device-pair]").click();
+  await page.locator("[data-device-pair-name]").fill("新设备");
+  await page.locator("[data-submit-device-pair]").click();
   await expect(page.locator(".account-device-pair")).toContainText("135790");
+  expect(calls.find((call) => call.pathname === "/devices/pair/start").body)
+    .toEqual({ type: "windows", name: "新设备" });
 });
 
 test("desktop manages device name, pause state and pairing QR", async ({
@@ -676,12 +735,13 @@ test("desktop manages device name, pause state and pairing QR", async ({
 }) => {
   const calls = [];
   const device = {
-    id: "desktop-device",
+    id: 1,
     name: "工作笔记本",
-    platform: "windows",
-    status: "online",
-    paused: false,
-    capabilities: ["files", "terminal"],
+    type: "windows",
+    platform: "Windows 11",
+    status: "1",
+    capabilitiesJson: '["files","terminal"]',
+    permissionsJson: null,
   };
   await page.route("http://backend.test/api/**", async (route) => {
     const request = route.request();
@@ -718,18 +778,22 @@ test("desktop manages device name, pause state and pairing QR", async ({
         json: {
           pairingCode: "135790",
           expiresAt: "2026-11-25T12:00:00+08:00",
-          qrPayload: "qianbian://pair?code=135790",
+          qrPayload:
+            '{"type":"qianbian-device","code":"135790","server":"https://agiqianbian.com"}',
+          type: "windows",
         },
       });
     }
     if (
-      pathname === "/devices/desktop-device" &&
+      pathname === "/devices/1" &&
       request.method() === "PATCH"
     ) {
       const patch = request.postDataJSON();
       if (typeof patch.name === "string") device.name = patch.name;
-      if (typeof patch.paused === "boolean") device.paused = patch.paused;
-      return route.fulfill({ headers, json: { device } });
+      if (typeof patch.paused === "boolean") {
+        device.status = patch.paused ? "2" : "1";
+      }
+      return route.fulfill({ status: 204, headers });
     }
     if (pathname === "/environments") {
       return route.fulfill({
@@ -776,11 +840,14 @@ test("desktop manages device name, pause state and pairing QR", async ({
   await unlockDesktop(page);
   await page.locator("#account-menu-button").click();
   await page.locator("[data-start-device-pair]").click();
+  await expect(page.locator("[data-device-pair-form]")).toBeVisible();
+  await page.locator("[data-device-pair-name]").fill("设计工作站");
+  await page.locator("[data-submit-device-pair]").click();
 
   const pairingQr = page.locator(".account-device-pair .device-pair-qr");
   await expect(pairingQr).toHaveAttribute(
     "data-qr-payload",
-    "qianbian://pair?code=135790",
+    /"code":"135790"/,
   );
   await expect(page.locator(".account-device-pair")).not.toContainText(
     "有效期至 刚刚",
@@ -797,31 +864,34 @@ test("desktop manages device name, pause state and pairing QR", async ({
       }),
     )
     .toBe(true);
-  await page.locator('[data-edit-device="desktop-device"]').click();
+  await expect(page.locator(".account-device-row")).toContainText(
+    "Windows 11 · 在线",
+  );
+  await page.locator('[data-edit-device="1"]').click();
   await page
-    .locator('[data-device-name-input="desktop-device"]')
+    .locator('[data-device-name-input="1"]')
     .fill("设计笔记本");
-  await page.locator('[data-save-device-name="desktop-device"]').click();
+  await page.locator('[data-save-device-name="1"]').click();
   await expect(page.locator(".account-device-row")).toContainText("设计笔记本");
-  expect(calls.find((call) => call.pathname === "/devices/desktop-device"))
+  expect(calls.find((call) => call.pathname === "/devices/1"))
     .toMatchObject({ method: "PATCH", body: { name: "设计笔记本" } });
 
-  await page.locator('[data-toggle-device-pause="desktop-device"]').click();
+  await page.locator('[data-toggle-device-pause="1"]').click();
   await expect(page.locator(".account-device-row")).toContainText("已暂停");
   expect(
-    calls.filter((call) => call.pathname === "/devices/desktop-device").at(-1),
+    calls.filter((call) => call.pathname === "/devices/1").at(-1),
   ).toMatchObject({ method: "PATCH", body: { paused: true } });
   await expect(
-    page.locator('#desktop-environment-select option[value="desktop-device"]'),
+    page.locator('#desktop-environment-select option[value="1"]'),
   ).toHaveText(/已暂停/);
   await expect(
-    page.locator('#desktop-environment-select option[value="desktop-device"]'),
+    page.locator('#desktop-environment-select option[value="1"]'),
   ).toBeDisabled();
 
-  await page.locator('[data-toggle-device-pause="desktop-device"]').click();
+  await page.locator('[data-toggle-device-pause="1"]').click();
   await expect(page.locator(".account-device-row")).toContainText("在线");
   expect(
-    calls.filter((call) => call.pathname === "/devices/desktop-device").at(-1),
+    calls.filter((call) => call.pathname === "/devices/1").at(-1),
   ).toMatchObject({ method: "PATCH", body: { paused: false } });
   await expect(page.locator("[data-open-connectors]")).toHaveAttribute(
     "href",

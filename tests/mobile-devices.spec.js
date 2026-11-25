@@ -15,13 +15,14 @@ async function mockDeviceBackend(page, calls, options = {}) {
   let loggedIn = Boolean(options.loggedIn);
   const devices = options.devices || [
     {
-      id: "device-1",
+      id: 1,
       name: "我的笔记本",
-      platform: "windows",
-      status: "online",
+      type: "windows",
+      platform: "Windows 11",
+      status: "1",
       lastSeenAt: "2026-11-25T10:30:00+08:00",
-      permissions: { roots: ["D:/workspace"] },
-      capabilities: ["files", "terminal"],
+      capabilitiesJson: '["files","terminal"]',
+      permissionsJson: null,
     },
   ];
   await page.route("http://backend.test/api/**", async (route) => {
@@ -74,21 +75,23 @@ async function mockDeviceBackend(page, calls, options = {}) {
       return route.fulfill({
         headers,
         json: {
-          pairingCode: "482913",
+          pairingCode: "7YKN85",
           expiresAt: "2026-11-25T10:35:00+08:00",
-          qrPayload: "qianbian://pair?code=482913",
+          qrPayload:
+            '{"type":"qianbian-device","code":"7YKN85","server":"https://agiqianbian.com"}',
+          type: "android",
         },
       });
     }
-    if (pathname === "/devices/device-1" && request.method() === "PATCH") {
+    if (pathname === "/devices/1" && request.method() === "PATCH") {
       const patch = request.postDataJSON();
       if (typeof patch.name === "string") devices[0].name = patch.name;
       if (typeof patch.paused === "boolean") {
-        devices[0].paused = patch.paused;
+        devices[0].status = patch.paused ? "2" : "1";
       }
-      return route.fulfill({ headers, json: { device: devices[0] } });
+      return route.fulfill({ status: 204, headers: corsHeaders });
     }
-    if (pathname === "/devices/device-1" && request.method() === "DELETE") {
+    if (pathname === "/devices/1" && request.method() === "DELETE") {
       devices.splice(0, devices.length);
       return route.fulfill({ status: 204, headers: corsHeaders });
     }
@@ -182,13 +185,24 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
   const devices = page.locator(".mobile-devices-screen");
   await expect(devices).toBeVisible();
   await expect(devices).toContainText("我的笔记本");
-  await expect(devices).toContainText("在线");
+  await expect(devices).toContainText("Windows 11 · 在线");
+  await expect(devices).toContainText("能力：files / terminal");
 
   await page.locator('[data-action="start-device-pair"]').click();
-  await expect(devices).toContainText("482913");
+  await expect(devices.locator("[data-device-pair-form]")).toBeVisible();
+  await page.locator("[data-device-pair-type]").selectOption("android");
+  await page.locator("[data-device-pair-name]").fill("随身手机");
+  await page.locator('[data-action="submit-device-pair"]').click();
+  expect(
+    calls.find((call) => call.pathname === "/devices/pair/start"),
+  ).toMatchObject({
+    method: "POST",
+    body: { type: "android", name: "随身手机" },
+  });
+  await expect(devices).toContainText("7YKN85");
   await expect(devices.locator(".device-pair-qr")).toHaveAttribute(
     "data-qr-payload",
-    "qianbian://pair?code=482913",
+    /"code":"7YKN85"/,
   );
   await expect(page.locator("[data-device-download-link]")).toHaveAttribute(
     "href",
@@ -196,47 +210,56 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
   );
 
   await page
-    .locator('[data-action="edit-device"][data-device-id="device-1"]')
+    .locator('[data-action="edit-device"][data-device-id="1"]')
     .click();
-  await page.locator('[data-device-name-input="device-1"]').fill("随身笔记本");
+  await page.locator('[data-device-name-input="1"]').fill("随身笔记本");
   await page
-    .locator('[data-action="save-device-name"][data-device-id="device-1"]')
+    .locator('[data-action="save-device-name"][data-device-id="1"]')
     .click();
   await expect(devices).toContainText("随身笔记本");
   expect(
     calls.find(
       (call) =>
-        call.pathname === "/devices/device-1" &&
+        call.pathname === "/devices/1" &&
         call.body?.name === "随身笔记本",
     ),
   ).toBeTruthy();
   await page
-    .locator('[data-action="toggle-device-pause"][data-device-id="device-1"]')
+    .locator('[data-action="toggle-device-pause"][data-device-id="1"]')
     .click();
   await expect(devices).toContainText("已暂停");
   expect(
     calls.find(
       (call) =>
-        call.pathname === "/devices/device-1" &&
+        call.pathname === "/devices/1" &&
         call.body?.paused === true,
     ),
   ).toBeTruthy();
   await page
-    .locator('[data-action="toggle-device-pause"][data-device-id="device-1"]')
+    .locator('[data-action="toggle-device-pause"][data-device-id="1"]')
     .click();
   await expect(devices).toContainText("在线");
 
   await page.evaluate(() => {
     window.__qianbianMobileBackend.handleEvent("device/status", {
-      deviceId: "device-1",
-      status: "offline",
+      devices: [
+        {
+          id: 1,
+          name: "随身笔记本",
+          type: "windows",
+          platform: "Windows 11",
+          status: "0",
+          capabilitiesJson: '["files","terminal"]',
+          permissionsJson: null,
+        },
+      ],
     });
   });
   await expect(devices).toContainText("离线");
 
   await page.locator('[data-action="delete-device"]').click();
   await expect
-    .poll(() => calls.find((call) => call.pathname === "/devices/device-1"))
+    .poll(() => calls.find((call) => call.pathname === "/devices/1"))
     .toBeTruthy();
   await expect(page.locator(".mobile-device-card")).toHaveCount(0);
 });

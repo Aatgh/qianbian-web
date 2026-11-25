@@ -135,3 +135,23 @@ test("connectors page recovers from a manifest error", async ({ page }) => {
   await page.locator("[data-retry-releases]").click();
   await expect(page.locator(".connector-release-card")).toHaveCount(1);
 });
+
+test("connectors page explains when the release API is not available", async ({
+  page,
+}) => {
+  await page.route("http://frontend.test/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === "/api/connectors/releases") {
+      return route.fulfill({
+        status: 404,
+        json: { error: "接口不存在" },
+      });
+    }
+    return serveStatic(route);
+  });
+
+  await page.goto(pageUrl);
+  await expect(page.locator("[data-release-pending]")).toContainText(
+    "安装包版本接口尚未开放",
+  );
+});
