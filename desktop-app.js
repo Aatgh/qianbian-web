@@ -662,27 +662,6 @@
     },
   ];
 
-  const SUGGESTIONS = [
-    {
-      title: "整理一个想法",
-      copy: "把模糊目标拆成清晰步骤",
-      icon: "list-tree",
-      prompt: "我有一个还不完整的想法，请帮我梳理目标、关键步骤和下一步。",
-    },
-    {
-      title: "创建产品方案",
-      copy: "补充流程、边界与验收标准",
-      icon: "notebook-pen",
-      prompt: "请帮我整理一份产品方案，包含目标用户、核心流程和验收条件。",
-    },
-    {
-      title: "检查一个页面",
-      copy: "从布局、交互和响应式入手",
-      icon: "scan-search",
-      prompt: "请检查一个网页页面，分析布局、交互、响应式和可访问性问题。",
-    },
-  ];
-
   const COMPOSE_ACTIONS = [
     {
       id: "upload-file",
@@ -2420,17 +2399,6 @@
         <div class="empty-inner">
           <h2>一句话，<strong>千变万化。</strong></h2>
           <p>说出目标，千变会整理上下文、调用技能，并和你一起把事情推进到完成。</p>
-          <div class="suggestion-grid">
-            ${SUGGESTIONS.map(
-              (suggestion) => `
-                <button class="suggestion-button" data-suggestion="${escapeHtml(suggestion.prompt)}" type="button">
-                  <span class="suggestion-icon">${icon(suggestion.icon)}</span>
-                  <strong>${escapeHtml(suggestion.title)}</strong>
-                  <small>${escapeHtml(suggestion.copy)}</small>
-                </button>
-              `,
-            ).join("")}
-          </div>
         </div>
       </div>
     `;
@@ -7479,23 +7447,6 @@ export const skill = {
     const sessionTarget = event.target.closest("[data-session]");
     if (sessionTarget) {
       selectSession(sessionTarget.dataset.session);
-      return;
-    }
-    const suggestion = event.target.closest("[data-suggestion]");
-    if (suggestion) {
-      state.draft = suggestion.dataset.suggestion;
-      state.composerOpen = false;
-      state.composerOpening = false;
-      state.composerClosing = false;
-      state.view = "chat";
-      render();
-      window.requestAnimationFrame(() => {
-        const input = document.getElementById("desktop-composer-input");
-        if (input) {
-          input.focus();
-          input.setSelectionRange(input.value.length, input.value.length);
-        }
-      });
       return;
     }
     if (event.target.closest(".skill-market-refresh")) {
