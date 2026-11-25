@@ -141,26 +141,33 @@ GET /api/devices/{id}/tasks
 - 风险等级
 - 允许一次 / 本会话 / 拒绝
 
-## 5. 权限配置
-
-后端下一步提供：
+## 5. 设备权限（已可用）
 
 ```http
 GET /api/devices/{id}/permissions
 PUT /api/devices/{id}/permissions
 ```
 
-字段草案：
+字段：
 
 ```json
 {
   "allowedRoots": ["C:/Users/me/Desktop"],
   "terminal": true,
+  "files": true,
   "screenshot": false
 }
 ```
 
-前端可以先预留设备权限卡片，不要自行伪造接口。
+连接器会在启动时和每 60 秒同步一次，权限变更不需要重启。
+
+## 5.1 设备审计（已可用）
+
+```http
+GET /api/devices/{id}/audit
+```
+
+返回配对、权限修改、任务创建和任务完成/失败记录。
 
 ## 6. 不要做的事
 
