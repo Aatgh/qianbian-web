@@ -12,6 +12,7 @@
     "(prefers-reduced-motion: reduce)",
   );
   const PARTICLE_COUNT = 210;
+  const DEFAULT_ZOOM = 1.42;
   const MIN_ZOOM = 0.68;
   const MAX_ZOOM = 2.35;
   const COLORS = [
@@ -29,8 +30,8 @@
   let animationFrame = 0;
   let lastTime = performance.now();
   let rotation = 0;
-  let zoom = 1;
-  let targetZoom = 1;
+  let zoom = DEFAULT_ZOOM;
+  let targetZoom = DEFAULT_ZOOM;
   let seed = 0x7f4a7c15;
   let particles = [];
   const sprites = new Map();
@@ -188,7 +189,7 @@
   }
 
   function setZoom(value) {
-    targetZoom = clampZoom(Number(value) || 1);
+    targetZoom = clampZoom(Number(value) || DEFAULT_ZOOM);
     canvas.dataset.zoom = targetZoom.toFixed(3);
   }
 
@@ -197,7 +198,7 @@
   }
 
   function reset() {
-    setZoom(1);
+    setZoom(DEFAULT_ZOOM);
   }
 
   function stats() {
@@ -224,7 +225,7 @@
   resizeObserver.observe(canvas);
   createParticles();
   resize();
-  setZoom(1);
+  setZoom(DEFAULT_ZOOM);
   animationFrame = window.requestAnimationFrame(render);
 
   window.QianbianLoginGalaxy = Object.freeze({
