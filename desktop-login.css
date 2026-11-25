@@ -497,7 +497,7 @@ body.login-locked {
   max-width: 560px;
   padding: 42px 40px 34px;
   border-color: rgba(255, 255, 255, 0.18);
-  border-radius: 40px;
+  border-radius: 56px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.115), transparent 32%),
     radial-gradient(
@@ -1256,7 +1256,7 @@ body.login-locked {
   touch-action: none;
   padding: 33px 32px 27px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 36px;
+  border-radius: 52px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.065), transparent 36%),
     var(--login-surface);
@@ -1631,17 +1631,22 @@ body.login-locked {
 .login-field input {
   width: 100%;
   height: 52px;
-  padding: 19px 44px 7px 14px;
+  padding: 0 44px 0 14px;
   border: 0;
   outline: 0;
   background: transparent;
   color: var(--login-text);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .login-field input::placeholder {
-  color: transparent;
+  color: rgba(239, 231, 255, 0.46);
+  opacity: 1;
+}
+
+.login-field:focus-within input::placeholder {
+  color: rgba(239, 231, 255, 0.58);
 }
 
 .login-field-line {
@@ -1756,6 +1761,36 @@ body.login-locked {
 
 .login-mode-panel {
   animation: login-mode-in 260ms var(--login-ease) both;
+}
+
+.login-mode-switch-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: -5px;
+}
+
+.login-mode-switch {
+  padding: 1px 0 3px;
+  border: 0;
+  border-bottom: 1px solid rgba(240, 181, 106, 0.62);
+  background: transparent;
+  color: var(--login-gold);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.3;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.login-mode-switch:hover {
+  border-bottom-color: var(--login-text);
+  color: var(--login-text);
+}
+
+.login-mode-switch:focus-visible {
+  outline: 2px solid rgba(240, 181, 106, 0.48);
+  outline-offset: 3px;
 }
 
 .login-meta-row {
@@ -2415,8 +2450,7 @@ body.login-locked {
 
   .login-field input {
     height: 42px;
-    padding-top: 16px;
-    padding-bottom: 4px;
+    padding: 0 44px 0 14px;
   }
 
   .login-field-label {
@@ -2540,7 +2574,7 @@ body.login-locked {
   .login-panel {
     max-width: none;
     padding: 25px 22px 22px;
-    border-radius: 22px;
+    border-radius: 30px;
   }
 
   .login-footer {
@@ -2598,7 +2632,7 @@ body.login-locked {
 
   .login-panel {
     padding: 22px 17px 18px;
-    border-radius: 20px;
+    border-radius: 28px;
   }
 
   .login-panel-head h2 {

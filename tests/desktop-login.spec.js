@@ -108,7 +108,7 @@ test("email account switching validates the email and code", async ({ page }) =>
 
   const gate = page.locator("#login-gate");
   const account = gate.getByLabel("账号/邮箱/手机号", { exact: true });
-  await account.fill("not-an-email");
+  await account.fill("not-an-email@");
   await gate.getByRole("button", { name: "登录", exact: true }).click();
   await expect(gate.getByRole("alert")).toContainText("请输入有效的邮箱地址");
 

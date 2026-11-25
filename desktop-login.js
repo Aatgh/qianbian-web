@@ -6,11 +6,8 @@
   const body = document.body;
   const appShell = document.getElementById("app-shell");
   const form = document.getElementById("login-form");
-  const phoneInput = document.getElementById("login-phone");
-  const emailInput = document.getElementById("login-email");
-  const phoneField = document.getElementById("login-phone-field");
-  const emailField = document.getElementById("login-email-field");
-  const accountTabs = gate.querySelector(".login-account-tabs");
+  const accountInput = document.getElementById("login-account");
+  const accountField = document.getElementById("login-account-field");
   const codeInput = document.getElementById("login-code");
   const passwordInput = document.getElementById("login-password");
   const errorBox = document.getElementById("login-error");
@@ -18,7 +15,7 @@
   const submitButton = gate.querySelector(".login-submit");
   const submitLabel = gate.querySelector(".login-submit-label");
   const loginDescription = document.getElementById("login-description");
-  const modeTabs = gate.querySelector(".login-mode-tabs");
+  const modeSwitch = gate.querySelector(".login-mode-switch");
   const passwordToggle = gate.querySelector(".login-password-toggle");
   const codeButton = gate.querySelector(".login-code-button");
   const legalButtons = gate.querySelectorAll(".login-legal button");
@@ -44,8 +41,8 @@
     loggedIn: true,
   };
 
-  let accountType = "phone";
-  let loginMode = "code";
+  let accountType = "account";
+  let loginMode = "password";
   let busy = false;
   let completionTimer = 0;
   let focusTimer = 0;
@@ -184,7 +181,10 @@
     submitButton.classList.remove("is-submitting");
     submitButton.disabled = false;
     submitButton.removeAttribute("aria-busy");
+    accountInput.value = "";
+    accountInput.closest(".login-field")?.classList.remove("has-value");
     passwordInput.value = "";
+    codeInput.value = "";
     passwordInput.type = "password";
     passwordInput.closest(".login-field")?.classList.remove("has-value");
     passwordToggle?.setAttribute("aria-label", "显示密码");
@@ -194,8 +194,8 @@
     codeButton.disabled = false;
     codeButton.textContent = "获取验证码";
     gate.classList.add("login-box-open");
-    setAccountType("phone");
-    setMode("code");
+    accountType = "account";
+    setMode("password");
     hideError();
   }
 
@@ -215,7 +215,7 @@
     }
 
     if (focusEmail) {
-      focusTimer = window.setTimeout(() => phoneInput.focus(), 780);
+      focusTimer = window.setTimeout(() => accountInput.focus(), 780);
     }
   }
 
@@ -241,8 +241,7 @@
     errorBox.textContent = "";
     errorBox.classList.remove("is-info");
     fieldElements.forEach((field) => field.classList.remove("is-invalid"));
-    phoneInput.removeAttribute("aria-invalid");
-    emailInput.removeAttribute("aria-invalid");
+    accountInput.removeAttribute("aria-invalid");
     codeInput.removeAttribute("aria-invalid");
     passwordInput.removeAttribute("aria-invalid");
   }
@@ -281,40 +280,34 @@
     );
   }
 
-  function setAccountType(nextType) {
-    accountType = nextType;
-    if (accountTabs) accountTabs.dataset.account = accountType;
-    gate.querySelectorAll("[data-login-account]").forEach((button) => {
-      const active = button.dataset.loginAccount === accountType;
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-selected", String(active));
-      button.tabIndex = active ? 0 : -1;
-    });
-    phoneField.hidden = accountType !== "phone";
-    emailField.hidden = accountType !== "email";
-    hideError();
-    if (accountType === "phone") phoneInput.focus();
-    else emailInput.focus();
+  function accountTypeForIdentifier(value) {
+    if (validEmail(value)) return "email";
+    if (validPhone(value)) return "phone";
+    return "account";
   }
 
   function setMode(nextMode) {
     loginMode = nextMode === "password" ? "password" : "code";
-    if (modeTabs) modeTabs.dataset.mode = loginMode;
-    gate.querySelectorAll("[data-login-mode]").forEach((button) => {
-      const active = button.dataset.loginMode === loginMode;
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-selected", String(active));
-      button.tabIndex = active ? 0 : -1;
-    });
+    if (modeSwitch) {
+      modeSwitch.dataset.loginMode =
+        loginMode === "password" ? "code" : "password";
+      modeSwitch.textContent =
+        loginMode === "password" ? "验证码登录" : "密码登录";
+      modeSwitch.setAttribute(
+        "aria-pressed",
+        String(loginMode === "code"),
+      );
+    }
     gate.querySelectorAll("[data-login-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.loginPanel !== loginMode;
     });
     hideError();
-    submitLabel.textContent = loginMode === "password" ? "登录" : "登录 / 注册";
+    submitLabel.textContent =
+      loginMode === "password" ? "登录" : "登录 / 注册";
     loginDescription.textContent =
       loginMode === "password"
-        ? "使用已注册的手机号或邮箱和密码登录。"
-        : "手机号或邮箱登录，新用户验证后自动注册。";
+        ? "使用账号、邮箱或手机号登录。"
+        : "手机号或邮箱验证码登录，新用户验证后自动注册。";
     if (loginMode === "password") passwordInput.focus();
     else codeInput.focus();
   }
@@ -410,22 +403,20 @@
     if (busy) return;
     hideError();
 
-    const identifier =
-      accountType === "phone"
-        ? phoneInput.value.trim()
-        : emailInput.value.trim();
-    const identifierField =
-      accountType === "phone"
-        ? phoneInput.closest(".login-field")
-        : emailInput.closest(".login-field");
-    if (accountType === "phone" && !validPhone(identifier)) {
-      showError("请输入有效的 11 位手机号。", identifierField);
+    const identifier = accountInput.value.trim();
+    if (!identifier) {
+      showError("请输入账号、邮箱或手机号。", accountField);
       return;
     }
-    if (accountType === "email" && !validEmail(identifier)) {
-      showError("请输入有效的邮箱地址。", identifierField);
+    if (identifier.includes("@") && !validEmail(identifier)) {
+      showError("请输入有效的邮箱地址。", accountField);
       return;
     }
+    if (/^\d+$/.test(identifier) && !validPhone(identifier)) {
+      showError("请输入有效的 11 位手机号。", accountField);
+      return;
+    }
+    accountType = accountTypeForIdentifier(identifier);
 
     if (loginMode === "password" && passwordInput.value.length < 6) {
       showError(
@@ -450,7 +441,9 @@
             name:
               accountType === "phone"
                 ? `用户${identifier.slice(-4)}`
-                : identifier.split("@")[0],
+                : accountType === "email"
+                  ? identifier.split("@")[0]
+                  : identifier,
             method: `${accountType}-${loginMode}`,
           });
         },
@@ -485,24 +478,20 @@
   }
 
   async function startCodeCountdown() {
-    const identifier =
-      accountType === "phone"
-        ? phoneInput.value.trim()
-        : emailInput.value.trim();
-    if (accountType === "phone" && !validPhone(identifier)) {
-      showError(
-        "请先输入有效的 11 位手机号。",
-        phoneInput.closest(".login-field"),
-      );
+    const identifier = accountInput.value.trim();
+    if (!identifier) {
+      showError("请先输入手机号或邮箱。", accountField);
       return;
     }
-    if (accountType === "email" && !validEmail(identifier)) {
-      showError(
-        "请先输入有效的邮箱地址。",
-        emailInput.closest(".login-field"),
-      );
+    if (/^\d+$/.test(identifier) && !validPhone(identifier)) {
+      showError("请先输入有效的 11 位手机号。", accountField);
       return;
     }
+    if (identifier.includes("@") && !validEmail(identifier)) {
+      showError("请先输入有效的邮箱地址。", accountField);
+      return;
+    }
+    accountType = accountTypeForIdentifier(identifier);
 
     hideError();
 
@@ -526,7 +515,11 @@
       }
     } else {
       showInfo(
-        `验证码已发送到${accountType === "phone" ? "手机号" : "邮箱"} ${identifier}`,
+        accountType === "phone"
+          ? `验证码已发送到手机号 ${identifier}`
+          : accountType === "email"
+            ? `验证码已发送到邮箱 ${identifier}`
+            : `验证码已发送到账号 ${identifier}`,
       );
     }
 
@@ -592,15 +585,12 @@
     const input = field.querySelector("input");
     if (!input) return;
     input.addEventListener("input", () => {
+      if (input === accountInput) {
+        accountType = accountTypeForIdentifier(input.value.trim());
+      }
       syncFieldState(input);
       hideError();
     });
-  });
-
-  gate.querySelectorAll("[data-login-account]").forEach((button) => {
-    button.addEventListener("click", () =>
-      setAccountType(button.dataset.loginAccount),
-    );
   });
 
   gate.querySelectorAll("[data-login-mode]").forEach((button) => {
