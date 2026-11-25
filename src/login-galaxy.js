@@ -2,8 +2,8 @@
   "use strict";
 
   const canvas = document.getElementById("login-galaxy-canvas");
-  const panel = canvas?.closest(".login-panel");
-  if (!canvas || !panel) return;
+  const loginGate = canvas?.closest(".login-gate");
+  if (!canvas || !loginGate) return;
 
   const context = canvas.getContext("2d", { alpha: true });
   if (!context) return;
@@ -119,7 +119,7 @@
   }
 
   function drawDust() {
-    const centerX = width * 0.55;
+    const centerX = width * 0.52;
     const centerY = height * 0.48;
     const radius = Math.min(width, height) * 0.7 * zoom;
     const gradient = context.createRadialGradient(
@@ -152,7 +152,7 @@
 
     context.clearRect(0, 0, width, height);
     drawDust();
-    const centerX = width * 0.55;
+    const centerX = width * 0.52;
     const centerY = height * 0.48;
     const radius = Math.min(width, height) * 0.46 * zoom;
 
@@ -211,7 +211,7 @@
     };
   }
 
-  panel.addEventListener(
+  loginGate.addEventListener(
     "wheel",
     (event) => {
       event.preventDefault();

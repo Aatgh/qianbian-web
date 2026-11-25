@@ -60,13 +60,21 @@ body.login-locked {
 .login-panel-wrap.is-dragging {
   animation: none !important;
   translate: var(--login-drag-x, 0px) var(--login-drag-y, 0px);
+  transform: perspective(1200px)
+    rotateX(var(--login-drag-rx, 0deg))
+    rotateY(var(--login-drag-ry, 0deg))
+    translateZ(28px) !important;
+  transform-style: preserve-3d;
   transition: none !important;
 }
 
 .login-panel-wrap.is-snapping {
   animation: none !important;
   translate: 0 0;
-  transition: translate 460ms var(--login-spring) !important;
+  transform: perspective(1200px) rotateX(0) rotateY(0) translateZ(0) !important;
+  transition:
+    translate 460ms var(--login-spring),
+    transform 460ms var(--login-spring) !important;
 }
 
 .login-panel-wrap.has-dragged {
@@ -1194,8 +1202,9 @@ body.login-locked {
   opacity: 0;
   perspective: 1100px;
   transform: translate3d(30px, 12px, 0) rotateY(-5deg);
+  transform-style: preserve-3d;
   translate: 0 0;
-  will-change: translate;
+  will-change: translate, transform;
 }
 
 .login-gate.is-ready .login-panel-wrap {
@@ -1227,24 +1236,24 @@ body.login-locked {
 }
 
 .login-galaxy-canvas {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  opacity: 0.82;
+  opacity: 0.72;
   pointer-events: none;
   mix-blend-mode: screen;
   mask-image: radial-gradient(
-    ellipse at 56% 48%,
-    #000 32%,
-    rgba(0, 0, 0, 0.8) 66%,
+    ellipse at 52% 48%,
+    #000 20%,
+    rgba(0, 0, 0, 0.82) 68%,
     transparent 100%
   );
   -webkit-mask-image: radial-gradient(
-    ellipse at 56% 48%,
-    #000 32%,
-    rgba(0, 0, 0, 0.8) 66%,
+    ellipse at 52% 48%,
+    #000 20%,
+    rgba(0, 0, 0, 0.82) 68%,
     transparent 100%
   );
 }

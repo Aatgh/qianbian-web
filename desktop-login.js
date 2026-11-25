@@ -102,6 +102,8 @@
     draggingLogin = false;
     loginPanelWrap.classList.remove("is-dragging");
     loginPanelWrap.classList.add("is-snapping");
+    loginPanelWrap.style.setProperty("--login-drag-rx", "0deg");
+    loginPanelWrap.style.setProperty("--login-drag-ry", "0deg");
     loginPanelWrap.style.setProperty("--login-drag-x", "0px");
     loginPanelWrap.style.setProperty("--login-drag-y", "0px");
     if (
@@ -169,6 +171,14 @@
         "--login-drag-y",
         `${dragTargetY}px`,
       );
+      loginPanelWrap.style.setProperty(
+        "--login-drag-rx",
+        `${maxY ? (-dragTargetY / maxY) * 9 : 0}deg`,
+      );
+      loginPanelWrap.style.setProperty(
+        "--login-drag-ry",
+        `${maxX ? (dragTargetX / maxX) * 12 : 0}deg`,
+      );
     });
   }
 
@@ -201,6 +211,8 @@
     );
     loginPanelWrap?.style.removeProperty("--login-drag-x");
     loginPanelWrap?.style.removeProperty("--login-drag-y");
+    loginPanelWrap?.style.removeProperty("--login-drag-rx");
+    loginPanelWrap?.style.removeProperty("--login-drag-ry");
     successPanel.hidden = true;
     gate.classList.remove("is-leaving");
     gate.classList.remove("is-authenticating");
