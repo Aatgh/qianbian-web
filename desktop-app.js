@@ -1010,6 +1010,10 @@
     devicePairType: "windows",
     devicePairName: "",
     deviceRevision: 0,
+    deviceTasks: [],
+    deviceTasksLoaded: false,
+    deviceTasksLoading: false,
+    deviceTasksError: "",
     sessionLoading: false,
     activeTurnId: null,
     pendingApprovals: [],
@@ -1607,6 +1611,38 @@
       });
   }
 
+  async function refreshBackendDeviceTasks() {
+    if (!api || !state.apiAvailable || state.deviceTasksLoading) return;
+    if (!state.devices.length) {
+      state.deviceTasks = [];
+      state.deviceTasksLoaded = true;
+      state.deviceTasksError = "";
+      renderAccountDialog();
+      return;
+    }
+    const taskUtils = window.QianbianDeviceTasks;
+    if (!taskUtils) return;
+    state.deviceTasksLoading = true;
+    state.deviceTasksError = "";
+    renderAccountDialog();
+    const results = await Promise.allSettled(
+      state.devices.map(async (device) => {
+        const payload = await api.deviceTasks(device.id);
+        return taskUtils.normalizeTasks(payload, device.id);
+      }),
+    );
+    const tasks = results.flatMap((result) =>
+      result.status === "fulfilled" ? result.value : [],
+    );
+    if (results.every((result) => result.status === "rejected")) {
+      state.deviceTasksError = "设备任务读取失败";
+    }
+    state.deviceTasks = taskUtils.orderTasks(tasks);
+    state.deviceTasksLoaded = true;
+    state.deviceTasksLoading = false;
+    renderAccountDialog();
+  }
+
   function currentEnvironment() {
     return (
       state.environments.find(
@@ -1863,6 +1899,63 @@
     if (mineSkills.length || mine) state.publishedSkills = mineSkills;
   }
 
+  function renderBackendApprovalContext(approval) {
+    const target =
+      approval.executionTarget && typeof approval.executionTarget === "object"
+        ? approval.executionTarget
+        : {};
+    const targetDevice = state.devices.find(
+      (device) =>
+        device.id ===
+        String(target.deviceId || target.id || approval.deviceId || ""),
+    );
+    const deviceName =
+      target.name ||
+      target.deviceName ||
+      approval.deviceName ||
+      targetDevice?.name ||
+      "";
+    const deviceType =
+      target.type ||
+      target.deviceType ||
+      approval.deviceType ||
+      targetDevice?.type ||
+      "";
+    const path =
+      approval.subject?.path ||
+      approval.subject?.command ||
+      approval.path ||
+      approval.command ||
+      "";
+    const riskValue = String(approval.riskLevel || approval.risk || "");
+    const riskLabel =
+      {
+        high: "高风险",
+        medium: "中风险",
+        low: "低风险",
+      }[riskValue.toLowerCase()] || riskValue;
+    const tags = [
+      deviceName
+        ? `<span>${icon("monitor")}${escapeHtml(deviceName)}</span>`
+        : "",
+      deviceType
+        ? `<span>${escapeHtml(
+            deviceType === "android" ? "Android" : "Windows",
+          )}</span>`
+        : "",
+      riskLabel
+        ? `<span class="is-risk-${escapeHtml(
+            riskValue.toLowerCase(),
+          )}">${icon("shield-alert")}${escapeHtml(riskLabel)}</span>`
+        : "",
+      path
+        ? `<span class="is-path"><code>${escapeHtml(path)}</code></span>`
+        : "",
+    ].filter(Boolean);
+    if (!tags.length) return "";
+    return `<div class="backend-prompt-context">${tags.join("")}</div>`;
+  }
+
   function renderBackendPrompts() {
     if (!backendPromptHost) return;
     const approvalCards = state.pendingApprovals.map((approval) => {
@@ -1881,6 +1974,7 @@
             ${icon("shield-alert")}
           </div>
           <p class="backend-prompt-copy">${escapeHtml(subject)}</p>
+          ${renderBackendApprovalContext(approval)}
           <div class="backend-prompt-actions">
             ${(approval.availableChoices || [])
               .map(
@@ -4154,6 +4248,73 @@ export const skill = {
     );
   }
 
+  function renderAccountDeviceTasks() {
+    if (!state.devices.length) return "";
+    const taskUtils = window.QianbianDeviceTasks;
+    const rows = state.deviceTasks
+      .slice(0, 8)
+      .map((task) => {
+        const device = state.devices.find(
+          (item) => item.id === String(task.deviceId),
+        );
+        const duration = taskUtils?.formatDuration(task) || "";
+        return `
+          <article class="account-device-task" data-task-id="${escapeHtml(
+            task.id || task.type,
+          )}">
+            <span class="account-device-task-icon">${icon(
+              task.type === "terminal.exec" ? "terminal" : "file-search",
+            )}</span>
+            <span class="account-device-task-copy">
+              <strong>${escapeHtml(task.typeLabel)}</strong>
+              <small>${escapeHtml(device?.name || "未知设备")}${
+                task.error ? ` · ${escapeHtml(task.error)}` : ""
+              }</small>
+            </span>
+            <span class="task-status task-status-${escapeHtml(task.tone)}">${escapeHtml(
+              task.statusLabel,
+            )}</span>
+            <span class="account-device-task-duration">${escapeHtml(
+              duration || "—",
+            )}</span>
+          </article>
+        `;
+      })
+      .join("");
+    return `
+      <div class="account-device-tasks">
+        <div class="account-device-tasks-head">
+          <div>
+            <strong>设备任务</strong>
+            <span>${state.deviceTasks.length} 条记录</span>
+          </div>
+          <button data-refresh-device-tasks type="button">${icon(
+            "refresh-cw",
+          )}刷新</button>
+        </div>
+        ${
+          state.deviceTasksError
+            ? `<p class="account-device-error">${escapeHtml(
+                state.deviceTasksError,
+              )}</p>`
+            : ""
+        }
+        <div class="account-device-task-list">
+          ${
+            state.deviceTasksLoading
+              ? `<p class="account-device-empty">正在读取设备任务…</p>`
+              : rows ||
+                `<p class="account-device-empty">${
+                  state.deviceTasksLoaded
+                    ? "暂无设备任务"
+                    : "等待读取设备任务"
+                }</p>`
+          }
+        </div>
+      </div>
+    `;
+  }
+
   function renderAccountDialog() {
     if (!accountDialogHost) return;
     if (!state.accountDialogOpen) {
@@ -4300,6 +4461,7 @@ export const skill = {
             }</p>`
           }
         </div>
+        ${renderAccountDeviceTasks()}
         <a class="account-device-download" data-open-connectors href="${escapeHtml(
           connectorPageUrl(),
         )}">${icon("download")}下载千变设备连接</a>
@@ -4421,6 +4583,7 @@ export const skill = {
     state.accountSwitchOpen = false;
     accountDialogEntering = true;
     renderAccountDialog();
+    refreshBackendDeviceTasks();
     window.requestAnimationFrame(() =>
       accountDialogHost.querySelector(".account-dialog-close")?.focus(),
     );
@@ -6592,6 +6755,10 @@ export const skill = {
       }
       return;
     }
+    if (event.target.closest("[data-refresh-device-tasks]")) {
+      refreshBackendDeviceTasks();
+      return;
+    }
     if (event.target.closest("[data-cancel-device-pair]")) {
       state.devicePairingFormOpen = false;
       state.deviceError = "";
@@ -6659,6 +6826,9 @@ export const skill = {
         .then(() => {
           state.devices = state.devices.filter(
             (device) => device.id !== deviceId,
+          );
+          state.deviceTasks = state.deviceTasks.filter(
+            (task) => task.deviceId !== deviceId,
           );
           applyBackendDevices({ devices: state.devices });
           renderAccountDialog();

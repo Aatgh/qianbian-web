@@ -10101,6 +10101,181 @@ svg {
   color: var(--danger);
 }
 
+.mobile-device-tasks {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.mobile-device-tasks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobile-device-tasks-head > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.mobile-device-tasks-head strong {
+  font-size: 11px;
+}
+
+.mobile-device-tasks-head span {
+  color: var(--phone-muted);
+  font-size: 9px;
+}
+
+.mobile-device-tasks-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--phone-muted);
+  font-size: 9px;
+}
+
+.mobile-device-tasks-head button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.mobile-device-task-list {
+  display: grid;
+  gap: 7px;
+}
+
+.mobile-device-task {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--phone-line);
+  border-radius: 10px;
+  background: var(--phone-surface);
+}
+
+.mobile-device-task-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--phone-surface-soft);
+  color: var(--accent);
+}
+
+.mobile-device-task-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mobile-device-task-copy {
+  min-width: 0;
+}
+
+.mobile-device-task-copy strong,
+.mobile-device-task-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-device-task-copy strong {
+  font-size: 10px;
+}
+
+.mobile-device-task-copy small,
+.mobile-device-task-duration {
+  margin-top: 2px;
+  color: var(--phone-muted);
+  font-size: 8px;
+}
+
+.mobile-device-task-duration {
+  min-width: 30px;
+  text-align: right;
+}
+
+.task-status {
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.task-status-done {
+  background: color-mix(in srgb, var(--success) 11%, transparent);
+  color: var(--success);
+}
+
+.task-status-running {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+
+.task-status-scheduled {
+  background: var(--phone-surface-soft);
+  color: var(--phone-muted);
+}
+
+.task-status-failed {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+
+.mobile-approval-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.mobile-approval-context > span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
+  border: 1px solid var(--phone-line);
+  border-radius: 6px;
+  background: var(--phone-surface-soft);
+  color: var(--phone-muted);
+  font-size: 8px;
+}
+
+.mobile-approval-context svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+
+.mobile-approval-context .is-risk-high {
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--phone-line));
+  background: color-mix(in srgb, var(--danger) 7%, var(--phone-surface));
+  color: var(--danger);
+}
+
+.mobile-approval-context .is-risk-medium {
+  border-color: color-mix(in srgb, var(--warning) 24%, var(--phone-line));
+  background: color-mix(in srgb, var(--warning) 8%, var(--phone-surface));
+  color: var(--warning);
+}
+
+.mobile-approval-context .is-path {
+  max-width: 100%;
+}
+
+.mobile-approval-context code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mobile-devices-help {
   display: grid;
   gap: 5px;

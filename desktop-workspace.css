@@ -533,6 +533,11 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   color: var(--muted);
 }
 
+.task-status-failed {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+
 .task-activity-track {
   height: 3px;
   margin-top: 10px;
@@ -2978,6 +2983,111 @@ body.settings-sheet-open {
   color: var(--danger);
 }
 
+.account-device-tasks {
+  display: grid;
+  gap: 8px;
+}
+
+.account-device-tasks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.account-device-tasks-head > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.account-device-tasks-head strong {
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.account-device-tasks-head span {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-tasks-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-tasks-head button:hover {
+  color: var(--accent-ink);
+}
+
+.account-device-tasks-head button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.account-device-task-list {
+  display: grid;
+  gap: 6px;
+}
+
+.account-device-task {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.account-device-task-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--accent-ink);
+}
+
+.account-device-task-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.account-device-task-copy {
+  min-width: 0;
+}
+
+.account-device-task-copy strong,
+.account-device-task-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-device-task-copy strong {
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.account-device-task-copy small,
+.account-device-task-duration {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-task-duration {
+  min-width: 32px;
+  text-align: right;
+}
+
 .account-device-download {
   display: inline-flex;
   width: fit-content;
@@ -3418,6 +3528,60 @@ body.settings-sheet-open {
   font-size: 10px;
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+.backend-prompt-context,
+.mobile-approval-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.backend-prompt-context > span,
+.mobile-approval-context > span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.backend-prompt-context svg,
+.mobile-approval-context svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+
+.backend-prompt-context .is-risk-high,
+.mobile-approval-context .is-risk-high {
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--line));
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+}
+
+.backend-prompt-context .is-risk-medium,
+.mobile-approval-context .is-risk-medium {
+  border-color: color-mix(in srgb, var(--warning) 24%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.backend-prompt-context .is-path,
+.mobile-approval-context .is-path {
+  max-width: 100%;
+}
+
+.backend-prompt-context code,
+.mobile-approval-context code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .backend-prompt-actions {
