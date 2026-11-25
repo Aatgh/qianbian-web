@@ -173,6 +173,12 @@
     pairingType: "windows",
     pairingName: "",
     devicePermissionId: null,
+    devicePermissions: null,
+    devicePermissionsLoading: false,
+    devicePermissionsSaving: false,
+    devicePermissionsError: "",
+    deviceAudit: [],
+    deviceAuditLoading: false,
     deviceRevision: 0,
     deviceTasks: [],
     deviceTasksLoaded: false,
@@ -2564,26 +2570,145 @@
     `;
   }
 
+  async function openMobileDevicePermissions(deviceId) {
+    if (!api || !state.backendConnected || !deviceId) return;
+    const settingsUtils = window.QianbianDeviceSettings;
+    if (!settingsUtils) return;
+    state.devicePermissionId = String(deviceId);
+    state.devicePermissions = null;
+    state.devicePermissionsLoading = true;
+    state.devicePermissionsSaving = false;
+    state.devicePermissionsError = "";
+    state.deviceAudit = [];
+    state.deviceAuditLoading = true;
+    renderPhone();
+    updateIcons();
+    const [permissionsResult, auditResult] = await Promise.allSettled([
+      api.devicePermissions(deviceId),
+      api.deviceAudit(deviceId),
+    ]);
+    if (state.devicePermissionId !== String(deviceId)) return;
+    if (permissionsResult.status === "fulfilled") {
+      state.devicePermissions = settingsUtils.normalizePermissions(
+        permissionsResult.value,
+      );
+    } else {
+      state.devicePermissionsError = "设备权限读取失败";
+    }
+    state.devicePermissionsLoading = false;
+    state.deviceAudit =
+      auditResult.status === "fulfilled"
+        ? settingsUtils.normalizeAudit(auditResult.value)
+        : [];
+    state.deviceAuditLoading = false;
+    renderPhone();
+    updateIcons();
+  }
+
+  async function refreshMobileDeviceAudit(deviceId) {
+    if (!api || !state.backendConnected || !deviceId) return;
+    const settingsUtils = window.QianbianDeviceSettings;
+    if (!settingsUtils) return;
+    state.deviceAuditLoading = true;
+    try {
+      state.deviceAudit = settingsUtils.normalizeAudit(
+        await api.deviceAudit(deviceId),
+      );
+    } catch {
+      state.deviceAudit = [];
+    } finally {
+      if (state.devicePermissionId === String(deviceId)) {
+        state.deviceAuditLoading = false;
+        renderPhone();
+        updateIcons();
+      }
+    }
+  }
+
+  async function saveMobileDevicePermissions() {
+    const deviceId = state.devicePermissionId;
+    const host = phoneScreen.querySelector("[data-device-permissions]");
+    if (!deviceId || !host || !api || !state.backendConnected) return;
+    const settingsUtils = window.QianbianDeviceSettings;
+    if (!settingsUtils) return;
+    const allowedRoots = String(
+      host.querySelector("[data-device-permission-roots]")?.value || "",
+    )
+      .split(/[\n,]+/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const payload = {
+      allowedRoots,
+      terminal: Boolean(
+        host.querySelector("[data-device-permission-terminal]")?.checked,
+      ),
+      files: Boolean(
+        host.querySelector("[data-device-permission-files]")?.checked,
+      ),
+      screenshot: Boolean(
+        host.querySelector("[data-device-permission-screenshot]")?.checked,
+      ),
+    };
+    state.devicePermissionsSaving = true;
+    state.devicePermissionsError = "";
+    renderPhone();
+    updateIcons();
+    try {
+      const result = await api.updateDevicePermissions(deviceId, payload);
+      if (state.devicePermissionId !== String(deviceId)) return;
+      state.devicePermissions = settingsUtils.normalizePermissions(result);
+      state.devicePermissionsSaving = false;
+      renderPhone();
+      updateIcons();
+      showToast("设备权限已保存", "shield-check");
+      refreshMobileDeviceAudit(deviceId);
+    } catch (error) {
+      state.devicePermissionsSaving = false;
+      state.devicePermissionsError =
+        error.message || "设备权限保存失败";
+      renderPhone();
+      updateIcons();
+    }
+  }
+
   function renderMobileDevicePermissions() {
     if (!state.devicePermissionId) return "";
     const device = state.devices.find(
       (item) => item.id === String(state.devicePermissionId),
     );
     if (!device) return "";
-    const permissions =
+    const fallbackPermissions =
       device.permissions && typeof device.permissions === "object"
         ? device.permissions
         : {};
-    const roots = Array.isArray(permissions.allowedRoots)
-      ? permissions.allowedRoots
-      : Array.isArray(permissions.roots)
-        ? permissions.roots
-        : [];
-    const terminal =
-      permissions.terminal === true || device.capabilities.includes("terminal");
-    const screenshot =
-      permissions.screenshot === true ||
-      device.capabilities.includes("screenshot");
+    const permissions = state.devicePermissions || {
+      allowedRoots: Array.isArray(fallbackPermissions.allowedRoots)
+        ? fallbackPermissions.allowedRoots
+        : Array.isArray(fallbackPermissions.roots)
+          ? fallbackPermissions.roots
+          : [],
+      files: fallbackPermissions.files !== false,
+      terminal:
+        fallbackPermissions.terminal === true ||
+        device.capabilities.includes("terminal"),
+      screenshot:
+        fallbackPermissions.screenshot === true ||
+        device.capabilities.includes("screenshot"),
+    };
+    const auditRows = state.deviceAudit
+      .slice(0, 6)
+      .map(
+        (entry) => `
+          <div class="mobile-device-audit-entry" data-device-audit-entry>
+            <span class="task-status task-status-${escapeHtml(entry.tone)}">${escapeHtml(
+              entry.actionLabel,
+            )}</span>
+            <span>${escapeHtml(entry.summary || entry.status || "设备操作")}</span>
+            <time>${escapeHtml(formatBackendTime(entry.createdAt))}</time>
+          </div>
+        `,
+      )
+      .join("");
     return `
       <section class="mobile-device-permissions" data-device-permissions>
         <div class="mobile-device-permissions-head">
@@ -2595,21 +2720,57 @@
             "x",
           )}</button>
         </div>
-        <div class="mobile-device-permission-summary">
-          <span>${icon("folder-lock")}授权目录</span>
-          <strong>${escapeHtml(
-            roots.length ? roots.join(" / ") : "未上报授权目录",
-          )}</strong>
+        ${
+          state.devicePermissionsError
+            ? `<div class="mobile-devices-error">${escapeHtml(
+                state.devicePermissionsError,
+              )}</div>`
+            : ""
+        }
+        ${
+          state.devicePermissionsLoading
+            ? `<div class="mobile-devices-loading">正在读取设备权限…</div>`
+            : `
+              <label class="mobile-device-permission-roots">
+                <span>授权目录，每行一个</span>
+                <textarea data-device-permission-roots rows="3">${escapeHtml(
+                  permissions.allowedRoots.join("\n"),
+                )}</textarea>
+              </label>
+              <div class="mobile-device-permission-toggles">
+                <label><input type="checkbox" data-device-permission-files ${
+                  permissions.files ? "checked" : ""
+                } /><span>${icon("files")}文件访问</span></label>
+                <label><input type="checkbox" data-device-permission-terminal ${
+                  permissions.terminal ? "checked" : ""
+                } /><span>${icon("terminal")}终端</span></label>
+                <label><input type="checkbox" data-device-permission-screenshot ${
+                  permissions.screenshot ? "checked" : ""
+                } /><span>${icon("scan-line")}截图</span></label>
+              </div>
+              <button class="mobile-device-permission-save" data-action="save-device-permissions" type="button" ${
+                state.devicePermissionsSaving ? "disabled" : ""
+              }>${icon("check")}${
+                state.devicePermissionsSaving ? "保存中…" : "保存权限"
+              }</button>
+            `
+        }
+        <div class="mobile-device-audit">
+          <div class="mobile-device-audit-head">
+            <strong>最近审计</strong>
+            ${
+              state.deviceAuditLoading
+                ? `<span>读取中…</span>`
+                : `<span>${state.deviceAudit.length} 条</span>`
+            }
+          </div>
+          ${
+            auditRows ||
+            (!state.deviceAuditLoading
+              ? `<div class="mobile-devices-loading">暂无审计记录</div>`
+              : "")
+          }
         </div>
-        <div class="mobile-device-permission-chips">
-          <span class="${terminal ? "is-enabled" : ""}">${
-            terminal ? "终端已授权" : "终端未授权"
-          }</span>
-          <span class="${screenshot ? "is-enabled" : ""}">${
-            screenshot ? "截图已开放" : "截图未开放"
-          }</span>
-        </div>
-        <small>权限配置接口准备中，当前仅展示设备上报的权限摘要。</small>
       </section>
     `;
   }
@@ -7980,6 +8141,8 @@ export async function run(input, context) {
         state.deviceEditingId = null;
         state.pairingFormOpen = false;
         state.devicePermissionId = null;
+        state.devicePermissions = null;
+        state.deviceAudit = [];
         state.deviceTasks = [];
         state.deviceTasksLoaded = false;
         state.deviceTasksError = "";
@@ -8001,16 +8164,21 @@ export async function run(input, context) {
         state.deviceEditingId = null;
         state.pairingFormOpen = false;
         state.devicePermissionId = null;
+        state.devicePermissions = null;
+        state.deviceAudit = [];
         renderPhone();
         updateIcons();
       } else if (action === "show-device-permissions") {
-        state.devicePermissionId = actionTarget.dataset.deviceId;
-        renderPhone();
-        updateIcons();
+        openMobileDevicePermissions(actionTarget.dataset.deviceId);
       } else if (action === "close-device-permissions") {
         state.devicePermissionId = null;
+        state.devicePermissions = null;
+        state.deviceAudit = [];
+        state.devicePermissionsError = "";
         renderPhone();
         updateIcons();
+      } else if (action === "save-device-permissions") {
+        saveMobileDevicePermissions();
       } else if (action === "edit-device") {
         const deviceId = actionTarget.dataset.deviceId;
         if (!deviceId) return;
@@ -8125,6 +8293,8 @@ export async function run(input, context) {
             );
             if (state.devicePermissionId === deviceId) {
               state.devicePermissionId = null;
+              state.devicePermissions = null;
+              state.deviceAudit = [];
             }
             applyMobileDevices({ devices: state.devices });
             renderControls();

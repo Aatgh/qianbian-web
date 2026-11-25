@@ -3195,6 +3195,140 @@ body.settings-sheet-open {
   line-height: 1.55;
 }
 
+.account-device-permission-roots {
+  display: grid;
+  gap: 5px;
+}
+
+.account-device-permission-roots > span {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-permission-roots textarea {
+  width: 100%;
+  min-height: 62px;
+  resize: vertical;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.account-device-permission-roots textarea:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.account-device-permission-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.account-device-permission-toggles label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-permission-toggles input {
+  width: 13px;
+  height: 13px;
+  accent-color: var(--accent);
+}
+
+.account-device-permission-toggles span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.account-device-permission-toggles svg {
+  width: 12px;
+  height: 12px;
+}
+
+.account-device-permission-save {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 31px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.account-device-permission-save:disabled {
+  opacity: 0.55;
+}
+
+.account-device-pair-form-actions svg,
+.account-device-permission-save svg {
+  width: 13px;
+  height: 13px;
+}
+
+.account-device-audit {
+  display: grid;
+  gap: 6px;
+}
+
+.account-device-audit-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.account-device-audit-head strong,
+.account-device-audit-head span {
+  font-size: 8px;
+}
+
+.account-device-audit-head span {
+  color: var(--muted);
+}
+
+.account-device-audit-entry {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 8px;
+}
+
+.account-device-audit-entry > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-device-audit-entry time {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .account-device-download {
   display: inline-flex;
   width: fit-content;

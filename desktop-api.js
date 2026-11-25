@@ -237,6 +237,23 @@
         { signal },
       );
     },
+    devicePermissions(id, signal) {
+      return request(`/devices/${encodeURIComponent(id)}/permissions`, {
+        signal,
+      });
+    },
+    updateDevicePermissions(id, payload, signal) {
+      return request(`/devices/${encodeURIComponent(id)}/permissions`, {
+        method: "PUT",
+        body: payload,
+        signal,
+      });
+    },
+    deviceAudit(id, signal) {
+      return request(`/devices/${encodeURIComponent(id)}/audit`, {
+        signal,
+      });
+    },
     connectorReleases(signal) {
       return request("/connectors/releases", { signal });
     },

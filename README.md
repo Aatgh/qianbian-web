@@ -34,6 +34,7 @@ python -m http.server 8080
 - `desktop-app.js`、`data.js`：电脑端工作区交互和演示数据
 - `index.html`、`styles.css`、`app.js`：手机端界面
 - `device-tasks.js`：桌面端与手机端共享的设备任务状态、耗时和审批上下文格式化工具
+- `device-settings.js`：设备权限与审计记录的共享解析工具
 - `connectors.html`、`connectors.css`、`connectors.js`：千变 for Windows / Android 版本清单与下载页
 - `assets/`：品牌、图标、字体和演示素材
 - `docs/`：设计说明和实现计划
