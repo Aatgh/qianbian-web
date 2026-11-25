@@ -25,22 +25,35 @@ test("first visit shows the premium login gate", async ({ page }) => {
   const gate = page.locator("#login-gate");
   await expect(gate).toBeVisible();
   await expect(gate.getByRole("heading", { name: "登录框" })).toBeVisible();
-  await expect(gate.getByLabel("手机号", { exact: true })).toBeVisible();
+  const account = gate.getByLabel("账号/邮箱/手机号", { exact: true });
+  const password = gate.getByLabel("密码", { exact: true });
+  await expect(account).toBeVisible();
+  await expect(account).toHaveAttribute("placeholder", "账号/邮箱/手机号");
+  await expect(password).toBeVisible();
+  await expect(password).toHaveAttribute("placeholder", "密码");
   await expect(
-    gate.getByRole("tab", { name: "手机号" }),
-  ).toHaveAttribute("aria-selected", "true");
+    gate.getByRole("button", { name: "验证码登录", exact: true }),
+  ).toHaveClass(/login-mode-switch/);
+  await expect(gate.getByLabel("验证码", { exact: true })).toBeHidden();
   await expect(
-    gate.getByRole("button", { name: "登录 / 注册", exact: true }),
+    gate.getByRole("button", { name: "登录", exact: true }),
   ).toBeVisible();
   await expect(gate.locator(".login-google-button")).toHaveCount(0);
   await expect(page.locator("body")).toHaveClass(/login-locked/);
   await expect(page.locator("#app-shell")).toHaveAttribute("inert", "");
+  const radius = await page
+    .locator(".login-panel")
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).borderRadius));
+  expect(radius).toBeGreaterThanOrEqual(48);
 });
 
 test("phone code login enters the desktop workspace", async ({ page }) => {
   await openFreshDesktop(page);
 
-  await page.getByLabel("手机号", { exact: true }).fill("13800000000");
+  await page
+    .getByLabel("账号/邮箱/手机号", { exact: true })
+    .fill("13800000000");
+  await page.getByRole("button", { name: "验证码登录", exact: true }).click();
   await page.getByRole("button", { name: "获取验证码" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "验证码已发送到手机号 13800000000",
@@ -60,18 +73,11 @@ test("phone password login can reveal the password and enter the workspace", asy
   await openFreshDesktop(page);
 
   const gate = page.locator("#login-gate");
-  await expect(gate.getByRole("tab", { name: "验证码登录" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-  await gate.getByRole("tab", { name: "密码登录" }).click();
-  await expect(gate.getByRole("tab", { name: "密码登录" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
   await expect(gate.getByLabel("验证码", { exact: true })).toBeHidden();
 
-  await gate.getByLabel("手机号", { exact: true }).fill("13800000000");
+  await gate
+    .getByLabel("账号/邮箱/手机号", { exact: true })
+    .fill("13800000000");
   const password = gate.getByLabel("密码", { exact: true });
   await expect(password).toBeVisible();
   await password.fill("qianbian123");
@@ -101,12 +107,13 @@ test("email account switching validates the email and code", async ({ page }) =>
   await openFreshDesktop(page);
 
   const gate = page.locator("#login-gate");
-  await gate.getByRole("tab", { name: "邮箱" }).click();
-  await gate.getByLabel("邮箱", { exact: true }).fill("not-an-email");
-  await gate.getByRole("button", { name: "登录 / 注册", exact: true }).click();
+  const account = gate.getByLabel("账号/邮箱/手机号", { exact: true });
+  await account.fill("not-an-email");
+  await gate.getByRole("button", { name: "登录", exact: true }).click();
   await expect(gate.getByRole("alert")).toContainText("请输入有效的邮箱地址");
 
-  await gate.getByLabel("邮箱", { exact: true }).fill("hello@qianbian.ai");
+  await account.fill("hello@qianbian.ai");
+  await gate.getByRole("button", { name: "验证码登录", exact: true }).click();
   await expect(gate.getByLabel("验证码", { exact: true })).toBeVisible();
   await gate.getByRole("button", { name: "获取验证码" }).click();
   await expect(gate.getByRole("alert")).toContainText(
@@ -118,8 +125,10 @@ test("successful email login and logout reopen the gate", async ({ page }) => {
   await openFreshDesktop(page);
 
   const gate = page.locator("#login-gate");
-  await gate.getByRole("tab", { name: "邮箱" }).click();
-  await gate.getByLabel("邮箱", { exact: true }).fill("hello@qianbian.ai");
+  await gate
+    .getByLabel("账号/邮箱/手机号", { exact: true })
+    .fill("hello@qianbian.ai");
+  await gate.getByRole("button", { name: "验证码登录", exact: true }).click();
   await gate.getByLabel("验证码", { exact: true }).fill("123456");
   await gate.getByRole("button", { name: "登录 / 注册", exact: true }).click();
   await expect(gate).toBeHidden({ timeout: 6000 });
@@ -142,7 +151,9 @@ test("login gate remains usable on a narrow desktop viewport", async ({
 
   const gate = page.locator("#login-gate");
   await expect(gate).toBeVisible();
-  await expect(gate.getByLabel("手机号", { exact: true })).toBeVisible();
+  await expect(
+    gate.getByLabel("账号/邮箱/手机号", { exact: true }),
+  ).toBeVisible();
   const overflow = await page.evaluate(() => ({
     horizontal: document.documentElement.scrollWidth - window.innerWidth,
     vertical: document.documentElement.scrollHeight - window.innerHeight,
