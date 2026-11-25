@@ -671,6 +671,162 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
   await expect(page.locator(".account-device-pair")).toContainText("135790");
 });
 
+test("desktop manages device name, pause state and pairing QR", async ({
+  page,
+}) => {
+  const calls = [];
+  const device = {
+    id: "desktop-device",
+    name: "工作笔记本",
+    platform: "windows",
+    status: "online",
+    paused: false,
+    capabilities: ["files", "terminal"],
+  };
+  await page.route("http://backend.test/api/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const pathname = url.pathname.replace(/^\/api/, "");
+    if (request.method() === "OPTIONS") {
+      return route.fulfill({
+        status: 204,
+        headers: {
+          "access-control-allow-origin": "*",
+          "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+          "access-control-allow-headers": "content-type",
+        },
+      });
+    }
+    calls.push({
+      method: request.method(),
+      pathname,
+      body: request.postData() ? JSON.parse(request.postData()) : null,
+    });
+    const headers = {
+      "access-control-allow-origin": "*",
+      "content-type": "application/json",
+    };
+    if (pathname === "/health") {
+      return route.fulfill({ headers, json: { ok: true } });
+    }
+    if (pathname === "/devices" && request.method() === "GET") {
+      return route.fulfill({ headers, json: { devices: [device] } });
+    }
+    if (pathname === "/devices/pair/start") {
+      return route.fulfill({
+        headers,
+        json: {
+          pairingCode: "135790",
+          expiresAt: "2026-11-25T12:00:00+08:00",
+          qrPayload: "qianbian://pair?code=135790",
+        },
+      });
+    }
+    if (
+      pathname === "/devices/desktop-device" &&
+      request.method() === "PATCH"
+    ) {
+      const patch = request.postDataJSON();
+      if (typeof patch.name === "string") device.name = patch.name;
+      if (typeof patch.paused === "boolean") device.paused = patch.paused;
+      return route.fulfill({ headers, json: { device } });
+    }
+    if (pathname === "/environments") {
+      return route.fulfill({
+        headers,
+        json: {
+          environments: [
+            {
+              id: "local",
+              name: "本机工作区",
+              kind: "local",
+              status: "ready",
+            },
+          ],
+        },
+      });
+    }
+    if (pathname === "/sessions") {
+      return route.fulfill({ headers, json: { sessions: [] } });
+    }
+    if (pathname === "/models") {
+      return route.fulfill({
+        headers,
+        json: {
+          models: [{ modelId: "2", label: "DeepSeek Chat", isDefault: true }],
+        },
+      });
+    }
+    if (pathname === "/skills" || pathname === "/skills/mine") {
+      return route.fulfill({ headers, json: { skills: [] } });
+    }
+    if (pathname === "/automations") {
+      return route.fulfill({ headers, json: { automations: [] } });
+    }
+    if (pathname === "/events") {
+      return route.fulfill({
+        headers: { ...headers, "content-type": "text/event-stream" },
+        body: 'event: status\ndata: {"connected":true,"mock":false}\n\n',
+      });
+    }
+    return route.fulfill({ headers, json: {} });
+  });
+
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  await page.locator("#account-menu-button").click();
+  await page.locator("[data-start-device-pair]").click();
+
+  const pairingQr = page.locator(".account-device-pair .device-pair-qr");
+  await expect(pairingQr).toHaveAttribute(
+    "data-qr-payload",
+    "qianbian://pair?code=135790",
+  );
+  await expect
+    .poll(() =>
+      pairingQr.evaluate((canvas) => {
+        const context = canvas.getContext("2d");
+        return Boolean(
+          context
+            ?.getImageData(0, 0, canvas.width, canvas.height)
+            .data.some((channel) => channel !== 0),
+        );
+      }),
+    )
+    .toBe(true);
+
+  await page.locator('[data-edit-device="desktop-device"]').click();
+  await page
+    .locator('[data-device-name-input="desktop-device"]')
+    .fill("设计笔记本");
+  await page.locator('[data-save-device-name="desktop-device"]').click();
+  await expect(page.locator(".account-device-row")).toContainText("设计笔记本");
+  expect(calls.find((call) => call.pathname === "/devices/desktop-device"))
+    .toMatchObject({ method: "PATCH", body: { name: "设计笔记本" } });
+
+  await page.locator('[data-toggle-device-pause="desktop-device"]').click();
+  await expect(page.locator(".account-device-row")).toContainText("已暂停");
+  expect(
+    calls.filter((call) => call.pathname === "/devices/desktop-device").at(-1),
+  ).toMatchObject({ method: "PATCH", body: { paused: true } });
+  await expect(
+    page.locator('#desktop-environment-select option[value="desktop-device"]'),
+  ).toHaveText(/已暂停/);
+  await expect(
+    page.locator('#desktop-environment-select option[value="desktop-device"]'),
+  ).toBeDisabled();
+
+  await page.locator('[data-toggle-device-pause="desktop-device"]').click();
+  await expect(page.locator(".account-device-row")).toContainText("在线");
+  expect(
+    calls.filter((call) => call.pathname === "/devices/desktop-device").at(-1),
+  ).toMatchObject({ method: "PATCH", body: { paused: false } });
+  await expect(page.locator("[data-open-connectors]")).toHaveAttribute(
+    "href",
+    /connectors\.html/,
+  );
+});
+
 test("desktop shows ICP footer", async ({ page }) => {
   await page.goto(desktopUrl);
   const footer = page.locator(".icp-footer");

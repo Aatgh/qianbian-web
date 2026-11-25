@@ -80,6 +80,14 @@ async function mockDeviceBackend(page, calls, options = {}) {
         },
       });
     }
+    if (pathname === "/devices/device-1" && request.method() === "PATCH") {
+      const patch = request.postDataJSON();
+      if (typeof patch.name === "string") devices[0].name = patch.name;
+      if (typeof patch.paused === "boolean") {
+        devices[0].paused = patch.paused;
+      }
+      return route.fulfill({ headers, json: { device: devices[0] } });
+    }
     if (pathname === "/devices/device-1" && request.method() === "DELETE") {
       devices.splice(0, devices.length);
       return route.fulfill({ status: 204, headers: corsHeaders });
@@ -180,6 +188,42 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
     "data-qr-payload",
     "qianbian://pair?code=482913",
   );
+  await expect(page.locator("[data-device-download-link]")).toHaveAttribute(
+    "href",
+    /connectors\.html/,
+  );
+
+  await page
+    .locator('[data-action="edit-device"][data-device-id="device-1"]')
+    .click();
+  await page.locator('[data-device-name-input="device-1"]').fill("随身笔记本");
+  await page
+    .locator('[data-action="save-device-name"][data-device-id="device-1"]')
+    .click();
+  await expect(devices).toContainText("随身笔记本");
+  expect(
+    calls.find(
+      (call) =>
+        call.pathname === "/devices/device-1" &&
+        call.body?.name === "随身笔记本",
+    ),
+  ).toBeTruthy();
+
+  await page
+    .locator('[data-action="toggle-device-pause"][data-device-id="device-1"]')
+    .click();
+  await expect(devices).toContainText("已暂停");
+  expect(
+    calls.find(
+      (call) =>
+        call.pathname === "/devices/device-1" &&
+        call.body?.paused === true,
+    ),
+  ).toBeTruthy();
+  await page
+    .locator('[data-action="toggle-device-pause"][data-device-id="device-1"]')
+    .click();
+  await expect(devices).toContainText("在线");
 
   await page.evaluate(() => {
     window.__qianbianMobileBackend.handleEvent("device/status", {
