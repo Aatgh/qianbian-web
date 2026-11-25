@@ -771,6 +771,18 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
   const environment = page.locator("#desktop-environment-select");
   await expect(environment).toHaveValue("local");
   await expect(environment.locator('option[value="cloud"]')).toBeDisabled();
+  const environmentPlacement = await environment.evaluate((select) => {
+    const control = select.closest(".sidebar-environment");
+    const box = control?.getBoundingClientRect();
+    return {
+      inSidebarSettings: Boolean(control?.closest(".sidebar-settings")),
+      inComposer: Boolean(control?.closest(".desktop-composer")),
+      left: box?.left ?? Number.POSITIVE_INFINITY,
+    };
+  });
+  expect(environmentPlacement.inSidebarSettings).toBe(true);
+  expect(environmentPlacement.inComposer).toBe(false);
+  expect(environmentPlacement.left).toBeLessThan(110);
   await expect(page.locator("#header-environment")).toContainText(
     "本机工作区",
   );
@@ -819,6 +831,26 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
   await expect
     .poll(() => calls.find((call) => call.pathname === "/devices/pair/start")?.body)
     .toEqual({ type: "windows", name: "新设备" });
+});
+
+test("desktop context close aligns with insight buttons", async ({ page }) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+
+  const grid = page.locator(".insight-icon-grid");
+  const buttons = grid.locator(".insight-icon-button");
+  await expect(buttons).toHaveCount(5);
+  const close = page.locator("#context-close");
+  await expect(close).toBeVisible();
+  await expect(close).toHaveClass(/insight-icon-button/);
+
+  const centers = await buttons.evaluateAll((items) =>
+    items.map((item) => {
+      const box = item.getBoundingClientRect();
+      return box.top + box.height / 2;
+    }),
+  );
+  expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(2);
 });
 
 test("desktop manages device name, pause state and pairing QR", async ({
