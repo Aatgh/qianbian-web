@@ -358,7 +358,7 @@ test("default starfield animates as a single theme", async ({ page }) => {
   expect(result.pixels.maxChannel).toBeGreaterThan(24);
 });
 
-test("login panel contains a zoomable particle galaxy", async ({ page }) => {
+test("login background contains a zoomable particle galaxy", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await openFreshDesktop(page, { starfieldPreview: true });
   await page.locator("#login-gate.is-ready").waitFor();
@@ -370,6 +370,26 @@ test("login panel contains a zoomable particle galaxy", async ({ page }) => {
 
   const canvas = page.locator("#login-galaxy-canvas");
   await expect(canvas).toBeVisible();
+  const canvasPlacement = await canvas.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      parentId: element.parentElement?.id,
+      position: style.position,
+      zIndex: style.zIndex,
+      width: Math.round(box.width),
+      height: Math.round(box.height),
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(canvasPlacement).toMatchObject({
+    parentId: "login-gate",
+    position: "fixed",
+    zIndex: "1",
+    width: canvasPlacement.viewportWidth,
+    height: canvasPlacement.viewportHeight,
+  });
   await expect
     .poll(() =>
       page.evaluate(() => window.QianbianLoginGalaxy?.stats()),
@@ -441,6 +461,18 @@ test("login panel can be dragged after long press", async ({
   await page.waitForTimeout(320);
   await expect(wrap).toHaveClass(/is-dragging/);
   await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
+  await expect
+    .poll(() =>
+      wrap.evaluate((element) =>
+        Number.parseFloat(
+          element.style.getPropertyValue("--login-drag-ry"),
+        ),
+      ),
+    )
+    .toBeGreaterThan(0);
+  await expect
+    .poll(() => wrap.evaluate((element) => getComputedStyle(element).transform))
+    .toContain("matrix3d");
   await expect
     .poll(() =>
       wrap.evaluate((element) => getComputedStyle(element).translate),
