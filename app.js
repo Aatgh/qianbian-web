@@ -869,6 +869,20 @@
       .join("");
   }
 
+  function renderMobileEnvironmentControl() {
+    const environment = currentMobileEnvironment();
+    return `
+      <label class="conversation-environment" title="${escapeHtml(
+        environment.detail || "工作环境",
+      )}">
+        ${icon(environment.kind === "cloud" ? "cloud" : "monitor")}
+        <select id="mobile-environment-select" aria-label="工作环境">
+          ${mobileEnvironmentOptions()}
+        </select>
+      </label>
+    `;
+  }
+
   function setMobileExecutionTarget(id) {
     const environment = state.environments.find(
       (candidate) => candidate.id === String(id),
@@ -3149,12 +3163,6 @@
       : `<button class="composer-plus" data-sheet="plus" type="button" aria-label="添加内容">${icon("plus")}</button>`;
     return `
       <div class="phone-composer">
-        <label class="composer-environment" title="${escapeHtml(currentMobileEnvironment().detail || "工作环境")}">
-          ${icon(currentMobileEnvironment().kind === "cloud" ? "cloud" : "monitor")}
-          <select id="mobile-environment-select" aria-label="工作环境">
-            ${mobileEnvironmentOptions()}
-          </select>
-        </label>
         ${leftButton}
         <textarea class="composer-input" id="chat-input" rows="1" placeholder="发消息给千变">${escapeHtml(
           state.chatDraft,
@@ -3229,9 +3237,12 @@
             </div>
           </div>
         </button>
-        <button class="phone-icon-button ghost conversation-nav-action" data-action="open-main-nav" type="button" aria-label="技能空间">${conversationNavIcon(
-          "skills",
-        )}</button>
+        <div class="conversation-nav-actions">
+          ${renderMobileEnvironmentControl()}
+          <button class="phone-icon-button ghost conversation-nav-action" data-action="open-main-nav" type="button" aria-label="技能空间">${conversationNavIcon(
+            "skills",
+          )}</button>
+        </div>
       </header>
     `;
   }
