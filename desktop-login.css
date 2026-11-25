@@ -73,6 +73,10 @@ body.login-locked {
   transition: transform 460ms var(--login-spring) !important;
 }
 
+.login-panel-wrap.has-dragged {
+  animation: none !important;
+}
+
 @keyframes login-preview-panel-in {
   from {
     opacity: 0;

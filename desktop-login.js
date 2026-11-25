@@ -127,6 +127,7 @@
     longPressTimer = window.setTimeout(() => {
       draggingLogin = true;
       loginPanelWrap.classList.remove("is-snapping");
+      loginPanelWrap.classList.add("has-dragged");
       loginPanelWrap.classList.add("is-dragging");
       loginPanelWrap.setPointerCapture?.(dragPointerId);
     }, reduceMotion.matches ? 0 : 220);
@@ -171,6 +172,13 @@
     window.clearInterval(countdownTimer);
     countdown = 0;
     busy = false;
+    loginPanelWrap?.classList.remove(
+      "has-dragged",
+      "is-dragging",
+      "is-snapping",
+    );
+    loginPanelWrap?.style.removeProperty("--login-drag-x");
+    loginPanelWrap?.style.removeProperty("--login-drag-y");
     successPanel.hidden = true;
     gate.classList.remove("is-leaving");
     gate.classList.remove("is-authenticating");
