@@ -13,12 +13,9 @@
   const errorBox = document.getElementById("login-error");
   const successPanel = document.getElementById("login-success");
   const submitButton = gate.querySelector(".login-submit");
-  const submitLabel = gate.querySelector(".login-submit-label");
-  const loginDescription = document.getElementById("login-description");
   const modeSwitch = gate.querySelector(".login-mode-switch");
   const passwordToggle = gate.querySelector(".login-password-toggle");
   const codeButton = gate.querySelector(".login-code-button");
-  const legalButtons = gate.querySelectorAll(".login-legal button");
   const fieldElements = gate.querySelectorAll(".login-field");
   const loginPanelWrap = document.getElementById("login-panel-wrap");
   const loginPanel = gate.querySelector(".login-panel");
@@ -301,12 +298,10 @@
       panel.hidden = panel.dataset.loginPanel !== loginMode;
     });
     hideError();
-    submitLabel.textContent =
-      loginMode === "password" ? "登录" : "登录 / 注册";
-    loginDescription.textContent =
-      loginMode === "password"
-        ? "使用账号、邮箱或手机号登录。"
-        : "手机号或邮箱验证码登录，新用户验证后自动注册。";
+    submitButton.setAttribute(
+      "aria-label",
+      loginMode === "password" ? "登录" : "登录 / 注册",
+    );
     if (loginMode === "password") passwordInput.focus();
     else codeInput.focus();
   }
@@ -585,11 +580,6 @@
   passwordToggle?.addEventListener("click", togglePasswordVisibility);
 
   codeButton.addEventListener("click", startCodeCountdown);
-  legalButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      showInfo("当前为本地演示登录，服务条款与隐私政策将在正式接入后生效。");
-    });
-  });
 
   window.addEventListener("qianbian:auth-required", () => {
     showGate({ focusEmail: true });

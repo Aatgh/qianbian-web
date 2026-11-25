@@ -496,13 +496,13 @@ body.login-locked {
 .login-starfield-preview .login-panel {
   max-width: 560px;
   padding: 42px 40px 34px;
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.24);
   border-radius: 56px;
-  background-color: rgba(20, 26, 36, 0.38);
+  background-color: rgba(232, 238, 248, 0.36);
   background-image: none;
   box-shadow: 0 26px 72px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(36px) saturate(1.32) brightness(1.04);
-  -webkit-backdrop-filter: blur(36px) saturate(1.32) brightness(1.04);
+  backdrop-filter: blur(30px) saturate(1.2) brightness(1.08);
+  -webkit-backdrop-filter: blur(30px) saturate(1.2) brightness(1.08);
   isolation: isolate;
   transform-style: preserve-3d;
 }
@@ -516,7 +516,7 @@ body.login-locked {
 }
 
 .login-starfield-preview .login-panel-border {
-  background: rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .login-starfield-preview .login-google-button,
@@ -1212,19 +1212,20 @@ body.login-locked {
   cursor: grab;
   touch-action: none;
   padding: 33px 32px 27px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 52px;
-  background-color: rgba(20, 26, 36, 0.4);
+  background-color: rgba(232, 238, 248, 0.38);
   background-image: none;
   box-shadow: 0 26px 72px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(34px) saturate(1.28) brightness(1.03);
-  -webkit-backdrop-filter: blur(34px) saturate(1.28) brightness(1.03);
+  backdrop-filter: blur(28px) saturate(1.18) brightness(1.07);
+  -webkit-backdrop-filter: blur(28px) saturate(1.18) brightness(1.07);
 }
 
 .login-panel-head {
   cursor: grab;
   touch-action: none;
   user-select: none;
+  text-align: center;
 }
 
 .login-panel-wrap.is-dragging .login-panel-head {
@@ -1240,7 +1241,7 @@ body.login-locked {
   inset: 0;
   padding: 1px;
   border-radius: inherit;
-  background: rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.28);
   mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -1258,19 +1259,12 @@ body.login-locked {
 }
 
 .login-panel-head h2 {
-  margin: 9px 0 0;
+  margin: 0;
   color: var(--login-text);
   font-size: 30px;
   font-weight: 650;
   letter-spacing: 0;
   line-height: 1.18;
-}
-
-.login-panel-head p {
-  margin: 8px 0 0;
-  color: var(--login-muted);
-  font-size: 10px;
-  line-height: 1.6;
 }
 
 .login-google-button {
@@ -1833,13 +1827,17 @@ body.login-locked {
 .login-submit {
   position: relative;
   display: flex;
-  min-height: 50px;
+  width: 86px;
+  min-height: 52px;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  justify-self: center;
+  gap: 0;
+  margin: 4px auto 0;
+  padding: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  border-radius: 999px;
   background:
     linear-gradient(110deg, #e86a63, #dd4778 48%, #bd3c72),
     var(--login-accent);
@@ -1847,8 +1845,6 @@ body.login-locked {
     0 16px 36px rgba(205, 59, 106, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
   transition:
     transform 180ms var(--login-ease),
     box-shadow 180ms ease,
@@ -1871,28 +1867,15 @@ body.login-locked {
   cursor: default;
 }
 
-.login-submit-label,
-.login-submit-icon {
+.login-submit > svg {
   position: relative;
   z-index: 1;
-}
-
-.login-submit-icon {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
+  width: 19px;
+  height: 19px;
   transition: transform 220ms var(--login-ease);
 }
 
-.login-submit-icon svg {
-  width: 13px;
-  height: 13px;
-}
-
-.login-submit:hover .login-submit-icon {
+.login-submit:hover > svg {
   transform: translateX(2px);
 }
 
@@ -1907,8 +1890,7 @@ body.login-locked {
   animation: login-ring-spin 700ms linear infinite;
 }
 
-.login-submit.is-submitting .login-submit-label,
-.login-submit.is-submitting .login-submit-icon {
+.login-submit.is-submitting > svg {
   opacity: 0;
 }
 
@@ -1920,20 +1902,6 @@ body.login-locked {
   justify-self: center;
   padding: 2px 5px;
   font-size: 8.5px;
-}
-
-.login-legal {
-  margin-top: 20px;
-  color: var(--login-faint);
-  font-size: 7.5px;
-  line-height: 1.6;
-  text-align: center;
-}
-
-.login-legal button {
-  padding: 0;
-  color: rgba(248, 246, 242, 0.54);
-  font-size: inherit;
 }
 
 .login-footer {
