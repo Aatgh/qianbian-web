@@ -393,6 +393,12 @@ test("login panel can be dragged after long press", async ({
   expect(Number.parseFloat(offset.y)).toBeGreaterThan(80);
   await page.mouse.up();
   await page.waitForTimeout(600);
+  await expect(wrap).toHaveClass(/has-dragged/);
+  await expect(wrap).not.toHaveClass(/is-snapping/);
+  const settledAnimationName = await wrap.evaluate(
+    (element) => getComputedStyle(element).animationName,
+  );
+  expect(settledAnimationName).toBe("none");
   const settledBox = await page.locator(".login-panel").boundingBox();
   expect(
     Math.abs(settledBox.x + settledBox.width / 2 - initialCenter.x),
