@@ -332,7 +332,7 @@ test("default starfield animates as a single theme", async ({ page }) => {
   expect(result.pixels.maxChannel).toBeGreaterThan(24);
 });
 
-test("whole login panel is directly draggable by long press", async ({
+test("login panel stays fixed when long pressed", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -356,30 +356,25 @@ test("whole login panel is directly draggable by long press", async ({
 
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  await page.waitForTimeout(80);
-  await page.mouse.move(startX + 24, startY + 4, { steps: 3 });
-  await page.waitForTimeout(260);
-
-  await expect(wrap).toHaveClass(/is-dragging/);
+  await page.waitForTimeout(320);
+  await expect(wrap).not.toHaveClass(/is-dragging/);
   await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
   const offset = await wrap.evaluate((element) => ({
     x: element.style.getPropertyValue("--login-drag-x"),
     y: element.style.getPropertyValue("--login-drag-y"),
   }));
-  expect(Number.parseFloat(offset.x)).toBeGreaterThan(160);
-  expect(Number.parseFloat(offset.y)).toBeGreaterThan(80);
+  expect(offset).toEqual({ x: "", y: "" });
   await page.mouse.up();
-  await page.waitForTimeout(700);
-  const snappedBox = await page.locator(".login-panel").boundingBox();
+  const settledBox = await page.locator(".login-panel").boundingBox();
   expect(
-    Math.abs(snappedBox.x + snappedBox.width / 2 - initialCenter.x),
-  ).toBeLessThan(3);
+    Math.abs(settledBox.x + settledBox.width / 2 - initialCenter.x),
+  ).toBeLessThan(1);
   expect(
-    Math.abs(snappedBox.y + snappedBox.height / 2 - initialCenter.y),
-  ).toBeLessThan(5);
+    Math.abs(settledBox.y + settledBox.height / 2 - initialCenter.y),
+  ).toBeLessThan(1);
 });
 
-test("rounded glass panel keeps its tint stable while dragging", async ({
+test("matte glass panel keeps its material stable on long press", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -403,8 +398,6 @@ test("rounded glass panel keeps its tint stable while dragging", async ({
         ? colorMatch[1].split(",").map((part) => Number(part.trim()))
         : [];
       return {
-        pointerX: rootStyle.getPropertyValue("--login-pointer-x").trim(),
-        pointerY: rootStyle.getPropertyValue("--login-pointer-y").trim(),
         radius: Number.parseFloat(panelStyle.borderRadius),
         alpha: colorParts.length === 4 ? colorParts[3] : 1,
         backgroundImage: panelStyle.backgroundImage,
@@ -428,13 +421,16 @@ test("rounded glass panel keeps its tint stable while dragging", async ({
   expect(before.afterDisplay).toBe("none");
 
   await page.mouse.down();
-  await page.waitForTimeout(260);
+  await page.waitForTimeout(320);
   await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
   const during = await readPanelState();
+  const wrap = page.locator("#login-panel-wrap");
+  await expect(wrap).not.toHaveClass(/is-dragging/);
+  await expect(wrap).not.toHaveClass(/is-snapping/);
   await page.mouse.up();
 
-  expect(during.pointerX).toBe(before.pointerX);
-  expect(during.pointerY).toBe(before.pointerY);
   expect(during.radius).toBe(before.radius);
   expect(during.alpha).toBe(before.alpha);
+  expect(during.backgroundImage).toBe(before.backgroundImage);
+  expect(during.backdrop).toBe(before.backdrop);
 });
