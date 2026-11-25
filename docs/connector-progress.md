@@ -10,7 +10,7 @@
 - WSS：`wss://agiqianbian.com/ws/connector?deviceId=&token=`
 - 设备上线/离线状态
 - SSE：`event: device/status`
-- 设备任务：`fs.list` / `fs.read` / `fs.write` / `fs.mkdir` / `terminal.exec`
+- 设备任务：`fs.list/read/write/mkdir/edit/delete/grep`、`terminal.exec`
 - 连接器任务轮询与结果回传
 - 手机号短信登录 + Cookie 会话
 
@@ -18,18 +18,19 @@
 
 - 设备管理 Stage A：设备列表、配对、工作环境选择
 - 手机端登录入口
-- 设备状态展示
+- 设备状态展示与 `online/offline/paused` 映射
 - 设备任务 API 客户端：创建任务、查询任务
-- 桌面端与手机端设备任务状态列表：设备名、任务类型、状态、耗时、手动刷新；面板打开时自动刷新
+- 桌面端与手机端设备任务列表：设备名、任务类型、状态、耗时
+- 面板打开时自动刷新任务，支持手动刷新，编辑或配对时暂停刷新
 - 设备审批上下文展示：设备名、设备类型、路径/命令、风险等级
 
-## 当前正在做
+## Agent / 连接器已完成（2026-11-25）
 
-- 把 Agent 工具路由到设备：
-  - `read_file`、`list_files`、`write_file`、`run_terminal`
-  - 当前选择设备时走连接器任务
-  - 其他文件工具在设备模式下先返回“暂不支持”，避免误操作服务器
-- 设备任务的审批接入
+- Agent 工具路由到设备：
+  - `list_files`、`read_file`、`write_file`、`edit_file`、`delete_file`、`grep_files`、`run_terminal`
+  - 设备模式下走连接器任务，不再误操作服务器
+- 设备任务：`fs.list/read/write/mkdir/edit/delete/grep`、`terminal.exec`
+- 本地端到端实测：聊天读取 Windows 桌面文件成功
 
 ## 前端下一步
 
@@ -49,7 +50,7 @@
 
 ## 下一步排期
 
-1. 后端：工具路由 + 审批（进行中）
+1. 后端：设备任务审批事件
 2. 连接器：把 Node MVP 打包成 `千变 for Windows` 安装包
-3. 前端：设备任务/审批 UI + 下载页
+3. 前端：设备审批事件联调 + 下载页发布接口
 4. 联调：Windows 实测读桌面文件、执行命令
