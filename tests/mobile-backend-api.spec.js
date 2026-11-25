@@ -322,7 +322,16 @@ test("mobile renders backend approvals and user questions", async ({ page }) => 
       approvalId: "57",
       sessionId: "23",
       toolName: "write_file",
-      subject: { summary: "写入天气报告.md" },
+      subject: {
+        summary: "写入天气报告.md",
+        path: "D:/workspace/天气报告.md",
+      },
+      executionTarget: {
+        deviceId: "device-7",
+        name: "设计笔记本",
+        type: "windows",
+      },
+      riskLevel: "high",
       availableChoices: [
         {
           choiceId: "allow_once",
@@ -337,6 +346,15 @@ test("mobile renders backend approvals and user questions", async ({ page }) => 
 
   await expect(page.locator(".mobile-backend-approval")).toContainText(
     "写入天气报告.md",
+  );
+  await expect(page.locator(".mobile-approval-context")).toContainText(
+    "设计笔记本",
+  );
+  await expect(page.locator(".mobile-approval-context")).toContainText(
+    "高风险",
+  );
+  await expect(page.locator(".mobile-approval-context")).toContainText(
+    "D:/workspace/天气报告.md",
   );
   await page.locator('[data-mobile-approval-choice="allow_once"]').click();
   await expect

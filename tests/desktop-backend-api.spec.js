@@ -412,7 +412,16 @@ test("desktop app hydrates sessions, models and approval prompts from API", asyn
       approvalId: "57",
       sessionId: "23",
       toolName: "write_file",
-      subject: { summary: "写入测试文件" },
+      subject: {
+        summary: "写入测试文件",
+        path: "D:/workspace/测试文件.md",
+      },
+      executionTarget: {
+        deviceId: "device-7",
+        name: "设计笔记本",
+        type: "windows",
+      },
+      riskLevel: "high",
       availableChoices: [
         {
           choiceId: "allow_once",
@@ -425,6 +434,15 @@ test("desktop app hydrates sessions, models and approval prompts from API", asyn
   });
   await expect(page.locator(".backend-prompt-card")).toContainText(
     "写入测试文件",
+  );
+  await expect(page.locator(".backend-prompt-context")).toContainText(
+    "设计笔记本",
+  );
+  await expect(page.locator(".backend-prompt-context")).toContainText(
+    "高风险",
+  );
+  await expect(page.locator(".backend-prompt-context")).toContainText(
+    "D:/workspace/测试文件.md",
   );
   await page.evaluate(() => {
     window.__qianbianBackend.handleEvent("item/started", {
@@ -916,6 +934,119 @@ test("desktop manages device name, pause state and pairing QR", async ({
     "href",
     /connectors\.html/,
   );
+});
+
+test("desktop shows live device task progress", async ({ page }) => {
+  const calls = [];
+  await page.route("http://backend.test/api/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const pathname = url.pathname.replace(/^\/api/, "");
+    if (request.method() !== "OPTIONS") {
+      calls.push({ method: request.method(), pathname });
+    }
+    const headers = {
+      "access-control-allow-origin": "*",
+      "content-type": "application/json",
+    };
+    if (pathname === "/health") {
+      return route.fulfill({ headers, json: { ok: true } });
+    }
+    if (pathname === "/devices") {
+      return route.fulfill({
+        headers,
+        json: {
+          devices: [
+            {
+              id: 1,
+              name: "工作笔记本",
+              type: "windows",
+              platform: "Windows 11",
+              status: "1",
+              capabilitiesJson: '["files","terminal"]',
+              permissionsJson: null,
+            },
+          ],
+        },
+      });
+    }
+    if (pathname === "/devices/1/tasks") {
+      return route.fulfill({
+        headers,
+        json: {
+          tasks: [
+            {
+              id: 11,
+              deviceId: 1,
+              type: "terminal.exec",
+              status: "running",
+              startedAt: new Date(Date.now() - 2300).toISOString(),
+            },
+            {
+              id: 10,
+              deviceId: 1,
+              type: "fs.list",
+              status: "completed",
+              startedAt: "2026-11-25T10:20:00+08:00",
+              completedAt: "2026-11-25T10:20:01.250+08:00",
+              durationMs: 1250,
+            },
+          ],
+        },
+      });
+    }
+    if (pathname === "/environments" || pathname === "/sessions") {
+      return route.fulfill({
+        headers,
+        json: pathname === "/sessions" ? { sessions: [] } : { environments: [] },
+      });
+    }
+    if (pathname === "/models") {
+      return route.fulfill({
+        headers,
+        json: {
+          models: [{ modelId: "2", label: "DeepSeek Chat", isDefault: true }],
+        },
+      });
+    }
+    if (pathname === "/skills" || pathname === "/skills/mine") {
+      return route.fulfill({ headers, json: { skills: [] } });
+    }
+    if (pathname === "/automations") {
+      return route.fulfill({ headers, json: { automations: [] } });
+    }
+    if (pathname === "/events") {
+      return route.fulfill({
+        headers: { ...headers, "content-type": "text/event-stream" },
+        body: 'event: status\ndata: {"connected":true,"mock":false}\n\n',
+      });
+    }
+    return route.fulfill({ headers, json: {} });
+  });
+
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  await page.locator("#account-menu-button").click();
+
+  const tasks = page.locator(".account-device-task");
+  await expect(tasks).toHaveCount(2);
+  await expect(tasks.nth(0)).toContainText("工作笔记本");
+  await expect(tasks.nth(0)).toContainText("执行命令");
+  await expect(tasks.nth(0)).toContainText("执行中");
+  await expect(tasks.nth(1)).toContainText("列目录");
+  await expect(tasks.nth(1)).toContainText("已完成");
+  await expect(tasks.nth(1)).toContainText("1.3s");
+
+  const beforeRefresh = calls.filter(
+    (call) => call.pathname === "/devices/1/tasks",
+  ).length;
+  await page.locator("[data-refresh-device-tasks]").click();
+  await expect
+    .poll(
+      () =>
+        calls.filter((call) => call.pathname === "/devices/1/tasks").length,
+    )
+    .toBeGreaterThan(beforeRefresh);
 });
 
 test("desktop shows ICP footer", async ({ page }) => {

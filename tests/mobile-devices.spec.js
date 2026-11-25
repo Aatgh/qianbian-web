@@ -25,6 +25,7 @@ async function mockDeviceBackend(page, calls, options = {}) {
       permissionsJson: null,
     },
   ];
+  const deviceTasks = options.deviceTasks || [];
   await page.route("http://backend.test/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -70,6 +71,9 @@ async function mockDeviceBackend(page, calls, options = {}) {
     }
     if (pathname === "/devices" && request.method() === "GET") {
       return route.fulfill({ headers, json: { devices } });
+    }
+    if (pathname === "/devices/1/tasks" && request.method() === "GET") {
+      return route.fulfill({ headers, json: { tasks: deviceTasks } });
     }
     if (pathname === "/devices/pair/start") {
       return route.fulfill({
@@ -262,4 +266,53 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
     .poll(() => calls.find((call) => call.pathname === "/devices/1"))
     .toBeTruthy();
   await expect(page.locator(".mobile-device-card")).toHaveCount(0);
+});
+
+test("mobile shows device task progress and refresh", async ({ page }) => {
+  const calls = [];
+  await mockDeviceBackend(page, calls, {
+    loggedIn: true,
+    deviceTasks: [
+      {
+        id: 11,
+        deviceId: 1,
+        type: "terminal.exec",
+        status: "running",
+        startedAt: new Date(Date.now() - 2100).toISOString(),
+      },
+      {
+        id: 10,
+        deviceId: 1,
+        type: "fs.read",
+        status: "failed",
+        error: "文件不存在",
+        durationMs: 340,
+      },
+    ],
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(
+    `${mobileUrl}?mobile=1&api=${encodeURIComponent(apiBase)}#/account`,
+  );
+  await page.waitForFunction(() => window.__qianbianMobileBackend?.ready);
+  await page.locator('[data-action="open-devices"]').click();
+
+  const tasks = page.locator(".mobile-device-task");
+  await expect(tasks).toHaveCount(2);
+  await expect(tasks.nth(0)).toContainText("执行命令");
+  await expect(tasks.nth(0)).toContainText("执行中");
+  await expect(tasks.nth(1)).toContainText("读取文件");
+  await expect(tasks.nth(1)).toContainText("失败");
+  await expect(tasks.nth(1)).toContainText("0.3s");
+
+  const beforeRefresh = calls.filter(
+    (call) => call.pathname === "/devices/1/tasks",
+  ).length;
+  await page.locator('[data-action="refresh-device-tasks"]').click();
+  await expect
+    .poll(
+      () =>
+        calls.filter((call) => call.pathname === "/devices/1/tasks").length,
+    )
+    .toBeGreaterThan(beforeRefresh);
 });
