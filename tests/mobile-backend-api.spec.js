@@ -371,6 +371,53 @@ test("mobile environment control sits beside history settings", async ({
   );
 });
 
+test("mobile publish action floats at the bottom of skill space", async ({
+  page,
+}) => {
+  const calls = [];
+  await mockBackend(page, calls);
+  await page.setViewportSize({ width: 430, height: 932 });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+  await page
+    .locator('.unified-conversation-nav [data-action="open-main-nav"]')
+    .click();
+
+  const publish = page.locator(".skill-share-fab");
+  await expect(publish).toBeVisible();
+  await expect(publish).toHaveAttribute("aria-label", "发布技能");
+  await expect(page.locator(".skill-share-pill")).toHaveCount(0);
+
+  const geometry = await page.evaluate(() => {
+    const publishButton = document.querySelector(".skill-share-fab");
+    const handle = document.querySelector(".main-nav-handle");
+    const publishBox = publishButton?.getBoundingClientRect();
+    const handleBox = handle?.getBoundingClientRect();
+    return {
+      position: publishButton
+        ? getComputedStyle(publishButton).position
+        : "",
+      width: publishBox?.width ?? NaN,
+      height: publishBox?.height ?? NaN,
+      rightGap: publishBox ? innerWidth - publishBox.right : NaN,
+      bottomGap: publishBox ? innerHeight - publishBox.bottom : NaN,
+      publishBottom: publishBox?.bottom ?? NaN,
+      handleTop: handleBox?.top ?? NaN,
+    };
+  });
+  expect(geometry.position).toBe("fixed");
+  expect(geometry.width).toBeGreaterThanOrEqual(52);
+  expect(geometry.height).toBeGreaterThanOrEqual(52);
+  expect(geometry.rightGap).toBeGreaterThan(8);
+  expect(geometry.rightGap).toBeLessThan(32);
+  expect(geometry.bottomGap).toBeGreaterThan(24);
+  expect(geometry.bottomGap).toBeLessThan(100);
+  expect(geometry.publishBottom).toBeLessThanOrEqual(geometry.handleTop);
+
+  await publish.click();
+  await expect(page.locator(".publish-skill-page")).toBeVisible();
+});
+
 test("mobile renders backend approvals and user questions", async ({ page }) => {
   const calls = [];
   await mockBackend(page, calls);
