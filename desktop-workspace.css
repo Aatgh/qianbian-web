@@ -69,10 +69,54 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   display: flex;
   width: 100%;
   flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
   justify-content: center;
   padding-top: 9px;
   margin-top: auto;
   border-top: 1px solid var(--line);
+}
+
+.sidebar-environment {
+  position: relative;
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  min-height: 42px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.sidebar-environment:hover,
+.sidebar-environment:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.sidebar-environment > svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.sidebar-environment select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .desktop-reference .sidebar-settings .rail-tool {
@@ -762,8 +806,7 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   font-size: 7px;
 }
 
-.context-toggle,
-.context-close {
+.context-toggle {
   display: none;
 }
 
@@ -775,21 +818,6 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
 
   .desktop-reference .context-panel {
     width: min(320px, 100vw);
-  }
-
-  .desktop-reference .context-close {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 3;
-    display: grid;
-    width: 32px;
-    height: 32px;
-    place-items: center;
-    border: 1px solid var(--line);
-    border-radius: 50%;
-    background: var(--surface-soft);
-    color: var(--muted);
   }
 }
 
@@ -845,6 +873,7 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
 }
 
 .desktop-reference .insight-icon-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
   gap: 10px;
   margin-top: 28px;
@@ -874,30 +903,6 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
 
 .right-feature-title-row h3 {
   margin: 0;
-}
-
-.skill-delete-circle {
-  display: grid;
-  width: 27px;
-  height: 27px;
-  flex: none;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: var(--surface-soft);
-  color: var(--muted);
-}
-
-.skill-delete-circle:hover,
-.skill-delete-circle.is-active {
-  border-color: color-mix(in srgb, var(--danger) 34%, var(--line));
-  background: color-mix(in srgb, var(--danger) 9%, var(--surface));
-  color: var(--danger);
-}
-
-.skill-delete-circle svg {
-  width: 13px;
-  height: 13px;
 }
 
 .skill-delete-toolbar {
@@ -956,6 +961,47 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
 
 .right-feature-filters {
   margin-top: -2px;
+}
+
+.skill-config-controls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.skill-config-controls .right-feature-filters {
+  min-width: 0;
+  flex: 1;
+  margin-top: 0;
+}
+
+.skill-delete-toggle {
+  display: grid;
+  width: 34px;
+  min-width: 34px;
+  height: 20px;
+  min-height: 20px;
+  flex: none;
+  place-items: center;
+  margin-right: calc(clamp(9px, 0.75vw, 12px) + 1px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.skill-delete-toggle:hover,
+.skill-delete-toggle.is-active {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--line));
+  background: color-mix(in srgb, var(--danger) 9%, var(--surface));
+  color: var(--danger);
+}
+
+.skill-delete-toggle svg {
+  width: 13px;
+  height: 13px;
 }
 
 .right-feature-list {
@@ -4068,8 +4114,7 @@ body.settings-sheet-open {
   text-align: center;
 }
 
-.desktop-reference .right-feature-title-row .right-feature-add,
-.desktop-reference .right-feature-title-row .skill-delete-circle {
+.desktop-reference .right-feature-title-row .right-feature-add {
   position: absolute;
   top: 50%;
   right: 0;
@@ -4773,8 +4818,7 @@ body.desktop-reference[data-density="宽松"] .message-row {
     justify-content: flex-start;
   }
 
-  .desktop-reference .right-feature-title-row .right-feature-add,
-  .desktop-reference .right-feature-title-row .skill-delete-circle {
+  .desktop-reference .right-feature-title-row .right-feature-add {
     position: static;
     margin-left: auto;
     transform: none;

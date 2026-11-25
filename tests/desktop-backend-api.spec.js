@@ -851,7 +851,7 @@ test("desktop skill delete control aligns with card toggles", async ({
 
   const alignment = await page.evaluate(() => {
     const action = document.querySelector("[data-toggle-skill-delete]");
-    const toggle = document.querySelector("[data-skill-config-toggle]");
+    const toggle = document.querySelectorAll("[data-skill-config-toggle]")[1];
     const actionBox = action?.getBoundingClientRect();
     const toggleBox = toggle?.getBoundingClientRect();
     return {

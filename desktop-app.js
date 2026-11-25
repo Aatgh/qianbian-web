@@ -1329,6 +1329,7 @@
     if (engineLabel) engineLabel.textContent = state.model || "未选择模型";
     if (profileName) profileName.textContent = state.workspaceName;
     if (profileSubtitle) profileSubtitle.textContent = state.accountName;
+    renderSidebarEnvironment();
   }
 
   function renderWorkspaceSwitcher() {
@@ -1706,6 +1707,28 @@
         return `<option value="${escapeHtml(environment.id)}" ${unavailable ? "disabled" : ""} ${environment.id === state.executionTarget ? "selected" : ""}>${escapeHtml(environment.name + suffix)}</option>`;
       })
       .join("");
+  }
+
+  function renderSidebarEnvironment() {
+    const host = document.getElementById("sidebar-environment-host");
+    if (!host) return;
+    const environment = currentEnvironment();
+    host.innerHTML = `
+      <label class="sidebar-environment" title="${escapeHtml(
+        environment.detail || "工作环境",
+      )}">
+        ${icon(environment.kind === "cloud" ? "cloud" : "monitor")}
+        <select id="desktop-environment-select" aria-label="工作环境">
+          ${environmentOptions()}
+        </select>
+      </label>
+    `;
+    updateIcons(host);
+    host
+      .querySelector("#desktop-environment-select")
+      ?.addEventListener("change", (event) => {
+        setExecutionTarget(event.target.value);
+      });
   }
 
   function setExecutionTarget(id) {
@@ -5063,12 +5086,6 @@ export const skill = {
     composerHost.innerHTML = `
       <div class="desktop-composer-stack ${open ? "is-open" : ""} ${open && state.composerOpening ? "is-opening" : ""}">
         <div class="desktop-composer-surface">
-          <label class="composer-environment" title="${escapeHtml(currentEnvironment().detail || "工作环境")}">
-            ${icon(currentEnvironment().kind === "cloud" ? "cloud" : "monitor")}
-            <select id="desktop-environment-select" aria-label="工作环境">
-              ${environmentOptions()}
-            </select>
-          </label>
           <button class="composer-plus ${open ? "is-open" : ""}" id="composer-plus" type="button" aria-label="${open ? "关闭添加内容" : "添加内容"}" aria-expanded="${open}">
             ${icon(open ? "x" : "plus")}
           </button>
@@ -5376,7 +5393,6 @@ export const skill = {
           <span class="eyebrow">能力管理</span>
           <div class="right-feature-title-row">
             <h3>技能配置</h3>
-            <button class="skill-delete-circle ${state.skillDeleteMode ? "is-active" : ""}" data-toggle-skill-delete type="button" aria-label="${state.skillDeleteMode ? "退出删除模式" : "选择并删除技能"}" aria-pressed="${state.skillDeleteMode}">${icon("x")}</button>
           </div>
           <p>${activeSkills.length - [...state.disabledSkills].filter((id) => activeSkills.some((skill) => skill.id === id)).length} 个技能已启用。</p>
           ${
@@ -5392,16 +5408,21 @@ export const skill = {
               `
               : ""
           }
-          <div class="workspace-filter-row right-feature-filters" aria-label="技能状态筛选">
-            ${renderWorkspaceFilters(
-              "skillConfig",
-              [
-                ["all", "全部"],
-                ["enabled", "已启用"],
-                ["disabled", "已停用"],
-              ],
-              skillFilter,
-            )}
+          <div class="skill-config-controls">
+            <div class="workspace-filter-row right-feature-filters" aria-label="技能状态筛选">
+              ${renderWorkspaceFilters(
+                "skillConfig",
+                [
+                  ["all", "全部"],
+                  ["enabled", "已启用"],
+                  ["disabled", "已停用"],
+                ],
+                skillFilter,
+              )}
+            </div>
+            <button class="skill-delete-toggle ${state.skillDeleteMode ? "is-active" : ""}" data-toggle-skill-delete type="button" title="${state.skillDeleteMode ? "退出多选删除" : "多选删除技能"}" aria-label="${state.skillDeleteMode ? "退出多选删除" : "多选删除技能"}" aria-pressed="${state.skillDeleteMode}">
+              ${icon("list-checks")}
+            </button>
           </div>
           <div class="skill-config-grid">
             ${visibleSkills
@@ -6081,14 +6102,6 @@ export const skill = {
   }
 
   function bindComposerInput() {
-    const environmentSelect = document.getElementById(
-      "desktop-environment-select",
-    );
-    if (environmentSelect) {
-      environmentSelect.addEventListener("change", () => {
-        setExecutionTarget(environmentSelect.value);
-      });
-    }
     const input = document.getElementById("desktop-composer-input");
     if (!input) return;
     const resize = () => {
@@ -7835,11 +7848,6 @@ export const skill = {
   document
     .getElementById("context-toggle")
     ?.addEventListener("click", toggleContext);
-  document.getElementById("context-close")?.addEventListener("click", () => {
-    state.contextOpen = false;
-    mobileScrim.hidden = true;
-    render();
-  });
   document.getElementById("sidebar-open").addEventListener("click", openMobileSidebar);
   document.getElementById("sidebar-close").addEventListener("click", closeMobileSidebar);
   sidePanelClose?.addEventListener("click", () => closeWorkspacePanel());
