@@ -122,12 +122,52 @@ data: {"devices":[...]}
 
 `devices` 与 `GET /api/devices` 的数组一致。前端收到后更新设备列表、工作环境选择器和在线状态，不需要轮询。
 
-## 7. 尚未提供
+## 7. 设备任务（连接器执行）
 
-- 文件/终端任务下发
+用户/Agent 创建任务：
+
+```http
+POST /api/devices/{id}/tasks
+{ "type": "fs.list", "payload": { "path": "C:/Users/me/Desktop" } }
+```
+
+查询任务：
+
+```http
+GET /api/devices/{id}/tasks
+```
+
+支持类型：
+
+- `fs.list`：列目录
+- `fs.read`：读文本
+- `fs.write`：写文本
+- `fs.mkdir`：建目录
+- `terminal.exec`：执行命令
+
+连接器拉取并回传：
+
+```http
+POST /api/connector/tasks/next
+{ "deviceId": 1, "deviceToken": "..." }
+
+POST /api/connector/tasks/{taskId}/result
+{
+  "deviceId": 1,
+  "deviceToken": "...",
+  "ok": true,
+  "result": { ... },
+  "error": null
+}
+```
+
+连接器会按授权目录限制路径，系统目录和危险命令默认拒绝。
+
+## 8. 尚未提供
+
 - 截图预览
 - 设备权限配置读写
-- 设备任务审计接口
+- 设备任务审计查询页面
 - 连接器安装包版本接口 `/api/connectors/releases`
 
-这些会在文件/终端工具接入时补上。
+这些会在桌面 GUI 和安装包阶段补上。
