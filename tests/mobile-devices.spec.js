@@ -146,6 +146,16 @@ test("mobile supports real SMS login", async ({ page }) => {
     .poll(() => calls.find((call) => call.pathname === "/auth/login/phone"))
     .toBeTruthy();
   await expect(gate).toBeHidden({ timeout: 10000 });
+
+  await page.goto(
+    `${mobileUrl}?mobile=1&auth=1&api=${encodeURIComponent(apiBase)}#/account`,
+  );
+  await expect(gate).toBeHidden({ timeout: 10000 });
+  await page.locator('[data-action="logout"]').click();
+  await page.locator('[data-action="confirm-dialog"]').click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/auth/logout"))
+    .toBeTruthy();
 });
 
 test("mobile lists devices, starts pairing and follows SSE status", async ({
@@ -166,6 +176,10 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
 
   await page.locator('[data-action="start-device-pair"]').click();
   await expect(devices).toContainText("482913");
+  await expect(devices.locator(".device-pair-qr")).toHaveAttribute(
+    "data-qr-payload",
+    "qianbian://pair?code=482913",
+  );
 
   await page.evaluate(() => {
     window.__qianbianMobileBackend.handleEvent("device/status", {

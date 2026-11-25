@@ -163,6 +163,11 @@
     backendModelId: null,
     backendModelLabel: "",
     lastActivityAt: null,
+    devices: [],
+    devicesLoaded: false,
+    devicesOpen: false,
+    pairing: null,
+    deviceError: "",
     terminalCommandCount: 0,
     catalogOpen: false,
     inspectorOpen: false,
@@ -570,6 +575,68 @@
     state.executionTarget = "local";
   }
 
+  function applyMobileDevices(payload) {
+    const devices = Array.isArray(payload?.devices)
+      ? payload.devices
+          .filter((device) => device?.id)
+          .map((device) => ({
+            id: String(device.id),
+            name: device.name || "未命名设备",
+            platform: device.platform || device.kind || "windows",
+            status: device.status || "offline",
+            lastSeenAt: device.lastSeenAt || "",
+            permissions: device.permissions || {},
+            capabilities: Array.isArray(device.capabilities)
+              ? device.capabilities
+              : [],
+          }))
+      : [];
+    state.devices = devices;
+    state.devicesLoaded = true;
+    state.environments = [
+      ...state.environments.filter((environment) => environment.kind !== "device"),
+      ...devices.map((device) => ({
+        id: device.id,
+        name: device.name,
+        kind: "device",
+        status: device.status === "online" ? "ready" : "not_configured",
+        detail:
+          device.platform === "android" ? "手机连接器" : "Windows 连接器",
+        device,
+      })),
+    ];
+    const selected = state.environments.find(
+      (environment) =>
+        environment.id === state.executionTarget &&
+        environment.status === "ready",
+    );
+    if (!selected) {
+      state.executionTarget =
+        state.environments.find(
+          (environment) => environment.status === "ready",
+        )?.id || "local";
+    }
+  }
+
+  async function refreshMobileDevices() {
+    if (!api || !state.backendConnected) return;
+    state.deviceError = "";
+    try {
+      applyMobileDevices(await api.devices());
+    } catch (error) {
+      state.devicesLoaded = true;
+      state.deviceError = error.message || "设备列表读取失败";
+    }
+    renderPhone();
+    updateIcons();
+  }
+
+  function devicePlatformLabel(platform) {
+    if (platform === "android") return "Android";
+    if (platform === "windows") return "Windows";
+    return platform || "设备";
+  }
+
   function currentMobileEnvironment() {
     return (
       state.environments.find(
@@ -582,8 +649,16 @@
     return state.environments
       .map((environment) => {
         const unavailable = environment.status !== "ready";
+        const suffix =
+          environment.kind === "device"
+            ? unavailable
+              ? " · 离线"
+              : " · 在线"
+            : unavailable
+              ? " · 待配置"
+              : "";
         return `<option value="${escapeHtml(environment.id)}" ${unavailable ? "disabled" : ""} ${environment.id === state.executionTarget ? "selected" : ""}>${escapeHtml(
-          environment.name + (unavailable ? " · 待配置" : ""),
+          environment.name + suffix,
         )}</option>`;
       })
       .join("");
@@ -734,6 +809,24 @@
       updateIcons();
       refreshMobileSessions();
       refreshMobileAffinity();
+      return;
+    }
+    if (method === "device/status") {
+      const device = state.devices.find(
+        (item) => item.id === String(params.deviceId || params.id || ""),
+      );
+      if (device) {
+        device.status = params.status || device.status;
+        device.lastSeenAt = params.lastSeenAt || device.lastSeenAt;
+        applyMobileDevices({ devices: state.devices });
+        renderControls();
+        renderPhone();
+        updateIcons();
+      }
+      return;
+    }
+    if (method === "device/paired" || method === "device/removed") {
+      refreshMobileDevices();
     }
   }
 
@@ -781,16 +874,28 @@
       location.hostname.endsWith(".github.io");
     if (staticHost && !api.explicit) {
       state.backendReady = true;
+      state.devicesLoaded = true;
+      state.deviceError = "设备服务未连接";
       return;
     }
     try {
       await api.health();
       state.backendConnected = true;
       state.network = "online";
-      const [sessions, environments, affinity, models, market, installed, mine] =
+      const [
+        sessions,
+        environments,
+        devices,
+        affinity,
+        models,
+        market,
+        installed,
+        mine,
+      ] =
         await Promise.allSettled([
           api.sessions(),
           api.environments(),
+          api.devices(),
           api.affinity(),
           api.models(),
           api.skills({ scope: "market" }),
@@ -808,6 +913,9 @@
       }
       if (environments.status === "fulfilled") {
         applyMobileEnvironments(environments.value);
+      }
+      if (devices.status === "fulfilled") {
+        applyMobileDevices(devices.value);
       }
       if (affinity.status === "fulfilled") {
         applyMobileAffinity(affinity.value);
@@ -842,6 +950,8 @@
       state.backendConnected = false;
       state.network = "offline";
       markMobileEnvironmentsUnavailable();
+      state.devicesLoaded = true;
+      state.deviceError = "设备服务未连接";
     } finally {
       state.backendReady = true;
       renderControls();
@@ -1747,6 +1857,14 @@
               : ""
           }
           <div class="phone-list" style="margin:0 14px 14px">
+            <button class="phone-row" data-action="open-devices" type="button">
+              <span class="row-glyph">${icon("monitor-smartphone")}</span>
+              <span class="phone-row-main">
+                <span class="phone-row-label">我的设备</span>
+                <span class="phone-row-description">管理本机与手机连接器</span>
+              </span>
+              ${icon("chevron-right", "row-chevron")}
+            </button>
             <button class="phone-row" data-action="open-desktop-version" type="button">
               <span class="row-glyph">${icon("monitor")}</span>
               <span class="phone-row-main">
@@ -2105,6 +2223,98 @@
       ${thinking}
       ${renderMobileBackendApprovals()}
       ${renderMobileBackendQuestions()}
+    `;
+  }
+
+  function renderMobileDevicesOverlay() {
+    const pairing = state.pairing;
+    const devices = state.devices
+      .map(
+        (device) => `
+          <article class="mobile-device-card" data-device-id="${escapeHtml(device.id)}">
+            <span class="mobile-device-icon">${icon(
+              device.platform === "android" ? "smartphone" : "laptop",
+            )}</span>
+            <div class="mobile-device-copy">
+              <strong>${escapeHtml(device.name)}</strong>
+              <small>${escapeHtml(
+                devicePlatformLabel(device.platform),
+              )} · ${device.status === "online" ? "在线" : "离线"}</small>
+              <small>${escapeHtml(
+                Array.isArray(device.capabilities) && device.capabilities.length
+                  ? `能力：${device.capabilities.join(" / ")}`
+                  : "尚未上报能力",
+              )}</small>
+            </div>
+            <button data-action="delete-device" data-device-id="${escapeHtml(
+              device.id,
+            )}" type="button" aria-label="解绑 ${escapeHtml(device.name)}">${icon(
+              "unlink",
+            )}</button>
+          </article>
+        `,
+      )
+      .join("");
+    return `
+      <section class="mobile-devices-screen" role="dialog" aria-modal="true" aria-label="我的设备">
+        <header class="mobile-devices-head">
+          <button data-action="close-devices" type="button" aria-label="关闭我的设备">${icon(
+            "chevron-left",
+          )}</button>
+          <div>
+            <h2>我的设备</h2>
+            <span>${state.devices.length} 台设备</span>
+          </div>
+          <button class="mobile-devices-pair" data-action="start-device-pair" type="button">${icon(
+            "plus",
+          )}添加</button>
+        </header>
+        <div class="mobile-devices-body">
+          ${
+            pairing
+              ? `
+                <section class="mobile-device-pair-card">
+                  <span>配对码</span>
+                  <strong data-pairing-code>${escapeHtml(
+                    pairing.pairingCode || "",
+                  )}</strong>
+                  <canvas class="device-pair-qr" data-qr-payload="${escapeHtml(
+                    pairing.qrPayload || pairing.pairingCode || "",
+                  )}" width="176" height="176"></canvas>
+                  <p>在千变 for Windows / Android 中输入配对码，保持当前页面打开。</p>
+                  <button data-action="copy-pair-code" type="button">${icon(
+                    "copy",
+                  )}复制配对码</button>
+                  <small>有效期至 ${escapeHtml(
+                    formatBackendTime(pairing.expiresAt),
+                  )}</small>
+                </section>
+              `
+              : ""
+          }
+          ${
+            state.deviceError
+              ? `<div class="mobile-devices-error">${escapeHtml(
+                  state.deviceError,
+                )}</div>`
+              : ""
+          }
+          <div class="mobile-device-list">
+            ${
+              devices ||
+              (state.devicesLoaded
+                ? `<div class="mobile-devices-empty">${icon(
+                    "monitor-smartphone",
+                  )}<strong>还没有设备</strong><span>安装连接器后输入配对码完成绑定。</span></div>`
+                : `<div class="mobile-devices-loading">正在读取设备…</div>`)
+            }
+          </div>
+          <section class="mobile-devices-help">
+            <strong>安装千变设备连接</strong>
+            <span>Windows 支持文件、终端和审批；Android V1 支持在线状态与审批。</span>
+          </section>
+        </div>
+      </section>
     `;
   }
 
@@ -6229,6 +6439,7 @@ export async function run(input, context) {
     if (state.mainNavOpen) html += renderMainNavOverlay();
     if (state.skillModal || state.skillDetail) html += renderSkillModalOverlay();
     if (state.historyOpen) html += renderHistoryOverlay();
+    if (state.devicesOpen) html += renderMobileDevicesOverlay();
     if (state.dialog) html += renderDialog();
     if (state.toast) {
       html += `<div class="phone-toast">${icon(state.toast.icon)}${escapeHtml(state.toast.message)}</div>`;
@@ -6238,6 +6449,14 @@ export async function run(input, context) {
     syncSheetMotion(animateSheet);
     pendingSheetAnimation = null;
     bindLocalInputs();
+    const pairingQr = phoneScreen.querySelector(".device-pair-qr");
+    if (pairingQr && window.QianbianQR) {
+      window.QianbianQR.render(pairingQr.dataset.qrPayload, pairingQr).catch(
+        () => {
+          pairingQr.hidden = true;
+        },
+      );
+    }
     scheduleChatScrollToBottom();
   }
 
@@ -6644,6 +6863,7 @@ export async function run(input, context) {
   }
 
   function handleDocumentClick(event) {
+    if (event.target.closest("#mobile-login-gate")) return;
     const openMainNavTarget = event.target.closest('[data-action="open-main-nav"]');
     if (openMainNavTarget) {
       event.preventDefault();
@@ -7213,6 +7433,16 @@ export async function run(input, context) {
         const label = state.dialog?.confirmLabel || "继续";
         if (dialogAction === "publish-skill") {
           completeSkillPublish();
+        } else if (dialogAction === "logout") {
+          const finishLogout = () => {
+            localStorage.removeItem("qianbian-mobile-auth");
+            window.location.reload();
+          };
+          if (api && state.backendConnected) {
+            api.logout().then(finishLogout, finishLogout);
+          } else {
+            finishLogout();
+          }
         } else {
           closeDialog();
           showToast(`${label} · 前端模拟完成`, "circle-check");
@@ -7252,6 +7482,69 @@ export async function run(input, context) {
       } else if (action === "open-desktop-version") {
         localStorage.setItem("qianbian-view-preference", "desktop");
         location.replace(new URL("desktop.html", location.href).href);
+      } else if (action === "open-devices") {
+        state.devicesOpen = true;
+        state.pairing = null;
+        state.deviceError = "";
+        renderPhone();
+        updateIcons();
+        if (!api || !state.backendConnected) {
+          state.devicesLoaded = true;
+          state.deviceError = "设备服务未连接";
+          renderPhone();
+          updateIcons();
+        } else {
+          refreshMobileDevices();
+        }
+      } else if (action === "close-devices") {
+        state.devicesOpen = false;
+        state.pairing = null;
+        renderPhone();
+        updateIcons();
+      } else if (action === "start-device-pair") {
+        if (!api || !state.backendConnected) {
+          showToast("登录后可添加设备", "circle-alert");
+          return;
+        }
+        state.deviceError = "";
+        api
+          .startDevicePairing()
+          .then((pairing) => {
+            state.pairing = pairing;
+            renderPhone();
+            updateIcons();
+          })
+          .catch((error) => {
+            state.deviceError = error.message || "配对码生成失败";
+            renderPhone();
+            updateIcons();
+          });
+      } else if (action === "copy-pair-code") {
+        const code = state.pairing?.pairingCode || "";
+        if (code) {
+          navigator.clipboard?.writeText(code).then(
+            () => showToast("配对码已复制", "copy"),
+            () => showToast(`配对码：${code}`, "copy"),
+          );
+        }
+      } else if (action === "delete-device") {
+        const deviceId = actionTarget.dataset.deviceId;
+        if (!deviceId || !api) return;
+        api
+          .deleteDevice(deviceId)
+          .then(() => {
+            state.devices = state.devices.filter(
+              (device) => device.id !== deviceId,
+            );
+            applyMobileDevices({ devices: state.devices });
+            renderControls();
+            renderPhone();
+            updateIcons();
+            showToast("设备已解绑", "unlink");
+          })
+          .catch((error) => {
+            showToast(error.message || "解绑失败", "circle-alert");
+          });
       } else if (action === "logout") {
         showDialog("退出登录？", "本地演示不会真正退出任何账号。", "退出登录", action);
       } else if (action === "restart") {

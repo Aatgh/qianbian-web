@@ -173,6 +173,48 @@
     affinity(signal) {
       return request("/affinity", { signal });
     },
+    authMe(signal) {
+      return request("/auth/me", { signal });
+    },
+    sendSmsCode(phone, signal) {
+      return request("/auth/sms-code", {
+        method: "POST",
+        body: { phone },
+        signal,
+      });
+    },
+    loginPhone(payload, signal) {
+      return request("/auth/login/phone", {
+        method: "POST",
+        body: payload,
+        signal,
+      });
+    },
+    logout(signal) {
+      return request("/auth/logout", { method: "POST", signal });
+    },
+    devices(signal) {
+      return request("/devices", { signal });
+    },
+    startDevicePairing(signal) {
+      return request("/devices/pair/start", { method: "POST", signal });
+    },
+    updateDevice(id, payload, signal) {
+      return request(`/devices/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: payload,
+        signal,
+      });
+    },
+    deleteDevice(id, signal) {
+      return request(`/devices/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        signal,
+      });
+    },
+    connectorReleases(signal) {
+      return request("/connectors/releases", { signal });
+    },
     sessions(params = {}, signal) {
       return request(`/sessions${query(params)}`, { signal });
     },

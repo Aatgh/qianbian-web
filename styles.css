@@ -9657,6 +9657,345 @@ svg {
   display: none !important;
 }
 
+.mobile-login-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(166, 36, 102, 0.18), transparent 36%),
+    #f4f7f9;
+}
+
+.mobile-login-gate[hidden] {
+  display: none;
+}
+
+.mobile-login-card {
+  display: grid;
+  width: min(100%, 360px);
+  gap: 14px;
+  padding: 26px 22px;
+  border: 1px solid var(--phone-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 24px 70px rgba(34, 28, 31, 0.16);
+  backdrop-filter: blur(24px);
+}
+
+.mobile-login-card > img {
+  width: 66px;
+  height: 66px;
+  margin: 0 auto;
+  border-radius: 18px;
+}
+
+.mobile-login-card h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 540;
+  text-align: center;
+}
+
+.mobile-login-card > p {
+  margin: 0;
+  color: var(--phone-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.mobile-login-card label {
+  display: grid;
+  gap: 6px;
+  color: var(--phone-muted);
+  font-size: 10px;
+}
+
+.mobile-login-card input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--phone-line);
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  color: var(--phone-ink);
+  font-size: 13px;
+}
+
+.mobile-login-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.mobile-login-code-row button {
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--phone-surface-soft);
+  color: var(--phone-ink);
+  font-size: 10px;
+}
+
+.mobile-login-code-row button:disabled {
+  opacity: 0.55;
+}
+
+.mobile-login-error {
+  min-height: 16px;
+  color: var(--danger);
+  font-size: 10px;
+  text-align: center;
+}
+
+.mobile-login-submit {
+  min-height: 44px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.mobile-login-card small {
+  color: var(--phone-muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+.mobile-devices-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: var(--phone-bg);
+  color: var(--phone-ink);
+}
+
+.mobile-devices-head {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 70px;
+  padding: calc(12px + env(safe-area-inset-top)) 14px 10px;
+  border-bottom: 1px solid var(--phone-line);
+}
+
+.mobile-devices-head > button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--phone-surface-soft);
+}
+
+.mobile-devices-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.mobile-devices-head span {
+  color: var(--phone-muted);
+  font-size: 9px;
+}
+
+.mobile-devices-head > .mobile-devices-pair {
+  display: inline-flex;
+  width: auto;
+  height: 36px;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: 10px;
+}
+
+.mobile-devices-head > .mobile-devices-pair svg {
+  width: 13px;
+  height: 13px;
+}
+
+.mobile-devices-body {
+  flex: 1;
+  min-height: 0;
+  padding: 16px 14px calc(28px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.mobile-device-pair-card,
+.mobile-device-card,
+.mobile-devices-help {
+  border: 1px solid var(--phone-line);
+  background: var(--phone-surface);
+}
+
+.mobile-device-pair-card {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 18px;
+  border-radius: 14px;
+}
+
+.mobile-device-pair-card > span {
+  color: var(--phone-muted);
+  font-size: 10px;
+}
+
+.mobile-device-pair-card > strong {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 28px;
+  letter-spacing: 0.12em;
+}
+
+.device-pair-qr {
+  width: 176px;
+  height: 176px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.mobile-device-pair-card p,
+.mobile-device-pair-card small {
+  margin: 0;
+  color: var(--phone-muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+.mobile-device-pair-card button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--phone-surface-soft);
+  color: var(--phone-ink);
+  font-size: 10px;
+}
+
+.mobile-device-pair-card button svg {
+  width: 13px;
+  height: 13px;
+}
+
+.mobile-device-list {
+  display: grid;
+  gap: 9px;
+}
+
+.mobile-device-card {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.mobile-device-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--phone-surface-soft);
+  color: var(--accent);
+}
+
+.mobile-device-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mobile-device-copy strong,
+.mobile-device-copy small {
+  display: block;
+}
+
+.mobile-device-copy strong {
+  font-size: 12px;
+}
+
+.mobile-device-copy small {
+  margin-top: 2px;
+  color: var(--phone-muted);
+  font-size: 9px;
+}
+
+.mobile-device-card > button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--danger);
+}
+
+.mobile-device-card > button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mobile-devices-empty,
+.mobile-devices-loading,
+.mobile-devices-error {
+  padding: 24px 14px;
+  border-radius: 12px;
+  background: var(--phone-surface);
+  color: var(--phone-muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.mobile-devices-empty {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+
+.mobile-devices-empty svg {
+  width: 25px;
+  height: 25px;
+  color: var(--accent);
+}
+
+.mobile-devices-empty strong {
+  color: var(--phone-ink);
+}
+
+.mobile-devices-error {
+  margin-bottom: 10px;
+  color: var(--danger);
+}
+
+.mobile-devices-help {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+  padding: 13px;
+  border-radius: 12px;
+}
+
+.mobile-devices-help strong {
+  font-size: 11px;
+}
+
+.mobile-devices-help span {
+  color: var(--phone-muted);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
 .icp-footer {
   position: fixed;
   left: 50%;

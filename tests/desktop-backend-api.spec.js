@@ -584,6 +584,30 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
         },
       });
     }
+    if (pathname === "/devices" && request.method() === "GET") {
+      return route.fulfill({
+        json: {
+          devices: [
+            {
+              id: "desktop-device",
+              name: "工作笔记本",
+              platform: "windows",
+              status: "online",
+              capabilities: ["files", "terminal"],
+            },
+          ],
+        },
+      });
+    }
+    if (pathname === "/devices/pair/start") {
+      return route.fulfill({
+        json: {
+          pairingCode: "135790",
+          expiresAt: "2026-11-25T12:00:00+08:00",
+          qrPayload: "qianbian://pair?code=135790",
+        },
+      });
+    }
     if (pathname === "/sessions") return route.fulfill({ json: { sessions: [] } });
     if (pathname === "/models") {
       return route.fulfill({
@@ -640,6 +664,11 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
     .toMatchObject({ executionTarget: "local" });
   expect(calls.find((call) => call.pathname === "/turn").body)
     .toMatchObject({ executionTarget: "local" });
+
+  await page.locator("#account-menu-button").click();
+  await expect(page.locator(".account-device-row")).toContainText("工作笔记本");
+  await page.locator("[data-start-device-pair]").click();
+  await expect(page.locator(".account-device-pair")).toContainText("135790");
 });
 
 test("desktop shows ICP footer", async ({ page }) => {

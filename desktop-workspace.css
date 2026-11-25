@@ -2739,6 +2739,101 @@ body.settings-sheet-open {
   gap: 8px;
 }
 
+.account-device-list {
+  display: grid;
+  gap: 8px;
+}
+
+.account-device-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.account-device-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--accent);
+}
+
+.account-device-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.account-device-copy strong,
+.account-device-copy small {
+  display: block;
+}
+
+.account-device-copy strong {
+  color: var(--ink);
+  font-size: 10px;
+}
+
+.account-device-copy small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-row > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--danger);
+  font-size: 8px;
+}
+
+.account-device-row > button svg {
+  width: 13px;
+  height: 13px;
+}
+
+.account-device-pair {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+  border-radius: 10px;
+  background: var(--accent-soft);
+}
+
+.account-device-pair span,
+.account-device-pair small {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.account-device-pair strong {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.12em;
+}
+
+.account-device-empty,
+.account-device-error {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.account-device-error {
+  color: var(--danger);
+}
+
 .account-action-button {
   display: inline-flex;
   min-height: 38px;

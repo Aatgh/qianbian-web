@@ -1001,6 +1001,10 @@
       ...environment,
     })),
     executionTarget: "local",
+    devices: [],
+    devicesLoaded: false,
+    devicePairing: null,
+    deviceError: "",
     sessionLoading: false,
     activeTurnId: null,
     pendingApprovals: [],
@@ -1408,6 +1412,67 @@
       "local";
   }
 
+  function applyBackendDevices(payload) {
+    const devices = Array.isArray(payload?.devices)
+      ? payload.devices
+          .filter((device) => device?.id)
+          .map((device) => ({
+            id: String(device.id),
+            name: device.name || "未命名设备",
+            platform: device.platform || "windows",
+            status: device.status || "offline",
+            lastSeenAt: device.lastSeenAt || "",
+            permissions: device.permissions || {},
+            capabilities: Array.isArray(device.capabilities)
+              ? device.capabilities
+              : [],
+          }))
+      : [];
+    state.devices = devices;
+    state.devicesLoaded = true;
+    state.environments = [
+      ...state.environments.filter((environment) => environment.kind !== "device"),
+      ...devices.map((device) => ({
+        id: device.id,
+        name: device.name,
+        kind: "device",
+        status: device.status === "online" ? "ready" : "not_configured",
+        detail: `${device.platform === "android" ? "Android" : "Windows"} 连接器`,
+        device,
+      })),
+    ];
+    if (
+      !state.environments.some(
+        (environment) =>
+          environment.id === state.executionTarget &&
+          environment.status === "ready",
+      )
+    ) {
+      state.executionTarget =
+        state.environments.find(
+          (environment) => environment.status === "ready",
+        )?.id || "local";
+    }
+  }
+
+  async function refreshBackendDevices() {
+    if (!api || !state.apiAvailable) return;
+    state.deviceError = "";
+    try {
+      applyBackendDevices(await api.devices());
+    } catch (error) {
+      state.devicesLoaded = true;
+      state.deviceError = error.message || "设备列表读取失败";
+    }
+    render();
+  }
+
+  function devicePlatformLabel(platform) {
+    if (platform === "android") return "Android";
+    if (platform === "windows") return "Windows";
+    return platform || "设备";
+  }
+
   function currentEnvironment() {
     return (
       state.environments.find(
@@ -1422,7 +1487,14 @@
     return state.environments
       .map((environment) => {
         const unavailable = environment.status !== "ready";
-        const suffix = unavailable ? " · 待配置" : "";
+        const suffix =
+          environment.kind === "device"
+            ? unavailable
+              ? " · 离线"
+              : " · 在线"
+            : unavailable
+              ? " · 待配置"
+              : "";
         return `<option value="${escapeHtml(environment.id)}" ${unavailable ? "disabled" : ""} ${environment.id === state.executionTarget ? "selected" : ""}>${escapeHtml(environment.name + suffix)}</option>`;
       })
       .join("");
@@ -1826,6 +1898,24 @@
       state.contextUsage = params;
       return;
     }
+    if (method === "device/status") {
+      const device = state.devices.find(
+        (item) => item.id === String(params.deviceId || params.id || ""),
+      );
+      if (device) {
+        device.status = params.status || device.status;
+        device.lastSeenAt = params.lastSeenAt || device.lastSeenAt;
+        applyBackendDevices({ devices: state.devices });
+        renderComposer();
+        renderAccountDialog();
+        syncChrome();
+      }
+      return;
+    }
+    if (method === "device/paired" || method === "device/removed") {
+      refreshBackendDevices();
+      return;
+    }
     if (method === "turn/completed") {
       state.typing = false;
       state.activeTurnId = null;
@@ -1873,7 +1963,11 @@
 
   async function initializeBackend() {
     if (!api) return;
-    if (location.protocol === "file:" && !api.explicit) return;
+    if (location.protocol === "file:" && !api.explicit) {
+      state.devicesLoaded = true;
+      state.deviceError = "设备服务未连接";
+      return;
+    }
     try {
       await api.health();
       state.apiAvailable = true;
@@ -1885,11 +1979,14 @@
         ...environment,
       }));
       state.executionTarget = "local";
+      state.devicesLoaded = true;
+      state.deviceError = "设备服务未连接";
       return;
     }
     const [
       sessionsResult,
       environmentsResult,
+      devicesResult,
       modelsResult,
       marketResult,
       installedResult,
@@ -1900,6 +1997,7 @@
       await Promise.allSettled([
         api.sessions(),
         api.environments(),
+        api.devices(),
         api.models(),
         api.skills({ scope: "market" }),
         api.skills({ scope: "installed" }),
@@ -1912,6 +2010,9 @@
     }
     if (environmentsResult.status === "fulfilled") {
       applyBackendEnvironments(environmentsResult.value);
+    }
+    if (devicesResult.status === "fulfilled") {
+      applyBackendDevices(devicesResult.value);
     }
     if (modelsResult.status === "fulfilled") {
       syncBackendModels(modelsResult.value);
@@ -3914,6 +4015,58 @@ export const skill = {
     const current = ACCOUNTS.find(
       (account) => account.id === state.currentAccountId,
     );
+    const deviceCards = state.devices
+      .map(
+        (device) => `
+          <div class="account-device-row" data-device-id="${escapeHtml(device.id)}">
+            <span class="account-device-icon">${icon(
+              device.platform === "android" ? "smartphone" : "laptop",
+            )}</span>
+            <span class="account-device-copy">
+              <strong>${escapeHtml(device.name)}</strong>
+              <small>${escapeHtml(
+                devicePlatformLabel(device.platform),
+              )} · ${device.status === "online" ? "在线" : "离线"}</small>
+            </span>
+            <button data-delete-device="${escapeHtml(device.id)}" type="button">${icon(
+              "unlink",
+            )}解绑</button>
+          </div>
+        `,
+      )
+      .join("");
+    const deviceSection = `
+      <section class="account-section">
+        <div class="account-section-head">
+          <strong>我的设备</strong>
+          <button class="workspace-text-button" data-start-device-pair type="button">${icon(
+            "plus",
+          )}添加设备</button>
+        </div>
+        ${
+          state.devicePairing
+            ? `<div class="account-device-pair">
+                <span>配对码</span>
+                <strong>${escapeHtml(state.devicePairing.pairingCode || "")}</strong>
+                <small>在千变连接器中输入配对码</small>
+              </div>`
+            : ""
+        }
+        ${
+          state.deviceError
+            ? `<p class="account-device-error">${escapeHtml(state.deviceError)}</p>`
+            : ""
+        }
+        <div class="account-device-list">
+          ${
+            deviceCards ||
+            `<p class="account-device-empty">${
+              state.devicesLoaded ? "还没有已绑定设备" : "正在读取设备…"
+            }</p>`
+          }
+        </div>
+      </section>
+    `;
     accountDialogHost.innerHTML = `
       <div class="account-dialog-layer">
         <button class="account-dialog-backdrop" data-close-account type="button" aria-label="关闭账号设置"></button>
@@ -3956,6 +4109,7 @@ export const skill = {
                       <button class="workspace-primary-button" data-save-account-profile type="button">${icon("check")}保存资料</button>
                     </div>
                   </section>
+                  ${deviceSection}
                   <section class="account-section">
                     <div class="account-section-head"><strong>账号操作</strong><span>${ACCOUNTS.length} 个账号</span></div>
                     <div class="account-action-row">
@@ -6132,6 +6286,44 @@ export const skill = {
     if (event.target.closest("[data-toggle-account-switch]")) {
       state.accountSwitchOpen = !state.accountSwitchOpen;
       renderAccountDialog();
+      return;
+    }
+    if (event.target.closest("[data-start-device-pair]")) {
+      if (!api || !state.apiAvailable) {
+        showToast("登录后可以添加设备", "circle-alert");
+        return;
+      }
+      state.deviceError = "";
+      api
+        .startDevicePairing()
+        .then((pairing) => {
+          state.devicePairing = pairing;
+          renderAccountDialog();
+        })
+        .catch((error) => {
+          state.deviceError = error.message || "配对码生成失败";
+          renderAccountDialog();
+        });
+      return;
+    }
+    const deleteDeviceButton = event.target.closest("[data-delete-device]");
+    if (deleteDeviceButton) {
+      const deviceId = deleteDeviceButton.dataset.deleteDevice;
+      if (!deviceId || !api) return;
+      api
+        .deleteDevice(deviceId)
+        .then(() => {
+          state.devices = state.devices.filter(
+            (device) => device.id !== deviceId,
+          );
+          applyBackendDevices({ devices: state.devices });
+          renderAccountDialog();
+          renderComposer();
+          syncChrome();
+        })
+        .catch((error) => {
+          showToast(error.message || "解绑失败", "circle-alert");
+        });
       return;
     }
     if (event.target.closest('[data-action="open-mobile-version"]')) {

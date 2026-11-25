@@ -6,6 +6,7 @@
     "build:login-scene": "esbuild src/login-three-scene.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/login-three-scene.min.js",
     "build:logo3d": "esbuild src/logo-3d-demo.js --bundle --minify --format=iife --target=chrome110 --outfile=logo-3d/app.js",
     "build:markdown": "esbuild src/markdown-renderer.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/markdown.min.js",
+    "build:mobile-qr": "esbuild src/mobile-qr.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/mobile-qr.min.js",
     "test:e2e": "playwright test",
     "test:server": "npm test --prefix muse-desktop/server"
   },
@@ -16,6 +17,7 @@
   "dependencies": {
     "dompurify": "^3.5.0",
     "marked": "^18.2.1",
+    "qrcode": "^1.5.4",
     "three": "^0.187.0"
   }
 }
