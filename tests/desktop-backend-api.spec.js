@@ -833,24 +833,45 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
     .toEqual({ type: "windows", name: "新设备" });
 });
 
-test("desktop context close aligns with insight buttons", async ({ page }) => {
+test("desktop skill delete control aligns with card toggles", async ({
+  page,
+}) => {
   await page.goto(desktopUrl);
   await unlockDesktop(page);
 
-  const grid = page.locator(".insight-icon-grid");
-  const buttons = grid.locator(".insight-icon-button");
-  await expect(buttons).toHaveCount(5);
-  const close = page.locator("#context-close");
-  await expect(close).toBeVisible();
-  await expect(close).toHaveClass(/insight-icon-button/);
-
-  const centers = await buttons.evaluateAll((items) =>
-    items.map((item) => {
-      const box = item.getBoundingClientRect();
-      return box.top + box.height / 2;
-    }),
+  const skillDelete = page.locator("[data-toggle-skill-delete]");
+  await expect(skillDelete).toBeVisible();
+  await expect(page.locator(".insight-icon-grid .insight-icon-button")).toHaveCount(
+    4,
   );
-  expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(2);
+  await expect(page.locator("#context-close")).toHaveCount(0);
+  await expect(
+    page.locator(".right-feature-title-row [data-toggle-skill-delete]"),
+  ).toHaveCount(0);
+
+  const alignment = await page.evaluate(() => {
+    const action = document.querySelector("[data-toggle-skill-delete]");
+    const toggle = document.querySelector("[data-skill-config-toggle]");
+    const actionBox = action?.getBoundingClientRect();
+    const toggleBox = toggle?.getBoundingClientRect();
+    return {
+      actionCenter: actionBox ? actionBox.left + actionBox.width / 2 : NaN,
+      actionRight: actionBox?.right ?? NaN,
+      toggleCenter: toggleBox ? toggleBox.left + toggleBox.width / 2 : NaN,
+      toggleRight: toggleBox?.right ?? NaN,
+    };
+  });
+  expect(Math.abs(alignment.actionCenter - alignment.toggleCenter)).toBeLessThan(
+    1,
+  );
+  expect(Math.abs(alignment.actionRight - alignment.toggleRight)).toBeLessThan(
+    1,
+  );
+
+  await skillDelete.click();
+  await expect(skillDelete).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("[data-skill-select]").first()).toBeVisible();
+  await expect(page.locator("[data-skill-config-toggle]")).toHaveCount(0);
 });
 
 test("desktop manages device name, pause state and pairing QR", async ({
