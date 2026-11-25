@@ -4291,7 +4291,7 @@ export const skill = {
             task.id || task.type,
           )}">
             <span class="account-device-task-icon">${icon(
-              task.type === "terminal.exec" ? "terminal" : "file-search",
+              taskUtils?.iconName(task.type) || "file-search",
             )}</span>
             <span class="account-device-task-copy">
               <strong>${escapeHtml(task.typeLabel)}</strong>

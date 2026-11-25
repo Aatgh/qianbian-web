@@ -2508,7 +2508,7 @@
             task.id || task.type,
           )}">
             <span class="mobile-device-task-icon">${icon(
-              task.type === "terminal.exec" ? "terminal" : "file-search",
+              taskUtils?.iconName(task.type) || "file-search",
             )}</span>
             <span class="mobile-device-task-copy">
               <strong>${escapeHtml(task.typeLabel)}</strong>

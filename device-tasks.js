@@ -6,7 +6,21 @@
     "fs.read": "读取文件",
     "fs.write": "写入文件",
     "fs.mkdir": "创建目录",
+    "fs.edit": "编辑文件",
+    "fs.delete": "删除文件",
+    "fs.grep": "搜索文件",
     "terminal.exec": "执行命令",
+  };
+
+  const TYPE_ICONS = {
+    "fs.list": "folder",
+    "fs.read": "file-search",
+    "fs.write": "file-plus",
+    "fs.mkdir": "folder-plus",
+    "fs.edit": "file-code-2",
+    "fs.delete": "trash-2",
+    "fs.grep": "search",
+    "terminal.exec": "terminal",
   };
 
   const STATUS_ALIASES = {
@@ -142,6 +156,9 @@
     normalizeTasks,
     orderTasks,
     taskList,
+    iconName(type) {
+      return TYPE_ICONS[type] || "file-search";
+    },
     typeLabel(type) {
       return TYPE_LABELS[type] || type || "未知任务";
     },
