@@ -7,6 +7,7 @@
     "build:logo3d": "esbuild src/logo-3d-demo.js --bundle --minify --format=iife --target=chrome110 --outfile=logo-3d/app.js",
     "build:markdown": "esbuild src/markdown-renderer.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/markdown.min.js",
     "build:mobile-qr": "esbuild src/mobile-qr.js --bundle --minify --format=iife --target=chrome110 --outfile=assets/mobile-qr.min.js",
+    "build:login-galaxy": "esbuild src/login-galaxy.js --minify --format=iife --target=chrome110 --outfile=assets/login-galaxy.min.js",
     "test:e2e": "playwright test",
     "test:server": "npm test --prefix muse-desktop/server"
   },
