@@ -144,6 +144,14 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
       payload: { path: "C:/Users/me/Desktop" },
     });
     await api.deviceTasks("device-1");
+    await api.devicePermissions("device-1");
+    await api.updateDevicePermissions("device-1", {
+      allowedRoots: ["C:/Users/me/Desktop"],
+      terminal: true,
+      files: true,
+      screenshot: false,
+    });
+    await api.deviceAudit("device-1");
     await api.connectorReleases();
     await api.sessions();
     await api.startSession({
@@ -215,6 +223,9 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     { method: "DELETE", pathname: "/devices/device-1", search: "" },
     { method: "POST", pathname: "/devices/device-1/tasks", search: "" },
     { method: "GET", pathname: "/devices/device-1/tasks", search: "" },
+    { method: "GET", pathname: "/devices/device-1/permissions", search: "" },
+    { method: "PUT", pathname: "/devices/device-1/permissions", search: "" },
+    { method: "GET", pathname: "/devices/device-1/audit", search: "" },
     { method: "GET", pathname: "/connectors/releases", search: "" },
     { method: "GET", pathname: "/sessions", search: "" },
     { method: "POST", pathname: "/session/start", search: "" },
@@ -267,6 +278,17 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
   expect(JSON.parse(createTaskCall.body)).toEqual({
     type: "fs.list",
     payload: { path: "C:/Users/me/Desktop" },
+  });
+  const updatePermissionsCall = calls.find(
+    (call) =>
+      call.pathname === "/devices/device-1/permissions" &&
+      call.method === "PUT",
+  );
+  expect(JSON.parse(updatePermissionsCall.body)).toEqual({
+    allowedRoots: ["C:/Users/me/Desktop"],
+    terminal: true,
+    files: true,
+    screenshot: false,
   });
   const startCall = calls.find((call) => call.pathname === "/session/start");
   expect(JSON.parse(startCall.body)).toEqual({
@@ -865,6 +887,43 @@ test("desktop manages device name, pause state and pairing QR", async ({
       }
       return route.fulfill({ status: 204, headers });
     }
+    if (pathname === "/devices/1/permissions") {
+      if (request.method() === "GET") {
+        return route.fulfill({
+          headers,
+          json: {
+            permissions: {
+              allowedRoots: ["D:/workspace"],
+              terminal: true,
+              files: true,
+              screenshot: false,
+            },
+          },
+        });
+      }
+      if (request.method() === "PUT") {
+        return route.fulfill({
+          headers,
+          json: { permissions: request.postDataJSON() },
+        });
+      }
+    }
+    if (pathname === "/devices/1/audit") {
+      return route.fulfill({
+        headers,
+        json: {
+          audit: [
+            {
+              id: 1,
+              action: "permission.update",
+              status: "success",
+              summary: "更新终端权限",
+              create_time: "2026-11-25T10:45:00+08:00",
+            },
+          ],
+        },
+      });
+    }
     if (pathname === "/environments") {
       return route.fulfill({
         headers,
@@ -972,12 +1031,47 @@ test("desktop manages device name, pause state and pairing QR", async ({
   );
   await page.locator('[data-show-device-permissions="1"]').click();
   const permissions = page.locator("[data-device-permissions]");
-  await expect(permissions).toContainText("D:/workspace");
-  await expect(permissions).toContainText("终端已授权");
-  await expect(permissions).toContainText("截图未开放");
-  await expect(permissions).toContainText("权限配置接口准备中");
-  expect(calls.some((call) => call.pathname === "/devices/1/permissions"))
-    .toBe(false);
+  await expect(permissions.locator("[data-device-permission-roots]")).toHaveValue(
+    "D:/workspace",
+  );
+  await expect(
+    permissions.locator("[data-device-permission-terminal]"),
+  ).toBeChecked();
+  await expect(
+    permissions.locator("[data-device-permission-screenshot]"),
+  ).not.toBeChecked();
+  await expect(permissions.locator("[data-device-audit-entry]")).toContainText(
+    "权限已更新",
+  );
+  await permissions
+    .locator("[data-device-permission-roots]")
+    .fill("D:/workspace\nE:/notes");
+  await permissions
+    .locator("[data-device-permission-terminal]")
+    .uncheck();
+  await permissions.locator("[data-save-device-permissions]").click();
+  await expect
+    .poll(
+      () =>
+        calls.filter(
+          (call) =>
+            call.pathname === "/devices/1/permissions" &&
+            call.method === "PUT",
+        ).length,
+    )
+    .toBe(1);
+  expect(
+    calls.find(
+      (call) =>
+        call.pathname === "/devices/1/permissions" &&
+        call.method === "PUT",
+    ).body,
+  ).toEqual({
+    allowedRoots: ["D:/workspace", "E:/notes"],
+    terminal: false,
+    files: true,
+    screenshot: false,
+  });
 });
 
 test("desktop shows live device task progress", async ({ page }) => {

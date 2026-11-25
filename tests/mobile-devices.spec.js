@@ -27,6 +27,12 @@ async function mockDeviceBackend(page, calls, options = {}) {
     },
   ];
   const deviceTasks = options.deviceTasks || [];
+  let permissions = options.permissions || {
+    allowedRoots: ["D:/workspace"],
+    terminal: true,
+    files: true,
+    screenshot: false,
+  };
   await page.route("http://backend.test/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -75,6 +81,31 @@ async function mockDeviceBackend(page, calls, options = {}) {
     }
     if (pathname === "/devices/1/tasks" && request.method() === "GET") {
       return route.fulfill({ headers, json: { tasks: deviceTasks } });
+    }
+    if (pathname === "/devices/1/permissions") {
+      if (request.method() === "GET") {
+        return route.fulfill({ headers, json: { permissions } });
+      }
+      if (request.method() === "PUT") {
+        permissions = request.postDataJSON();
+        return route.fulfill({ headers, json: { permissions } });
+      }
+    }
+    if (pathname === "/devices/1/audit") {
+      return route.fulfill({
+        headers,
+        json: {
+          audit: [
+            {
+              id: 1,
+              action: "permission.update",
+              status: "success",
+              summary: "更新终端权限",
+              create_time: "2026-11-25T10:45:00+08:00",
+            },
+          ],
+        },
+      });
     }
     if (pathname === "/devices/pair/start") {
       return route.fulfill({
@@ -295,12 +326,44 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
   await expect(devices).toContainText("离线");
   await page.locator('[data-action="show-device-permissions"]').click();
   const permissions = page.locator("[data-device-permissions]");
-  await expect(permissions).toContainText("D:/workspace");
-  await expect(permissions).toContainText("终端已授权");
-  await expect(permissions).toContainText("截图未开放");
-  await expect(permissions).toContainText("权限配置接口准备中");
-  expect(calls.some((call) => call.pathname === "/devices/1/permissions"))
-    .toBe(false);
+  await expect(permissions.locator("[data-device-permission-roots]")).toHaveValue(
+    "D:/workspace",
+  );
+  await expect(
+    permissions.locator("[data-device-permission-terminal]"),
+  ).toBeChecked();
+  await expect(permissions.locator("[data-device-audit-entry]")).toContainText(
+    "权限已更新",
+  );
+  await permissions
+    .locator("[data-device-permission-roots]")
+    .fill("D:/workspace\nE:/notes");
+  await permissions
+    .locator("[data-device-permission-screenshot]")
+    .check();
+  await permissions.locator('[data-action="save-device-permissions"]').click();
+  await expect
+    .poll(
+      () =>
+        calls.filter(
+          (call) =>
+            call.pathname === "/devices/1/permissions" &&
+            call.method === "PUT",
+        ).length,
+    )
+    .toBe(1);
+  expect(
+    calls.find(
+      (call) =>
+        call.pathname === "/devices/1/permissions" &&
+        call.method === "PUT",
+    ).body,
+  ).toEqual({
+    allowedRoots: ["D:/workspace", "E:/notes"],
+    terminal: true,
+    files: true,
+    screenshot: true,
+  });
 
   await page.locator('[data-action="delete-device"]').click();
   await expect
