@@ -5395,19 +5395,6 @@ export const skill = {
             <h3>技能配置</h3>
           </div>
           <p>${activeSkills.length - [...state.disabledSkills].filter((id) => activeSkills.some((skill) => skill.id === id)).length} 个技能已启用。</p>
-          ${
-            state.skillDeleteMode
-              ? `
-                <div class="skill-delete-toolbar">
-                  <span>已选择 ${state.selectedSkills.size} 个技能</span>
-                  <div>
-                    <button class="danger-button" data-delete-selected-skills type="button" ${state.selectedSkills.size ? "" : "disabled"}>删除所选</button>
-                    <button class="secondary-button" data-cancel-skill-delete type="button">取消</button>
-                  </div>
-                </div>
-              `
-              : ""
-          }
           <div class="skill-config-controls">
             <div class="workspace-filter-row right-feature-filters" aria-label="技能状态筛选">
               ${renderWorkspaceFilters(
@@ -5420,9 +5407,21 @@ export const skill = {
                 skillFilter,
               )}
             </div>
-            <button class="skill-delete-toggle ${state.skillDeleteMode ? "is-active" : ""}" data-toggle-skill-delete type="button" title="${state.skillDeleteMode ? "退出多选删除" : "多选删除技能"}" aria-label="${state.skillDeleteMode ? "退出多选删除" : "多选删除技能"}" aria-pressed="${state.skillDeleteMode}">
-              ${icon("list-checks")}
-            </button>
+            <div class="skill-config-actions">
+              ${
+                state.skillDeleteMode
+                  ? `
+                    <span class="skill-delete-count" aria-live="polite">已选 ${state.selectedSkills.size}</span>
+                    <button class="skill-delete-confirm" data-delete-selected-skills type="button" title="删除所选" aria-label="删除所选" ${state.selectedSkills.size ? "" : "disabled"}>
+                      ${icon("trash-2")}
+                    </button>
+                  `
+                  : ""
+              }
+              <button class="skill-delete-toggle ${state.skillDeleteMode ? "is-active" : ""}" data-toggle-skill-delete type="button" title="${state.skillDeleteMode ? "退出多选删除" : "多选删除技能"}" aria-label="${state.skillDeleteMode ? "退出多选删除" : "多选删除技能"}" aria-pressed="${state.skillDeleteMode}">
+                ${icon("list-checks")}
+              </button>
+            </div>
           </div>
           <div class="skill-config-grid">
             ${visibleSkills
@@ -7201,12 +7200,6 @@ export const skill = {
     }
     if (event.target.closest("[data-toggle-skill-delete]")) {
       toggleSkillDeleteMode();
-      return;
-    }
-    if (event.target.closest("[data-cancel-skill-delete]")) {
-      state.skillDeleteMode = false;
-      state.selectedSkills.clear();
-      renderInsightPanel();
       return;
     }
     if (event.target.closest("[data-delete-selected-skills]")) {

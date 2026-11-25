@@ -905,48 +905,6 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   margin: 0;
 }
 
-.skill-delete-toolbar {
-  display: grid;
-  gap: 8px;
-  padding: 9px;
-  border: 1px solid color-mix(in srgb, var(--danger) 20%, var(--line));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--danger) 5%, var(--surface));
-}
-
-.skill-delete-toolbar > span {
-  color: var(--muted);
-  font-size: 8px;
-}
-
-.skill-delete-toolbar > div {
-  display: flex;
-  gap: 6px;
-}
-
-.skill-delete-toolbar button {
-  min-height: 29px;
-  padding: 0 9px;
-  border-radius: 7px;
-  font-size: 7.5px;
-  font-weight: 650;
-}
-
-.skill-delete-toolbar .secondary-button {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--muted);
-}
-
-.skill-delete-toolbar .danger-button {
-  background: var(--danger);
-  color: #ffffff;
-}
-
-.skill-delete-toolbar .danger-button:disabled {
-  opacity: 0.45;
-}
-
 .skill-select-checkbox {
   width: 18px;
   height: 18px;
@@ -976,7 +934,22 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   margin-top: 0;
 }
 
-.skill-delete-toggle {
+.skill-config-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-right: calc(clamp(9px, 0.75vw, 12px) + 1px);
+}
+
+.skill-delete-count {
+  color: var(--muted);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.skill-delete-toggle,
+.skill-delete-confirm {
   display: grid;
   width: 34px;
   min-width: 34px;
@@ -984,12 +957,17 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   min-height: 20px;
   flex: none;
   place-items: center;
-  margin-right: calc(clamp(9px, 0.75vw, 12px) + 1px);
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface-soft);
   color: var(--muted);
+}
+
+.skill-delete-confirm {
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--line));
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
 }
 
 .skill-delete-toggle:hover,
@@ -999,7 +977,19 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   color: var(--danger);
 }
 
-.skill-delete-toggle svg {
+.skill-delete-confirm:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.skill-delete-confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.skill-delete-toggle svg,
+.skill-delete-confirm svg {
   width: 13px;
   height: 13px;
 }
@@ -4704,7 +4694,6 @@ body.desktop-reference[data-density="宽松"] .message-row {
   max-width: 100%;
 }
 
-.desktop-reference .skill-delete-toolbar > div,
 .desktop-reference .skill-card-footer,
 .desktop-reference .right-inline-form > div {
   flex-wrap: wrap;
