@@ -139,6 +139,7 @@ async function mockDeviceBackend(page, calls, options = {}) {
 test("mobile supports real SMS login", async ({ page }) => {
   const calls = [];
   await mockDeviceBackend(page, calls);
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${mobileUrl}?mobile=1&auth=1&api=${encodeURIComponent(apiBase)}#/home`);
 
   const gate = page.locator("#mobile-login-gate");
@@ -171,6 +172,7 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
 }) => {
   const calls = [];
   await mockDeviceBackend(page, calls, { loggedIn: true });
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(
     `${mobileUrl}?mobile=1&api=${encodeURIComponent(apiBase)}#/account`,
   );
@@ -208,7 +210,6 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
         call.body?.name === "随身笔记本",
     ),
   ).toBeTruthy();
-
   await page
     .locator('[data-action="toggle-device-pause"][data-device-id="device-1"]')
     .click();

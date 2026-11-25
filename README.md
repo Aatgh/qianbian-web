@@ -12,6 +12,7 @@ AIDesigner 精选分类置顶展示 Holo Foil、Silk Waves、Liquid Metal、Liqu
 
 - 电脑端：`desktop.html`
 - 手机端：`index.html`
+- 设备连接下载页：`connectors.html`
 
 ## 本地预览
 
@@ -32,6 +33,7 @@ python -m http.server 8080
 - `desktop-api.js`：千变后端 API 客户端，覆盖会话、SSE、审批、提问、模型、技能和导出接口
 - `desktop-app.js`、`data.js`：电脑端工作区交互和演示数据
 - `index.html`、`styles.css`、`app.js`：手机端界面
+- `connectors.html`、`connectors.css`、`connectors.js`：千变 for Windows / Android 版本清单与下载页
 - `assets/`：品牌、图标、字体和演示素材
 - `docs/`：设计说明和实现计划
 - `muse-desktop/`：基于 OpenMuse 的桌面端预览源码

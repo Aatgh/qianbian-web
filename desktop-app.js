@@ -1005,6 +1005,8 @@
     devicesLoaded: false,
     devicePairing: null,
     deviceError: "",
+    deviceEditingId: null,
+    deviceRevision: 0,
     sessionLoading: false,
     activeTurnId: null,
     pendingApprovals: [],
@@ -1351,6 +1353,18 @@
     });
   }
 
+  function formatBackendDateTime(value) {
+    const timestamp = Date.parse(value || "");
+    if (!Number.isFinite(timestamp)) return "稍后";
+    return new Date(timestamp).toLocaleString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  }
+
   function mapBackendSession(session) {
     return {
       id: String(session.sessionId ?? session.id),
@@ -1416,17 +1430,7 @@
     const devices = Array.isArray(payload?.devices)
       ? payload.devices
           .filter((device) => device?.id)
-          .map((device) => ({
-            id: String(device.id),
-            name: device.name || "未命名设备",
-            platform: device.platform || "windows",
-            status: device.status || "offline",
-            lastSeenAt: device.lastSeenAt || "",
-            permissions: device.permissions || {},
-            capabilities: Array.isArray(device.capabilities)
-              ? device.capabilities
-              : [],
-          }))
+          .map(normalizeDevice)
       : [];
     state.devices = devices;
     state.devicesLoaded = true;
@@ -1436,7 +1440,10 @@
         id: device.id,
         name: device.name,
         kind: "device",
-        status: device.status === "online" ? "ready" : "not_configured",
+        status:
+          device.status === "online" && !device.paused
+            ? "ready"
+            : "not_configured",
         detail: `${device.platform === "android" ? "Android" : "Windows"} 连接器`,
         device,
       })),
@@ -1458,8 +1465,12 @@
   async function refreshBackendDevices() {
     if (!api || !state.apiAvailable) return;
     state.deviceError = "";
+    const revision = state.deviceRevision;
     try {
-      applyBackendDevices(await api.devices());
+      const payload = await api.devices();
+      if (revision === state.deviceRevision) {
+        applyBackendDevices(payload);
+      }
     } catch (error) {
       state.devicesLoaded = true;
       state.deviceError = error.message || "设备列表读取失败";
@@ -1467,10 +1478,85 @@
     render();
   }
 
+  function normalizeDevice(device) {
+    const status = String(device.status || "offline");
+    const paused = device.paused === true || status === "paused";
+    return {
+      id: String(device.id),
+      name: device.name || "未命名设备",
+      platform: device.platform || "windows",
+      status,
+      paused,
+      lastSeenAt: device.lastSeenAt || "",
+      permissions: device.permissions || {},
+      capabilities: Array.isArray(device.capabilities)
+        ? device.capabilities
+        : [],
+    };
+  }
+
   function devicePlatformLabel(platform) {
     if (platform === "android") return "Android";
     if (platform === "windows") return "Windows";
     return platform || "设备";
+  }
+
+  function deviceStateLabel(device) {
+    if (device?.paused || device?.status === "paused") return "已暂停";
+    return device?.status === "online" ? "在线" : "离线";
+  }
+
+  function connectorPageUrl() {
+    const url = new URL("connectors.html", location.href);
+    try {
+      const configured =
+        new URL(location.href).searchParams.get("api") ||
+        localStorage.getItem("qianbian-api-base");
+      if (configured) url.searchParams.set("api", configured);
+    } catch {}
+    return url.href;
+  }
+
+  function mergeDevicePatch(device, patch) {
+    const next = { ...device, ...patch };
+    if (next.paused === true && next.status === "online") {
+      next.status = "paused";
+    } else if (next.paused === false && next.status === "paused") {
+      next.status = "online";
+    }
+    return normalizeDevice(next);
+  }
+
+  function updateBackendDevice(deviceId, patch, successMessage) {
+    if (!api || !deviceId) return;
+    const current = state.devices.find((device) => device.id === deviceId);
+    if (!current) return;
+    state.deviceError = "";
+    state.deviceRevision += 1;
+    api
+      .updateDevice(deviceId, patch)
+      .then((payload) => {
+        const updated = payload?.device || payload?.item;
+        const devices = state.devices.map((device) =>
+          device.id === deviceId
+            ? updated?.id
+              ? normalizeDevice(updated)
+              : mergeDevicePatch(device, patch)
+            : device,
+        );
+        applyBackendDevices({ devices });
+        state.deviceEditingId = null;
+        renderAccountDialog();
+        renderComposer();
+        renderContext();
+        syncChrome();
+        showToast(successMessage, "circle-check");
+      })
+      .catch((error) => {
+        state.deviceError = error.message || "设备操作失败";
+        renderAccountDialog();
+        showToast(state.deviceError, "circle-alert");
+      });
   }
 
   function currentEnvironment() {
@@ -1486,12 +1572,15 @@
   function environmentOptions() {
     return state.environments
       .map((environment) => {
-        const unavailable = environment.status !== "ready";
+        const paused = Boolean(environment.device?.paused);
+        const unavailable = environment.status !== "ready" || paused;
         const suffix =
           environment.kind === "device"
-            ? unavailable
-              ? " · 离线"
-              : " · 在线"
+            ? paused
+              ? " · 已暂停"
+              : unavailable
+                ? " · 离线"
+                : " · 在线"
             : unavailable
               ? " · 待配置"
               : "";
@@ -1903,7 +1992,11 @@
         (item) => item.id === String(params.deviceId || params.id || ""),
       );
       if (device) {
+        state.deviceRevision += 1;
         device.status = params.status || device.status;
+        if (typeof params.paused === "boolean") {
+          device.paused = params.paused;
+        }
         device.lastSeenAt = params.lastSeenAt || device.lastSeenAt;
         applyBackendDevices({ devices: state.devices });
         renderComposer();
@@ -4017,22 +4110,62 @@ export const skill = {
     );
     const deviceCards = state.devices
       .map(
-        (device) => `
+        (device) => {
+          const editing = state.deviceEditingId === device.id;
+          return `
           <div class="account-device-row" data-device-id="${escapeHtml(device.id)}">
             <span class="account-device-icon">${icon(
               device.platform === "android" ? "smartphone" : "laptop",
             )}</span>
             <span class="account-device-copy">
-              <strong>${escapeHtml(device.name)}</strong>
+              ${
+                editing
+                  ? `<input class="account-device-name-input" data-device-name-input="${escapeHtml(
+                      device.id,
+                    )}" value="${escapeHtml(device.name)}" aria-label="设备名称" />`
+                  : `<strong>${escapeHtml(device.name)}</strong>`
+              }
               <small>${escapeHtml(
                 devicePlatformLabel(device.platform),
-              )} · ${device.status === "online" ? "在线" : "离线"}</small>
+              )} · ${deviceStateLabel(device)}</small>
             </span>
-            <button data-delete-device="${escapeHtml(device.id)}" type="button">${icon(
-              "unlink",
-            )}解绑</button>
+            <span class="account-device-actions">
+              ${
+                editing
+                  ? `
+                    <button class="account-device-icon-button is-primary" data-save-device-name="${escapeHtml(
+                      device.id,
+                    )}" type="button" aria-label="保存设备名称" title="保存">${icon(
+                      "check",
+                    )}</button>
+                    <button class="account-device-icon-button" data-cancel-device-name type="button" aria-label="取消重命名" title="取消">${icon(
+                      "x",
+                    )}</button>
+                  `
+                  : `
+                    <button class="account-device-icon-button" data-edit-device="${escapeHtml(
+                      device.id,
+                    )}" type="button" aria-label="重命名 ${escapeHtml(
+                      device.name,
+                    )}" title="重命名">${icon("pencil")}</button>
+                    <button class="account-device-icon-button" data-toggle-device-pause="${escapeHtml(
+                      device.id,
+                    )}" type="button" aria-label="${
+                      device.paused ? "恢复" : "暂停"
+                    } ${escapeHtml(device.name)}" title="${
+                      device.paused ? "恢复设备" : "暂停设备"
+                    }">${icon(device.paused ? "play" : "pause")}</button>
+                  `
+              }
+              <button class="account-device-icon-button is-danger" data-delete-device="${escapeHtml(
+                device.id,
+              )}" type="button" aria-label="解绑 ${escapeHtml(
+                device.name,
+              )}" title="解绑设备">${icon("unlink")}</button>
+            </span>
           </div>
-        `,
+        `;
+        },
       )
       .join("");
     const deviceSection = `
@@ -4046,9 +4179,19 @@ export const skill = {
         ${
           state.devicePairing
             ? `<div class="account-device-pair">
+                <canvas class="device-pair-qr" data-qr-payload="${escapeHtml(
+                  state.devicePairing.qrPayload ||
+                    state.devicePairing.pairingCode ||
+                    "",
+                )}" width="176" height="176"></canvas>
                 <span>配对码</span>
                 <strong>${escapeHtml(state.devicePairing.pairingCode || "")}</strong>
-                <small>在千变连接器中输入配对码</small>
+                <button data-copy-device-pair type="button">${icon(
+                  "copy",
+                )}复制配对码</button>
+                <small>在千变 for Windows / Android 中输入配对码，有效期至 ${escapeHtml(
+                  formatBackendDateTime(state.devicePairing.expiresAt),
+                )}</small>
               </div>`
             : ""
         }
@@ -4065,6 +4208,9 @@ export const skill = {
             }</p>`
           }
         </div>
+        <a class="account-device-download" data-open-connectors href="${escapeHtml(
+          connectorPageUrl(),
+        )}">${icon("download")}下载千变设备连接</a>
       </section>
     `;
     accountDialogHost.innerHTML = `
@@ -4150,6 +4296,14 @@ export const skill = {
       </div>
     `;
     updateIcons(accountDialogHost);
+    const pairingQr = accountDialogHost.querySelector(".device-pair-qr");
+    if (pairingQr && window.QianbianQR) {
+      window.QianbianQR.render(pairingQr.dataset.qrPayload, pairingQr).catch(
+        () => {
+          pairingQr.hidden = true;
+        },
+      );
+    }
     if (accountDialogEntering) {
       const dialog = accountDialogHost.querySelector(".account-dialog");
       const trigger = document.getElementById("account-menu-button");
@@ -6286,6 +6440,64 @@ export const skill = {
     if (event.target.closest("[data-toggle-account-switch]")) {
       state.accountSwitchOpen = !state.accountSwitchOpen;
       renderAccountDialog();
+      return;
+    }
+    const editDeviceButton = event.target.closest("[data-edit-device]");
+    if (editDeviceButton) {
+      state.deviceEditingId = editDeviceButton.dataset.editDevice;
+      state.deviceError = "";
+      renderAccountDialog();
+      window.requestAnimationFrame(() => {
+        accountDialogHost
+          .querySelector(
+            `[data-device-name-input="${CSS.escape(
+              state.deviceEditingId || "",
+            )}"]`,
+          )
+          ?.focus();
+      });
+      return;
+    }
+    if (event.target.closest("[data-cancel-device-name]")) {
+      state.deviceEditingId = null;
+      renderAccountDialog();
+      return;
+    }
+    const saveDeviceNameButton = event.target.closest(
+      "[data-save-device-name]",
+    );
+    if (saveDeviceNameButton) {
+      const deviceId = saveDeviceNameButton.dataset.saveDeviceName;
+      const input = accountDialogHost.querySelector(
+        `[data-device-name-input="${CSS.escape(deviceId || "")}"]`,
+      );
+      const name = input?.value.trim() || "";
+      if (!deviceId || !name || !api) return;
+      updateBackendDevice(deviceId, { name }, "设备名称已更新");
+      return;
+    }
+    const pauseDeviceButton = event.target.closest(
+      "[data-toggle-device-pause]",
+    );
+    if (pauseDeviceButton) {
+      const deviceId = pauseDeviceButton.dataset.toggleDevicePause;
+      const device = state.devices.find((item) => item.id === deviceId);
+      if (!device || !api) return;
+      updateBackendDevice(
+        deviceId,
+        { paused: !device.paused },
+        device.paused ? "设备已恢复" : "设备已暂停",
+      );
+      return;
+    }
+    if (event.target.closest("[data-copy-device-pair]")) {
+      const code = state.devicePairing?.pairingCode || "";
+      if (code) {
+        navigator.clipboard?.writeText(code).then(
+          () => showToast("配对码已复制", "copy"),
+          () => showToast(`配对码：${code}`, "copy"),
+        );
+      }
       return;
     }
     if (event.target.closest("[data-start-device-pair]")) {

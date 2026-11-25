@@ -2755,6 +2755,11 @@ body.settings-sheet-open {
   background: var(--surface);
 }
 
+.account-device-row:has(.account-device-name-input) {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
 .account-device-icon {
   display: grid;
   place-items: center;
@@ -2780,23 +2785,70 @@ body.settings-sheet-open {
   font-size: 10px;
 }
 
+.account-device-name-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 6px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 10px;
+}
+
+.account-device-name-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
 .account-device-copy small {
   margin-top: 2px;
   color: var(--muted);
   font-size: 8px;
 }
 
-.account-device-row > button {
-  display: inline-flex;
+.account-device-actions {
+  display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--danger);
-  font-size: 8px;
 }
 
-.account-device-row > button svg {
-  width: 13px;
-  height: 13px;
+.account-device-icon-button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.account-device-icon-button:hover,
+.account-device-icon-button:focus-visible {
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.account-device-icon-button.is-primary {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.account-device-icon-button.is-danger {
+  color: var(--danger);
+}
+
+.account-device-icon-button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .account-device-pair {
@@ -2823,6 +2875,35 @@ body.settings-sheet-open {
   letter-spacing: 0.12em;
 }
 
+.account-device-pair .device-pair-qr {
+  display: block;
+  width: 148px;
+  height: 148px;
+  margin-bottom: 3px;
+  border: 6px solid var(--surface);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(23, 32, 28, 0.1);
+}
+
+.account-device-pair button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--accent-ink);
+  font-size: 9px;
+}
+
+.account-device-pair button svg {
+  width: 13px;
+  height: 13px;
+}
+
 .account-device-empty,
 .account-device-error {
   margin: 0;
@@ -2832,6 +2913,26 @@ body.settings-sheet-open {
 
 .account-device-error {
   color: var(--danger);
+}
+
+.account-device-download {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-ink);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.account-device-download:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.account-device-download svg {
+  width: 14px;
+  height: 14px;
 }
 
 .account-action-button {

@@ -168,6 +168,8 @@
     devicesOpen: false,
     pairing: null,
     deviceError: "",
+    deviceEditingId: null,
+    deviceRevision: 0,
     terminalCommandCount: 0,
     catalogOpen: false,
     inspectorOpen: false,
@@ -579,17 +581,7 @@
     const devices = Array.isArray(payload?.devices)
       ? payload.devices
           .filter((device) => device?.id)
-          .map((device) => ({
-            id: String(device.id),
-            name: device.name || "未命名设备",
-            platform: device.platform || device.kind || "windows",
-            status: device.status || "offline",
-            lastSeenAt: device.lastSeenAt || "",
-            permissions: device.permissions || {},
-            capabilities: Array.isArray(device.capabilities)
-              ? device.capabilities
-              : [],
-          }))
+          .map(normalizeMobileDevice)
       : [];
     state.devices = devices;
     state.devicesLoaded = true;
@@ -599,7 +591,10 @@
         id: device.id,
         name: device.name,
         kind: "device",
-        status: device.status === "online" ? "ready" : "not_configured",
+        status:
+          device.status === "online" && !device.paused
+            ? "ready"
+            : "not_configured",
         detail:
           device.platform === "android" ? "手机连接器" : "Windows 连接器",
         device,
@@ -621,8 +616,12 @@
   async function refreshMobileDevices() {
     if (!api || !state.backendConnected) return;
     state.deviceError = "";
+    const revision = state.deviceRevision;
     try {
-      applyMobileDevices(await api.devices());
+      const payload = await api.devices();
+      if (revision === state.deviceRevision) {
+        applyMobileDevices(payload);
+      }
     } catch (error) {
       state.devicesLoaded = true;
       state.deviceError = error.message || "设备列表读取失败";
@@ -631,10 +630,85 @@
     updateIcons();
   }
 
+  function normalizeMobileDevice(device) {
+    const status = String(device.status || "offline");
+    const paused = device.paused === true || status === "paused";
+    return {
+      id: String(device.id),
+      name: device.name || "未命名设备",
+      platform: device.platform || device.kind || "windows",
+      status,
+      paused,
+      lastSeenAt: device.lastSeenAt || "",
+      permissions: device.permissions || {},
+      capabilities: Array.isArray(device.capabilities)
+        ? device.capabilities
+        : [],
+    };
+  }
+
   function devicePlatformLabel(platform) {
     if (platform === "android") return "Android";
     if (platform === "windows") return "Windows";
     return platform || "设备";
+  }
+
+  function mobileDeviceStateLabel(device) {
+    if (device?.paused || device?.status === "paused") return "已暂停";
+    return device?.status === "online" ? "在线" : "离线";
+  }
+
+  function mobileConnectorPageUrl() {
+    const url = new URL("connectors.html", location.href);
+    try {
+      const configured =
+        new URL(location.href).searchParams.get("api") ||
+        localStorage.getItem("qianbian-api-base");
+      if (configured) url.searchParams.set("api", configured);
+    } catch {}
+    return url.href;
+  }
+
+  function mergeMobileDevicePatch(device, patch) {
+    const next = { ...device, ...patch };
+    if (next.paused === true && next.status === "online") {
+      next.status = "paused";
+    } else if (next.paused === false && next.status === "paused") {
+      next.status = "online";
+    }
+    return normalizeMobileDevice(next);
+  }
+
+  function updateMobileDevice(deviceId, patch, successMessage) {
+    if (!api || !deviceId) return;
+    const current = state.devices.find((device) => device.id === deviceId);
+    if (!current) return;
+    state.deviceError = "";
+    state.deviceRevision += 1;
+    api
+      .updateDevice(deviceId, patch)
+      .then((payload) => {
+        const updated = payload?.device || payload?.item;
+        const devices = state.devices.map((device) =>
+          device.id === deviceId
+            ? updated?.id
+              ? normalizeMobileDevice(updated)
+              : mergeMobileDevicePatch(device, patch)
+            : device,
+        );
+        applyMobileDevices({ devices });
+        state.deviceEditingId = null;
+        renderControls();
+        renderPhone();
+        updateIcons();
+        showToast(successMessage, "circle-check");
+      })
+      .catch((error) => {
+        state.deviceError = error.message || "设备操作失败";
+        renderPhone();
+        updateIcons();
+        showToast(state.deviceError, "circle-alert");
+      });
   }
 
   function currentMobileEnvironment() {
@@ -648,12 +722,15 @@
   function mobileEnvironmentOptions() {
     return state.environments
       .map((environment) => {
-        const unavailable = environment.status !== "ready";
+        const paused = Boolean(environment.device?.paused);
+        const unavailable = environment.status !== "ready" || paused;
         const suffix =
           environment.kind === "device"
-            ? unavailable
-              ? " · 离线"
-              : " · 在线"
+            ? paused
+              ? " · 已暂停"
+              : unavailable
+                ? " · 离线"
+                : " · 在线"
             : unavailable
               ? " · 待配置"
               : "";
@@ -816,7 +893,11 @@
         (item) => item.id === String(params.deviceId || params.id || ""),
       );
       if (device) {
+        state.deviceRevision += 1;
         device.status = params.status || device.status;
+        if (typeof params.paused === "boolean") {
+          device.paused = params.paused;
+        }
         device.lastSeenAt = params.lastSeenAt || device.lastSeenAt;
         applyMobileDevices({ devices: state.devices });
         renderControls();
@@ -2230,29 +2311,69 @@
     const pairing = state.pairing;
     const devices = state.devices
       .map(
-        (device) => `
-          <article class="mobile-device-card" data-device-id="${escapeHtml(device.id)}">
+        (device) => {
+          const editing = state.deviceEditingId === device.id;
+          return `
+          <article class="mobile-device-card ${
+            device.paused ? "is-paused" : ""
+          }" data-device-id="${escapeHtml(device.id)}">
             <span class="mobile-device-icon">${icon(
               device.platform === "android" ? "smartphone" : "laptop",
             )}</span>
             <div class="mobile-device-copy">
-              <strong>${escapeHtml(device.name)}</strong>
+              ${
+                editing
+                  ? `<input class="mobile-device-name-input" data-device-name-input="${escapeHtml(
+                      device.id,
+                    )}" value="${escapeHtml(device.name)}" aria-label="设备名称" />`
+                  : `<strong>${escapeHtml(device.name)}</strong>`
+              }
               <small>${escapeHtml(
                 devicePlatformLabel(device.platform),
-              )} · ${device.status === "online" ? "在线" : "离线"}</small>
+              )} · ${mobileDeviceStateLabel(device)}</small>
               <small>${escapeHtml(
                 Array.isArray(device.capabilities) && device.capabilities.length
                   ? `能力：${device.capabilities.join(" / ")}`
                   : "尚未上报能力",
               )}</small>
             </div>
-            <button data-action="delete-device" data-device-id="${escapeHtml(
-              device.id,
-            )}" type="button" aria-label="解绑 ${escapeHtml(device.name)}">${icon(
-              "unlink",
-            )}</button>
+            <div class="mobile-device-actions">
+              ${
+                editing
+                  ? `
+                    <button class="is-primary" data-action="save-device-name" data-device-id="${escapeHtml(
+                      device.id,
+                    )}" type="button" aria-label="保存设备名称" title="保存">${icon(
+                      "check",
+                    )}</button>
+                    <button data-action="cancel-device-name" type="button" aria-label="取消重命名" title="取消">${icon(
+                      "x",
+                    )}</button>
+                  `
+                  : `
+                    <button data-action="edit-device" data-device-id="${escapeHtml(
+                      device.id,
+                    )}" type="button" aria-label="重命名 ${escapeHtml(
+                      device.name,
+                    )}" title="重命名">${icon("pencil")}</button>
+                    <button data-action="toggle-device-pause" data-device-id="${escapeHtml(
+                      device.id,
+                    )}" type="button" aria-label="${
+                      device.paused ? "恢复" : "暂停"
+                    } ${escapeHtml(device.name)}" title="${
+                      device.paused ? "恢复设备" : "暂停设备"
+                    }">${icon(device.paused ? "play" : "pause")}</button>
+                  `
+              }
+              <button class="is-danger" data-action="delete-device" data-device-id="${escapeHtml(
+                device.id,
+              )}" type="button" aria-label="解绑 ${escapeHtml(
+                device.name,
+              )}" title="解绑设备">${icon("unlink")}</button>
+            </div>
           </article>
-        `,
+        `;
+        },
       )
       .join("");
     return `
@@ -2309,10 +2430,12 @@
                 : `<div class="mobile-devices-loading">正在读取设备…</div>`)
             }
           </div>
-          <section class="mobile-devices-help">
+          <a class="mobile-devices-help" data-device-download-link href="${escapeHtml(
+            mobileConnectorPageUrl(),
+          )}">
             <strong>安装千变设备连接</strong>
             <span>Windows 支持文件、终端和审批；Android V1 支持在线状态与审批。</span>
-          </section>
+          </a>
         </div>
       </section>
     `;
@@ -7486,6 +7609,7 @@ export async function run(input, context) {
         state.devicesOpen = true;
         state.pairing = null;
         state.deviceError = "";
+        state.deviceEditingId = null;
         renderPhone();
         updateIcons();
         if (!api || !state.backendConnected) {
@@ -7499,8 +7623,44 @@ export async function run(input, context) {
       } else if (action === "close-devices") {
         state.devicesOpen = false;
         state.pairing = null;
+        state.deviceEditingId = null;
         renderPhone();
         updateIcons();
+      } else if (action === "edit-device") {
+        const deviceId = actionTarget.dataset.deviceId;
+        if (!deviceId) return;
+        state.deviceEditingId = deviceId;
+        state.deviceError = "";
+        renderPhone();
+        updateIcons();
+        window.requestAnimationFrame(() => {
+          phoneScreen
+            .querySelector(
+              `[data-device-name-input="${CSS.escape(deviceId)}"]`,
+            )
+            ?.focus();
+        });
+      } else if (action === "cancel-device-name") {
+        state.deviceEditingId = null;
+        renderPhone();
+        updateIcons();
+      } else if (action === "save-device-name") {
+        const deviceId = actionTarget.dataset.deviceId;
+        const input = phoneScreen.querySelector(
+          `[data-device-name-input="${CSS.escape(deviceId || "")}"]`,
+        );
+        const name = input?.value.trim() || "";
+        if (!deviceId || !name) return;
+        updateMobileDevice(deviceId, { name }, "设备名称已更新");
+      } else if (action === "toggle-device-pause") {
+        const deviceId = actionTarget.dataset.deviceId;
+        const device = state.devices.find((item) => item.id === deviceId);
+        if (!device) return;
+        updateMobileDevice(
+          deviceId,
+          { paused: !device.paused },
+          device.paused ? "设备已恢复" : "设备已暂停",
+        );
       } else if (action === "start-device-pair") {
         if (!api || !state.backendConnected) {
           showToast("登录后可添加设备", "circle-alert");

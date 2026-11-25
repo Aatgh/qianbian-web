@@ -1,7 +1,7 @@
 # 千变本机 / 手机连接器方案（前端已回复，待后端确认）
 
 日期：2026-11-24（前端回复 2026-11-25）
-状态：**前端已完成职责与 V1 边界确认，待后端确认接口细节后开工**
+状态：**前端阶段 A 页面与接口接入已实现，待后端与连接器联调**
 目标：让 Agent 能在用户自己的 Windows 笔记本和 Android 手机上工作，包括文件、终端、桌面 GUI、手机 App 操作。
 
 ---
@@ -252,6 +252,62 @@ V1 锁定边界：Windows 文件 + 终端 + 审批，Android 基础设备状态�
 - 手机端真实短信登录
 - 前端设备列表 / 配对 UI
 - 验收：网页能看到一台设备在线，能解绑
+
+### 阶段 A 前端接口约定（已实现）
+
+设备列表返回 `status: online | offline`；暂停使用独立布尔字段，不与在线状态混用。
+
+```json
+{
+  "devices": [
+    {
+      "id": "device-1",
+      "name": "工作笔记本",
+      "platform": "windows",
+      "status": "online",
+      "paused": false,
+      "lastSeenAt": "2026-11-25T10:30:00+08:00",
+      "permissions": { "roots": ["D:/workspace"] },
+      "capabilities": ["files", "terminal"]
+    }
+  ]
+}
+```
+
+改名和暂停继续使用 `PATCH /api/devices/{id}`：
+
+```json
+{ "name": "设计笔记本" }
+```
+
+```json
+{ "paused": true }
+```
+
+响应推荐返回 `{ "device": { ... } }`。前端也兼容直接返回设备对象和 `{ "item": { ... } }`。SSE `device/status` 可携带 `paused` 更新；暂停设备会立即从可选执行环境中移除。
+
+版本清单读取 `GET /api/connectors/releases`，下载页为 `connectors.html`：
+
+```json
+{
+  "releases": [
+    {
+      "platform": "windows",
+      "channel": "stable",
+      "version": "0.2.0",
+      "fileName": "Qianbian-Setup-0.2.0.exe",
+      "downloadUrl": "https://download.example/connectors/windows/stable/0.2.0/Qianbian-Setup-0.2.0.exe",
+      "sha256": "89abcdef...",
+      "size": 48234496,
+      "publishedAt": "2026-11-25T10:00:00+08:00",
+      "systemRequirements": "Windows 10 22H2 或更高版本",
+      "releaseNotes": ["新增设备暂停与恢复", "改进终端审批"]
+    }
+  ]
+}
+```
+
+前端不硬编码 OSS 域名，只使用接口返回的 `downloadUrl`。
 
 ### 阶段 B：Windows 文件 + 终端
 

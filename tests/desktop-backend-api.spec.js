@@ -782,6 +782,9 @@ test("desktop manages device name, pause state and pairing QR", async ({
     "data-qr-payload",
     "qianbian://pair?code=135790",
   );
+  await expect(page.locator(".account-device-pair")).not.toContainText(
+    "有效期至 刚刚",
+  );
   await expect
     .poll(() =>
       pairingQr.evaluate((canvas) => {
@@ -794,7 +797,6 @@ test("desktop manages device name, pause state and pairing QR", async ({
       }),
     )
     .toBe(true);
-
   await page.locator('[data-edit-device="desktop-device"]').click();
   await page
     .locator('[data-device-name-input="desktop-device"]')
