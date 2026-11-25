@@ -872,6 +872,34 @@ test("desktop skill delete control aligns with card toggles", async ({
   await expect(skillDelete).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("[data-skill-select]").first()).toBeVisible();
   await expect(page.locator("[data-skill-config-toggle]")).toHaveCount(0);
+  await expect(page.locator(".skill-delete-toolbar")).toHaveCount(0);
+
+  const compactDelete = page.locator(
+    ".skill-config-controls [data-delete-selected-skills]",
+  );
+  await expect(compactDelete).toBeVisible();
+  await expect(compactDelete).toBeDisabled();
+  await expect(compactDelete.locator(".lucide-trash-2")).toBeVisible();
+  await expect(page.locator(".skill-delete-count")).toHaveText("已选 0");
+
+  const actionAlignment = await page.evaluate(() => {
+    const toggle = document.querySelector("[data-toggle-skill-delete]");
+    const action = document.querySelector("[data-delete-selected-skills]");
+    const toggleBox = toggle?.getBoundingClientRect();
+    const actionBox = action?.getBoundingClientRect();
+    return {
+      actionCenter: actionBox ? actionBox.top + actionBox.height / 2 : NaN,
+      toggleCenter: toggleBox ? toggleBox.top + toggleBox.height / 2 : NaN,
+    };
+  });
+  expect(
+    Math.abs(actionAlignment.actionCenter - actionAlignment.toggleCenter),
+  ).toBeLessThan(1);
+
+  await page.locator("[data-skill-select]").first().check();
+  await expect(compactDelete).toBeEnabled();
+  await skillDelete.click();
+  await expect(compactDelete).toHaveCount(0);
 });
 
 test("desktop manages device name, pause state and pairing QR", async ({
