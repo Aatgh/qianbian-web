@@ -385,6 +385,16 @@ test("login panel can be dragged after long press", async ({
   await page.waitForTimeout(320);
   await expect(wrap).toHaveClass(/is-dragging/);
   await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
+  await expect
+    .poll(() =>
+      wrap.evaluate((element) => getComputedStyle(element).translate),
+    )
+    .not.toBe("none");
+  await expect
+    .poll(() =>
+      wrap.evaluate((element) => getComputedStyle(element).willChange),
+    )
+    .toContain("translate");
   const offset = await wrap.evaluate((element) => ({
     x: element.style.getPropertyValue("--login-drag-x"),
     y: element.style.getPropertyValue("--login-drag-y"),
