@@ -20,13 +20,14 @@
 - 手机端登录入口
 - 设备状态展示
 
-## 当前正在做
+## 已完成（2026-11-25）
 
-- 把 Agent 工具路由到设备：
-  - `read_file`、`list_files`、`write_file`、`run_terminal`
-  - 当前选择设备时走连接器任务
-  - 其他文件工具在设备模式下先返回“暂不支持”，避免误操作服务器
-- 设备任务的审批接入
+- Agent 工具路由到设备：
+  - `list_files`、`read_file`、`write_file`、`edit_file`、`delete_file`、`grep_files`、`run_terminal`
+  - 设备模式下走连接器任务，不再误操作服务器
+- 设备任务：`fs.list/read/write/mkdir/edit/delete/grep`、`terminal.exec`
+- 本地端到端实测：聊天读取 Windows 桌面文件成功
+- 设备状态对前端统一映射为 `online/offline/paused`
 
 ## 前端下一步
 
