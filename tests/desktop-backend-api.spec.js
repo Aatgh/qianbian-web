@@ -666,6 +666,20 @@ test("desktop composer input has no colored focus outline", async ({ page }) => 
   });
 });
 
+test("desktop empty state omits suggestion shortcuts", async ({ page }) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+
+  await expect(page.locator(".empty-inner h2")).toContainText(
+    "一句话，千变万化。",
+  );
+  await expect(page.locator(".empty-inner > p")).toContainText(
+    "说出目标，千变会整理上下文",
+  );
+  await expect(page.locator(".suggestion-grid")).toHaveCount(0);
+  await expect(page.locator("[data-suggestion]")).toHaveCount(0);
+});
+
 test("desktop environment switcher gates cloud and sends executionTarget", async ({
   page,
 }) => {
