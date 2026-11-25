@@ -24,7 +24,9 @@ test("first visit shows the premium login gate", async ({ page }) => {
 
   const gate = page.locator("#login-gate");
   await expect(gate).toBeVisible();
-  await expect(gate.getByRole("heading", { name: "登录框" })).toBeVisible();
+  await expect(gate.getByRole("heading", { name: "登录千变" })).toBeVisible();
+  await expect(gate.locator("#login-description")).toHaveCount(0);
+  await expect(gate.locator(".login-legal")).toHaveCount(0);
   const account = gate.getByLabel("账号/邮箱/手机号", { exact: true });
   const password = gate.getByLabel("密码", { exact: true });
   await expect(account).toBeVisible();
@@ -35,9 +37,33 @@ test("first visit shows the premium login gate", async ({ page }) => {
     gate.getByRole("button", { name: "验证码登录", exact: true }),
   ).toHaveClass(/login-mode-switch/);
   await expect(gate.getByLabel("验证码", { exact: true })).toBeHidden();
-  await expect(
-    gate.getByRole("button", { name: "登录", exact: true }),
-  ).toBeVisible();
+  const submit = gate.getByRole("button", { name: "登录", exact: true });
+  await expect(submit).toBeVisible();
+  await expect(submit.locator(".login-submit-label")).toHaveCount(0);
+  await expect(submit.locator("svg")).toHaveCount(1);
+  const submitLayout = await submit.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const panel = document.querySelector(".login-panel");
+    return {
+      text: button.textContent.trim(),
+      width: button.getBoundingClientRect().width,
+      height: button.getBoundingClientRect().height,
+      panelWidth: panel.getBoundingClientRect().width,
+      radius: Number.parseFloat(style.borderRadius),
+      marginLeft: style.marginLeft,
+      marginRight: style.marginRight,
+    };
+  });
+  expect(submitLayout.text).toBe("");
+  expect(submitLayout.width).toBeLessThan(submitLayout.panelWidth * 0.4);
+  expect(submitLayout.radius).toBeGreaterThanOrEqual(
+    submitLayout.height / 2,
+  );
+  expect(submitLayout.marginLeft).toBe(submitLayout.marginRight);
+  const headAlignment = await gate
+    .locator(".login-panel-head")
+    .evaluate((element) => getComputedStyle(element).textAlign);
+  expect(headAlignment).toBe("center");
   await expect(gate.locator(".login-google-button")).toHaveCount(0);
   await expect(page.locator("body")).toHaveClass(/login-locked/);
   await expect(page.locator("#app-shell")).toHaveAttribute("inert", "");
@@ -402,6 +428,9 @@ test("matte glass panel keeps its material stable on long press", async ({
       return {
         radius: Number.parseFloat(panelStyle.borderRadius),
         alpha: colorParts.length === 4 ? colorParts[3] : 1,
+        red: colorParts[0] ?? 0,
+        green: colorParts[1] ?? 0,
+        blue: colorParts[2] ?? 0,
         backgroundImage: panelStyle.backgroundImage,
         backdrop: panelStyle.backdropFilter || panelStyle.webkitBackdropFilter,
         beforeDisplay: getComputedStyle(panel, "::before").display,
@@ -417,6 +446,9 @@ test("matte glass panel keeps its material stable on long press", async ({
   expect(before.radius).toBeGreaterThanOrEqual(32);
   expect(before.alpha).toBeGreaterThanOrEqual(0.32);
   expect(before.alpha).toBeLessThanOrEqual(0.45);
+  expect((before.red + before.green + before.blue) / 3).toBeGreaterThanOrEqual(
+    170,
+  );
   expect(before.backgroundImage).toBe("none");
   expect(before.backdrop).toContain("blur");
   expect(before.beforeDisplay).toBe("none");
