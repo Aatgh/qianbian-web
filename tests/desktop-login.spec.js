@@ -408,7 +408,7 @@ test("login panel can be dragged after long press", async ({
   ).toBeLessThan(3);
 });
 
-test("long press applies frosted glass and restores the dark panel", async ({
+test("login panel always uses the pressed frosted glass material", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -454,11 +454,12 @@ test("long press applies frosted glass and restores the dark panel", async ({
   await page.mouse.move(startX, startY);
   const before = await readPanelState();
   expect(before.radius).toBeGreaterThanOrEqual(32);
-  expect(before.alpha).toBeGreaterThanOrEqual(0.65);
+  expect(before.alpha).toBeGreaterThanOrEqual(0.4);
+  expect(before.alpha).toBeLessThanOrEqual(0.5);
   expect((before.red + before.green + before.blue) / 3).toBeLessThanOrEqual(
-    100,
+    80,
   );
-  expect(before.blur).toBeLessThanOrEqual(8);
+  expect(before.blur).toBeGreaterThanOrEqual(30);
   expect(before.backgroundImage).toBe("none");
   expect(before.beforeDisplay).toBe("none");
   expect(before.afterDisplay).toBe("none");
@@ -471,12 +472,11 @@ test("long press applies frosted glass and restores the dark panel", async ({
   await expect(wrap).toHaveClass(/is-dragging/);
   await expect(wrap).not.toHaveClass(/is-snapping/);
   expect(during.radius).toBe(before.radius);
-  expect(during.alpha).toBeLessThan(before.alpha);
-  expect(during.alpha).toBeLessThanOrEqual(0.5);
+  expect(during.alpha).toBeCloseTo(before.alpha, 2);
   expect((during.red + during.green + during.blue) / 3).toBeLessThanOrEqual(
-    120,
+    80,
   );
-  expect(during.blur).toBeGreaterThan(before.blur + 20);
+  expect(during.blur).toBeCloseTo(before.blur, 0);
   expect(during.backgroundImage).toBe("none");
 
   await page.mouse.up();
