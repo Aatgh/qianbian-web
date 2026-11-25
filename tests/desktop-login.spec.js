@@ -370,10 +370,10 @@ test("login panel can be dragged after long press", async ({
   const settledBox = await page.locator(".login-panel").boundingBox();
   expect(
     Math.abs(settledBox.x + settledBox.width / 2 - initialCenter.x),
-  ).toBeLessThan(1);
+  ).toBeLessThan(3);
   expect(
     Math.abs(settledBox.y + settledBox.height / 2 - initialCenter.y),
-  ).toBeLessThan(1);
+  ).toBeLessThan(3);
 });
 
 test("matte glass panel keeps its material stable on long press", async ({

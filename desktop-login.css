@@ -57,6 +57,22 @@ body.login-locked {
   animation: login-preview-panel-in 420ms var(--login-spring) both;
 }
 
+.login-panel-wrap.is-dragging {
+  animation: none !important;
+  transform: translate3d(
+    var(--login-drag-x, 0px),
+    var(--login-drag-y, 0px),
+    0
+  ) !important;
+  transition: none !important;
+}
+
+.login-panel-wrap.is-snapping {
+  animation: none !important;
+  transform: translate3d(0, 0, 0) !important;
+  transition: transform 460ms var(--login-spring) !important;
+}
+
 @keyframes login-preview-panel-in {
   from {
     opacity: 0;
@@ -482,11 +498,11 @@ body.login-locked {
   padding: 42px 40px 34px;
   border-color: rgba(255, 255, 255, 0.14);
   border-radius: 56px;
-  background-color: rgba(14, 18, 26, 0.52);
+  background-color: rgba(20, 26, 36, 0.38);
   background-image: none;
   box-shadow: 0 26px 72px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(42px) saturate(1.08) brightness(0.96);
-  -webkit-backdrop-filter: blur(42px) saturate(1.08) brightness(0.96);
+  backdrop-filter: blur(36px) saturate(1.32) brightness(1.04);
+  -webkit-backdrop-filter: blur(36px) saturate(1.32) brightness(1.04);
   isolation: isolate;
   transform-style: preserve-3d;
 }
@@ -1193,14 +1209,26 @@ body.login-locked {
   width:100%;
   max-width: none;
   overflow: hidden;
+  cursor: grab;
+  touch-action: none;
   padding: 33px 32px 27px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 52px;
-  background-color: rgba(14, 18, 26, 0.54);
+  background-color: rgba(20, 26, 36, 0.4);
   background-image: none;
   box-shadow: 0 26px 72px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(38px) saturate(1.1);
-  -webkit-backdrop-filter: blur(38px) saturate(1.1);
+  backdrop-filter: blur(34px) saturate(1.28) brightness(1.03);
+  -webkit-backdrop-filter: blur(34px) saturate(1.28) brightness(1.03);
+}
+
+.login-panel-head {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.login-panel-wrap.is-dragging .login-panel-head {
+  cursor: grabbing;
 }
 
 .login-panel::before {
@@ -1841,21 +1869,6 @@ body.login-locked {
 
 .login-submit:disabled {
   cursor: default;
-}
-
-.login-submit-glow {
-  position: absolute;
-  top: -70%;
-  left: -30%;
-  width: 45%;
-  height: 240%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
-  transform: rotate(18deg) translateX(-150%);
-  transition: transform 700ms var(--login-ease);
-}
-
-.login-submit:hover .login-submit-glow {
-  transform: rotate(18deg) translateX(420%);
 }
 
 .login-submit-label,
