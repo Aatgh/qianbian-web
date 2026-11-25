@@ -295,7 +295,7 @@ test("desktop API forwards complete device status events", async ({ page }) => {
       },
       body: [
         "event: device/status",
-        'data: {"devices":[{"id":1,"name":"工作笔记本","type":"windows","platform":"Windows 11","status":"0","capabilitiesJson":"[]","permissionsJson":null}]}',
+        'data: {"deviceId":"1","status":"offline","lastSeenAt":"2026-11-25T10:40:00+08:00","devices":[{"id":1,"name":"工作笔记本","type":"windows","platform":"Windows 11","status":"offline","capabilitiesJson":"[]","permissionsJson":null}]}',
         "",
         "",
       ].join("\n"),
@@ -353,6 +353,23 @@ test("desktop app hydrates sessions, models and approval prompts from API", asyn
           models: [
             { modelId: "2", label: "DeepSeek Chat", isDefault: true },
             { modelId: "3", label: "DeepSeek Reasoner", isDefault: false },
+          ],
+        },
+      });
+    }
+    if (pathname === "/devices") {
+      return route.fulfill({
+        json: {
+          devices: [
+            {
+              id: 7,
+              name: "设计笔记本",
+              type: "windows",
+              platform: "Windows 11",
+              status: "online",
+              capabilitiesJson: '["files"]',
+              permissionsJson: null,
+            },
           ],
         },
       });
@@ -416,11 +433,7 @@ test("desktop app hydrates sessions, models and approval prompts from API", asyn
         summary: "写入测试文件",
         path: "D:/workspace/测试文件.md",
       },
-      executionTarget: {
-        deviceId: "device-7",
-        name: "设计笔记本",
-        type: "windows",
-      },
+      executionTarget: "7",
       riskLevel: "high",
       availableChoices: [
         {
@@ -755,6 +768,28 @@ test("desktop environment switcher gates cloud and sends executionTarget", async
 
   await page.locator("#account-menu-button").click();
   await expect(page.locator(".account-device-row")).toContainText("工作笔记本");
+  const beforePairedRefresh = calls.filter(
+    (call) => call.pathname === "/devices",
+  ).length;
+  await page.evaluate(() => {
+    window.__qianbianBackend.handleEvent("device/paired", {});
+  });
+  await expect
+    .poll(
+      () => calls.filter((call) => call.pathname === "/devices").length,
+    )
+    .toBeGreaterThan(beforePairedRefresh);
+  const beforeRemovedRefresh = calls.filter(
+    (call) => call.pathname === "/devices",
+  ).length;
+  await page.evaluate(() => {
+    window.__qianbianBackend.handleEvent("device/removed", {});
+  });
+  await expect
+    .poll(
+      () => calls.filter((call) => call.pathname === "/devices").length,
+    )
+    .toBeGreaterThan(beforeRemovedRefresh);
   await page.locator("[data-start-device-pair]").click();
   await page.locator("[data-device-pair-name]").fill("新设备");
   await page.locator("[data-submit-device-pair]").click();
@@ -775,7 +810,8 @@ test("desktop manages device name, pause state and pairing QR", async ({
     platform: "Windows 11",
     status: "1",
     capabilitiesJson: '["files","terminal"]',
-    permissionsJson: null,
+    permissionsJson:
+      '{"allowedRoots":["D:/workspace"],"terminal":true,"screenshot":false}',
   };
   await page.route("http://backend.test/api/**", async (route) => {
     const request = route.request();
@@ -934,6 +970,14 @@ test("desktop manages device name, pause state and pairing QR", async ({
     "href",
     /connectors\.html/,
   );
+  await page.locator('[data-show-device-permissions="1"]').click();
+  const permissions = page.locator("[data-device-permissions]");
+  await expect(permissions).toContainText("D:/workspace");
+  await expect(permissions).toContainText("终端已授权");
+  await expect(permissions).toContainText("截图未开放");
+  await expect(permissions).toContainText("权限配置接口准备中");
+  expect(calls.some((call) => call.pathname === "/devices/1/permissions"))
+    .toBe(false);
 });
 
 test("desktop shows live device task progress", async ({ page }) => {
@@ -980,16 +1024,19 @@ test("desktop shows live device task progress", async ({ page }) => {
               deviceId: 1,
               type: "terminal.exec",
               status: "running",
-              startedAt: new Date(Date.now() - 2300).toISOString(),
+              payload_json: '{"command":"dir"}',
+              create_time: new Date(Date.now() - 2500).toISOString(),
+              started_at: new Date(Date.now() - 2300).toISOString(),
             },
             {
               id: 10,
               deviceId: 1,
               type: "fs.list",
-              status: "completed",
-              startedAt: "2026-11-25T10:20:00+08:00",
-              completedAt: "2026-11-25T10:20:01.250+08:00",
-              durationMs: 1250,
+              status: "done",
+              result_json: '{"count":2}',
+              create_time: "2026-11-25T10:20:00+08:00",
+              started_at: "2026-11-25T10:20:00+08:00",
+              finished_at: "2026-11-25T10:20:01.250+08:00",
             },
           ],
         },

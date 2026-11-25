@@ -155,3 +155,51 @@ test("connectors page explains when the release API is not available", async ({
     "安装包版本接口尚未开放",
   );
 });
+
+test("connectors page marks unsigned Windows builds and pending Android", async ({
+  page,
+}) => {
+  await page.route("http://frontend.test/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === "/api/connectors/releases") {
+      return route.fulfill({
+        json: {
+          releases: [
+            {
+              platform: "windows",
+              channel: "test",
+              version: "0.1.0-test",
+              name: "千变 for Windows（未签名测试版）",
+              url: "https://downloads.test/qianbian-connector.exe",
+              sha256:
+                "e5b4c0311d00aefcdea1506ae2ce7a820a615e579f3e9f084e4ea8e0dc6c1ea3",
+              size: 91833344,
+              signed: false,
+              notes: "未签名测试版，Windows 可能提示发布者不明。",
+            },
+          ],
+        },
+      });
+    }
+    return serveStatic(route);
+  });
+
+  await page.goto(pageUrl);
+
+  const windows = page.locator(
+    '.connector-release-card[data-platform="windows"]',
+  );
+  await expect(windows).toContainText("0.1.0-test");
+  await expect(windows).toContainText("87.6 MB");
+  await expect(windows).toContainText(
+    "e5b4c0311d00aefcdea1506ae2ce7a820a615e579f3e9f084e4ea8e0dc6c1ea3",
+  );
+  await expect(windows.locator(".connector-unsigned-warning")).toContainText(
+    "未签名测试版",
+  );
+  const android = page.locator(
+    '.connector-release-card[data-platform="android"]',
+  );
+  await expect(android).toContainText("待发布");
+  await expect(android).toContainText("暂未提供 Android 安装包");
+});

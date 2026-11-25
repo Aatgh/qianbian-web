@@ -22,7 +22,8 @@ async function mockDeviceBackend(page, calls, options = {}) {
       status: "1",
       lastSeenAt: "2026-11-25T10:30:00+08:00",
       capabilitiesJson: '["files","terminal"]',
-      permissionsJson: null,
+      permissionsJson:
+        '{"allowedRoots":["D:/workspace"],"terminal":true,"screenshot":false}',
     },
   ];
   const deviceTasks = options.deviceTasks || [];
@@ -191,6 +192,34 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
   await expect(devices).toContainText("我的笔记本");
   await expect(devices).toContainText("Windows 11 · 在线");
   await expect(devices).toContainText("能力：files / terminal");
+  const beforePairedRefresh = calls.filter(
+    (call) => call.pathname === "/devices" && call.method === "GET",
+  ).length;
+  await page.evaluate(() => {
+    window.__qianbianMobileBackend.handleEvent("device/paired", {});
+  });
+  await expect
+    .poll(
+      () =>
+        calls.filter(
+          (call) => call.pathname === "/devices" && call.method === "GET",
+        ).length,
+    )
+    .toBeGreaterThan(beforePairedRefresh);
+  const beforeRemovedRefresh = calls.filter(
+    (call) => call.pathname === "/devices" && call.method === "GET",
+  ).length;
+  await page.evaluate(() => {
+    window.__qianbianMobileBackend.handleEvent("device/removed", {});
+  });
+  await expect
+    .poll(
+      () =>
+        calls.filter(
+          (call) => call.pathname === "/devices" && call.method === "GET",
+        ).length,
+    )
+    .toBeGreaterThan(beforeRemovedRefresh);
 
   await page.locator('[data-action="start-device-pair"]').click();
   await expect(devices.locator("[data-device-pair-form]")).toBeVisible();
@@ -246,6 +275,9 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
 
   await page.evaluate(() => {
     window.__qianbianMobileBackend.handleEvent("device/status", {
+      deviceId: "1",
+      status: "offline",
+      lastSeenAt: "2026-11-25T10:40:00+08:00",
       devices: [
         {
           id: 1,
@@ -260,6 +292,14 @@ test("mobile lists devices, starts pairing and follows SSE status", async ({
     });
   });
   await expect(devices).toContainText("离线");
+  await page.locator('[data-action="show-device-permissions"]').click();
+  const permissions = page.locator("[data-device-permissions]");
+  await expect(permissions).toContainText("D:/workspace");
+  await expect(permissions).toContainText("终端已授权");
+  await expect(permissions).toContainText("截图未开放");
+  await expect(permissions).toContainText("权限配置接口准备中");
+  expect(calls.some((call) => call.pathname === "/devices/1/permissions"))
+    .toBe(false);
 
   await page.locator('[data-action="delete-device"]').click();
   await expect
