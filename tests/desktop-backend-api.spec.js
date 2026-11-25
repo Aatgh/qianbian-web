@@ -131,6 +131,15 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     await api.health();
     await api.environments();
     await api.affinity();
+    await api.authMe();
+    await api.sendSmsCode("13800000000");
+    await api.loginPhone({ phone: "13800000000", code: "123456" });
+    await api.logout();
+    await api.devices();
+    await api.startDevicePairing();
+    await api.updateDevice("device-1", { name: "我的笔记本" });
+    await api.deleteDevice("device-1");
+    await api.connectorReleases();
     await api.sessions();
     await api.startSession({
       modelId: "2",
@@ -191,6 +200,15 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     { method: "GET", pathname: "/health", search: "" },
     { method: "GET", pathname: "/environments", search: "" },
     { method: "GET", pathname: "/affinity", search: "" },
+    { method: "GET", pathname: "/auth/me", search: "" },
+    { method: "POST", pathname: "/auth/sms-code", search: "" },
+    { method: "POST", pathname: "/auth/login/phone", search: "" },
+    { method: "POST", pathname: "/auth/logout", search: "" },
+    { method: "GET", pathname: "/devices", search: "" },
+    { method: "POST", pathname: "/devices/pair/start", search: "" },
+    { method: "PATCH", pathname: "/devices/device-1", search: "" },
+    { method: "DELETE", pathname: "/devices/device-1", search: "" },
+    { method: "GET", pathname: "/connectors/releases", search: "" },
     { method: "GET", pathname: "/sessions", search: "" },
     { method: "POST", pathname: "/session/start", search: "" },
     { method: "POST", pathname: "/session/resume", search: "" },
