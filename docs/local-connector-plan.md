@@ -262,6 +262,9 @@ V1 锁定边界：Windows 文件 + 终端 + 审批，Android 基础设备状态�
 - 后端状态 `0 / 1 / 2` 分别映射为前端离线、在线、已暂停；`capabilitiesJson` 和 `permissionsJson` 在前端安全解析。
 - `PATCH /api/devices/{id}` 提交 `{ "name": ... }` 或 `{ "paused": ... }`，前端兼容空响应和返回设备对象。
 - SSE `device/status` 直接推送完整 `devices` 数组，前端更新设备列表、状态和工作环境选择器，不轮询。
+- `POST /api/devices/{id}/tasks` 创建 `fs.list`、`fs.read`、`fs.write`、`fs.mkdir`、`terminal.exec` 任务。
+- `GET /api/devices/{id}/tasks` 查询任务；后端尚未在文档中定义任务响应结构，前端暂只接入 API 客户端，不推测列表字段。
+- `/api/connector/tasks/next` 和 `/api/connector/tasks/{taskId}/result` 仅由持有 `deviceToken` 的连接器调用，浏览器不实现连接器轮询和结果回传。
 
 `GET /api/connectors/releases` 后端尚未提供。`connectors.html` 已保留版本清单接入逻辑，接口返回 `404` 时展示“安装包版本接口尚未开放”，接口上线后无需修改前端即可显示 Windows / Android 安装包。
 

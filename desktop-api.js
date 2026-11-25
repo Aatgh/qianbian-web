@@ -224,6 +224,19 @@
         signal,
       });
     },
+    createDeviceTask(id, payload, signal) {
+      return request(`/devices/${encodeURIComponent(id)}/tasks`, {
+        method: "POST",
+        body: payload,
+        signal,
+      });
+    },
+    deviceTasks(id, params = {}, signal) {
+      return request(
+        `/devices/${encodeURIComponent(id)}/tasks${query(params)}`,
+        { signal },
+      );
+    },
     connectorReleases(signal) {
       return request("/connectors/releases", { signal });
     },
