@@ -407,7 +407,10 @@ test("rounded glass panel keeps its tint stable while dragging", async ({
         pointerY: rootStyle.getPropertyValue("--login-pointer-y").trim(),
         radius: Number.parseFloat(panelStyle.borderRadius),
         alpha: colorParts.length === 4 ? colorParts[3] : 1,
+        backgroundImage: panelStyle.backgroundImage,
         backdrop: panelStyle.backdropFilter || panelStyle.webkitBackdropFilter,
+        beforeDisplay: getComputedStyle(panel, "::before").display,
+        afterDisplay: getComputedStyle(panel, "::after").display,
       };
     });
 
@@ -417,8 +420,12 @@ test("rounded glass panel keeps its tint stable while dragging", async ({
   await page.mouse.move(startX, startY);
   const before = await readPanelState();
   expect(before.radius).toBeGreaterThanOrEqual(32);
-  expect(before.alpha).toBeGreaterThanOrEqual(0.76);
+  expect(before.alpha).toBeGreaterThanOrEqual(0.32);
+  expect(before.alpha).toBeLessThanOrEqual(0.68);
+  expect(before.backgroundImage).toBe("none");
   expect(before.backdrop).toContain("blur");
+  expect(before.beforeDisplay).toBe("none");
+  expect(before.afterDisplay).toBe("none");
 
   await page.mouse.down();
   await page.waitForTimeout(260);
