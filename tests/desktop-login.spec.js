@@ -454,8 +454,8 @@ test("login panel always uses the pressed frosted glass material", async ({
   await page.mouse.move(startX, startY);
   const before = await readPanelState();
   expect(before.radius).toBeGreaterThanOrEqual(32);
-  expect(before.alpha).toBeGreaterThanOrEqual(0.4);
-  expect(before.alpha).toBeLessThanOrEqual(0.5);
+  expect(before.alpha).toBeGreaterThanOrEqual(0.55);
+  expect(before.alpha).toBeLessThanOrEqual(0.65);
   expect((before.red + before.green + before.blue) / 3).toBeLessThanOrEqual(
     80,
   );
