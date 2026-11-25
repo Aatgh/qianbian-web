@@ -500,13 +500,13 @@ body.login-locked {
 .login-starfield-preview .login-panel {
   max-width: 560px;
   padding: 42px 40px 34px;
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
   border-radius: 56px;
-  background-color: rgba(11, 15, 23, 0.82);
+  background-color: rgba(20, 26, 36, 0.46);
   background-image: none;
   box-shadow: 0 26px 72px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(5px) saturate(1.08);
-  -webkit-backdrop-filter: blur(5px) saturate(1.08);
+  backdrop-filter: blur(34px) saturate(1.35) brightness(1.05);
+  -webkit-backdrop-filter: blur(34px) saturate(1.35) brightness(1.05);
   isolation: isolate;
   transform-style: preserve-3d;
 }
@@ -1216,22 +1216,11 @@ body.login-locked {
   cursor: grab;
   touch-action: none;
   padding: 33px 32px 27px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 52px;
-  background-color: rgba(11, 15, 23, 0.84);
+  background-color: rgba(20, 26, 36, 0.46);
   background-image: none;
   box-shadow: 0 26px 72px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(4px) saturate(1.06);
-  -webkit-backdrop-filter: blur(4px) saturate(1.06);
-  transition:
-    background-color 180ms ease,
-    border-color 180ms ease,
-    backdrop-filter 220ms ease;
-}
-
-.login-panel-wrap.is-dragging .login-panel {
-  border-color: rgba(255, 255, 255, 0.22);
-  background-color: rgba(20, 26, 36, 0.46);
   backdrop-filter: blur(34px) saturate(1.35) brightness(1.05);
   -webkit-backdrop-filter: blur(34px) saturate(1.35) brightness(1.05);
 }
