@@ -1102,6 +1102,7 @@
   let settingsSheetEntering = false;
   let skillMarketEntering = false;
   let accountDialogEntering = false;
+  let deviceTaskRefreshTimer = null;
 
   function getActiveSkills() {
     const installedMarketSkills = MARKET_SKILLS.filter(
@@ -1611,20 +1612,20 @@
       });
   }
 
-  async function refreshBackendDeviceTasks() {
+  async function refreshBackendDeviceTasks({ silent = false } = {}) {
     if (!api || !state.apiAvailable || state.deviceTasksLoading) return;
     if (!state.devices.length) {
       state.deviceTasks = [];
       state.deviceTasksLoaded = true;
       state.deviceTasksError = "";
-      renderAccountDialog();
+      if (state.accountDialogOpen) renderAccountDialog();
       return;
     }
     const taskUtils = window.QianbianDeviceTasks;
     if (!taskUtils) return;
     state.deviceTasksLoading = true;
     state.deviceTasksError = "";
-    renderAccountDialog();
+    if (!silent) renderAccountDialog();
     const results = await Promise.allSettled(
       state.devices.map(async (device) => {
         const payload = await api.deviceTasks(device.id);
@@ -1640,7 +1641,34 @@
     state.deviceTasks = taskUtils.orderTasks(tasks);
     state.deviceTasksLoaded = true;
     state.deviceTasksLoading = false;
-    renderAccountDialog();
+    if (
+      state.accountDialogOpen &&
+      !state.deviceEditingId &&
+      !state.devicePairingFormOpen
+    ) {
+      renderAccountDialog();
+    }
+  }
+
+  function stopBackendDeviceTaskPolling() {
+    if (!deviceTaskRefreshTimer) return;
+    window.clearInterval(deviceTaskRefreshTimer);
+    deviceTaskRefreshTimer = null;
+  }
+
+  function startBackendDeviceTaskPolling() {
+    stopBackendDeviceTaskPolling();
+    deviceTaskRefreshTimer = window.setInterval(() => {
+      if (
+        !state.accountDialogOpen ||
+        !state.devices.length ||
+        state.deviceEditingId ||
+        state.devicePairingFormOpen
+      ) {
+        return;
+      }
+      refreshBackendDeviceTasks({ silent: true });
+    }, 4000);
   }
 
   function currentEnvironment() {
@@ -4583,13 +4611,17 @@ export const skill = {
     state.accountSwitchOpen = false;
     accountDialogEntering = true;
     renderAccountDialog();
-    refreshBackendDeviceTasks();
+    if (api && state.apiAvailable) {
+      refreshBackendDeviceTasks();
+      startBackendDeviceTaskPolling();
+    }
     window.requestAnimationFrame(() =>
       accountDialogHost.querySelector(".account-dialog-close")?.focus(),
     );
   }
 
   function closeAccountDialog() {
+    stopBackendDeviceTaskPolling();
     state.accountDialogOpen = false;
     state.accountSwitchOpen = false;
     accountDialogEntering = false;

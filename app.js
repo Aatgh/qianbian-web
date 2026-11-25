@@ -224,6 +224,7 @@
   let streamTextFrame = 0;
   let chatScrollFrame = 0;
   let chatScrollTimer = null;
+  let mobileDeviceTaskRefreshTimer = null;
   let lastChatScrollAt = 0;
   const pendingStreamItemIds = new Set();
 
@@ -765,22 +766,26 @@
       });
   }
 
-  async function refreshMobileDeviceTasks() {
+  async function refreshMobileDeviceTasks({ silent = false } = {}) {
     if (!api || !state.backendConnected || state.deviceTasksLoading) return;
     if (!state.devices.length) {
       state.deviceTasks = [];
       state.deviceTasksLoaded = true;
       state.deviceTasksError = "";
-      renderPhone();
-      updateIcons();
+      if (state.devicesOpen) {
+        renderPhone();
+        updateIcons();
+      }
       return;
     }
     const taskUtils = window.QianbianDeviceTasks;
     if (!taskUtils) return;
     state.deviceTasksLoading = true;
     state.deviceTasksError = "";
-    renderPhone();
-    updateIcons();
+    if (!silent) {
+      renderPhone();
+      updateIcons();
+    }
     const results = await Promise.allSettled(
       state.devices.map(async (device) => {
         const payload = await api.deviceTasks(device.id);
@@ -796,8 +801,35 @@
     state.deviceTasks = taskUtils.orderTasks(tasks);
     state.deviceTasksLoaded = true;
     state.deviceTasksLoading = false;
-    renderPhone();
-    updateIcons();
+    if (
+      state.devicesOpen &&
+      !state.deviceEditingId &&
+      !state.pairingFormOpen
+    ) {
+      renderPhone();
+      updateIcons();
+    }
+  }
+
+  function stopMobileDeviceTaskPolling() {
+    if (!mobileDeviceTaskRefreshTimer) return;
+    window.clearInterval(mobileDeviceTaskRefreshTimer);
+    mobileDeviceTaskRefreshTimer = null;
+  }
+
+  function startMobileDeviceTaskPolling() {
+    stopMobileDeviceTaskPolling();
+    mobileDeviceTaskRefreshTimer = window.setInterval(() => {
+      if (
+        !state.devicesOpen ||
+        !state.devices.length ||
+        state.deviceEditingId ||
+        state.pairingFormOpen
+      ) {
+        return;
+      }
+      refreshMobileDeviceTasks({ silent: true });
+    }, 4000);
   }
 
   function currentMobileEnvironment() {
@@ -7890,6 +7922,7 @@ export async function run(input, context) {
         state.deviceTasksError = "";
         renderPhone();
         updateIcons();
+        if (api && state.backendConnected) startMobileDeviceTaskPolling();
         if (!api || !state.backendConnected) {
           state.devicesLoaded = true;
           state.deviceError = "设备服务未连接";
@@ -7899,6 +7932,7 @@ export async function run(input, context) {
           refreshMobileDevices();
         }
       } else if (action === "close-devices") {
+        stopMobileDeviceTaskPolling();
         state.devicesOpen = false;
         state.pairing = null;
         state.deviceEditingId = null;
