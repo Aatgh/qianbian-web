@@ -4897,7 +4897,28 @@ export const skill = {
     reader.readAsDataURL(file);
   }
 
+  function isRealAuthEnvironment() {
+    return (
+      /^https?:$/.test(location.protocol) &&
+      !location.hostname.endsWith("github.io") &&
+      !["localhost", "127.0.0.1"].includes(location.hostname)
+    );
+  }
+
   function switchAccount(id) {
+    if (isRealAuthEnvironment()) {
+      localStorage.removeItem("qianbian-desktop-auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      state.loggedIn = false;
+      state.accountDialogOpen = false;
+      state.accountSwitchOpen = false;
+      persistAccountProfile();
+      renderAccountDialog();
+      render();
+      window.dispatchEvent(new Event("qianbian:auth-required"));
+      showToast("请登录另一个账号", "users-round");
+      return;
+    }
     const account = ACCOUNTS.find((item) => item.id === id);
     if (!account) return;
     state.currentAccountId = account.id;
