@@ -139,6 +139,11 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     await api.startDevicePairing({ type: "windows", name: "我的笔记本" });
     await api.updateDevice("device-1", { name: "我的笔记本" });
     await api.deleteDevice("device-1");
+    await api.createDeviceTask("device-1", {
+      type: "fs.list",
+      payload: { path: "C:/Users/me/Desktop" },
+    });
+    await api.deviceTasks("device-1");
     await api.connectorReleases();
     await api.sessions();
     await api.startSession({
@@ -208,6 +213,8 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
     { method: "POST", pathname: "/devices/pair/start", search: "" },
     { method: "PATCH", pathname: "/devices/device-1", search: "" },
     { method: "DELETE", pathname: "/devices/device-1", search: "" },
+    { method: "POST", pathname: "/devices/device-1/tasks", search: "" },
+    { method: "GET", pathname: "/devices/device-1/tasks", search: "" },
     { method: "GET", pathname: "/connectors/releases", search: "" },
     { method: "GET", pathname: "/sessions", search: "" },
     { method: "POST", pathname: "/session/start", search: "" },
@@ -252,6 +259,14 @@ test("desktop API client covers every backend endpoint", async ({ page }) => {
   expect(JSON.parse(pairingCall.body)).toEqual({
     type: "windows",
     name: "我的笔记本",
+  });
+  const createTaskCall = calls.find(
+    (call) =>
+      call.pathname === "/devices/device-1/tasks" && call.method === "POST",
+  );
+  expect(JSON.parse(createTaskCall.body)).toEqual({
+    type: "fs.list",
+    payload: { path: "C:/Users/me/Desktop" },
   });
   const startCall = calls.find((call) => call.pathname === "/session/start");
   expect(JSON.parse(startCall.body)).toEqual({
