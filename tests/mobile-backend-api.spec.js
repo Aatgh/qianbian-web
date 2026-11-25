@@ -225,10 +225,6 @@ test("mobile hydrates backend sessions, skills and streamed replies", async ({
   await waitForMobileBackend(page);
 
   expect(await page.evaluate(() => Boolean(window.QianbianApi))).toBe(true);
-  await expect(page.locator("#mobile-environment-select")).toHaveValue("local");
-  await expect(
-    page.locator('#mobile-environment-select option[value="cloud"]'),
-  ).toBeDisabled();
   expect(
     await page.evaluate(() =>
       window.APP_DATA.pages["plugin-market"].marketItems.map(
@@ -238,6 +234,10 @@ test("mobile hydrates backend sessions, skills and streamed replies", async ({
   ).toContain("天气助手");
 
   await page.locator('[data-action="open-history"]').click();
+  await expect(page.locator("#mobile-environment-select")).toHaveValue("local");
+  await expect(
+    page.locator('#mobile-environment-select option[value="cloud"]'),
+  ).toBeDisabled();
   await expect(page.locator(".history-session").first()).toContainText(
     "今天的天气",
   );

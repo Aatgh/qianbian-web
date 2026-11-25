@@ -872,7 +872,7 @@
   function renderMobileEnvironmentControl() {
     const environment = currentMobileEnvironment();
     return `
-      <label class="conversation-environment" title="${escapeHtml(
+      <label class="history-environment" title="${escapeHtml(
         environment.detail || "工作环境",
       )}">
         ${icon(environment.kind === "cloud" ? "cloud" : "monitor")}
@@ -3237,12 +3237,9 @@
             </div>
           </div>
         </button>
-        <div class="conversation-nav-actions">
-          ${renderMobileEnvironmentControl()}
-          <button class="phone-icon-button ghost conversation-nav-action" data-action="open-main-nav" type="button" aria-label="技能空间">${conversationNavIcon(
-            "skills",
-          )}</button>
-        </div>
+        <button class="phone-icon-button ghost conversation-nav-action" data-action="open-main-nav" type="button" aria-label="技能空间">${conversationNavIcon(
+          "skills",
+        )}</button>
       </header>
     `;
   }
@@ -4358,6 +4355,7 @@ export async function review(target) {
         </div>
         <p class="history-empty" id="history-empty" hidden>没有匹配的会话</p>
         <div class="history-footer">
+          ${renderMobileEnvironmentControl()}
           <button
             class="history-settings-trigger"
             data-nav="settings"
