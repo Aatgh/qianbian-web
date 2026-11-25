@@ -402,7 +402,7 @@ test("login panel can be dragged after long press", async ({
   ).toBeLessThan(3);
 });
 
-test("matte glass panel keeps its material stable on long press", async ({
+test("long press applies frosted glass and restores the dark panel", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -425,6 +425,9 @@ test("matte glass panel keeps its material stable on long press", async ({
       const colorParts = colorMatch
         ? colorMatch[1].split(",").map((part) => Number(part.trim()))
         : [];
+      const blurMatch = panelStyle.backdropFilter.match(
+        /blur\(([\d.]+)px\)/,
+      );
       return {
         radius: Number.parseFloat(panelStyle.borderRadius),
         alpha: colorParts.length === 4 ? colorParts[3] : 1,
@@ -433,6 +436,7 @@ test("matte glass panel keeps its material stable on long press", async ({
         blue: colorParts[2] ?? 0,
         backgroundImage: panelStyle.backgroundImage,
         backdrop: panelStyle.backdropFilter || panelStyle.webkitBackdropFilter,
+        blur: blurMatch ? Number(blurMatch[1]) : 0,
         beforeDisplay: getComputedStyle(panel, "::before").display,
         afterDisplay: getComputedStyle(panel, "::after").display,
       };
@@ -444,13 +448,12 @@ test("matte glass panel keeps its material stable on long press", async ({
   await page.mouse.move(startX, startY);
   const before = await readPanelState();
   expect(before.radius).toBeGreaterThanOrEqual(32);
-  expect(before.alpha).toBeGreaterThanOrEqual(0.32);
-  expect(before.alpha).toBeLessThanOrEqual(0.45);
-  expect((before.red + before.green + before.blue) / 3).toBeGreaterThanOrEqual(
-    170,
+  expect(before.alpha).toBeGreaterThanOrEqual(0.65);
+  expect((before.red + before.green + before.blue) / 3).toBeLessThanOrEqual(
+    100,
   );
+  expect(before.blur).toBeLessThanOrEqual(8);
   expect(before.backgroundImage).toBe("none");
-  expect(before.backdrop).toContain("blur");
   expect(before.beforeDisplay).toBe("none");
   expect(before.afterDisplay).toBe("none");
 
@@ -461,12 +464,21 @@ test("matte glass panel keeps its material stable on long press", async ({
   const wrap = page.locator("#login-panel-wrap");
   await expect(wrap).toHaveClass(/is-dragging/);
   await expect(wrap).not.toHaveClass(/is-snapping/);
-  await page.mouse.up();
-
   expect(during.radius).toBe(before.radius);
-  expect(during.alpha).toBe(before.alpha);
-  expect(during.backgroundImage).toBe(before.backgroundImage);
-  expect(during.backdrop).toBe(before.backdrop);
+  expect(during.alpha).toBeLessThan(before.alpha);
+  expect(during.alpha).toBeLessThanOrEqual(0.5);
+  expect((during.red + during.green + during.blue) / 3).toBeLessThanOrEqual(
+    120,
+  );
+  expect(during.blur).toBeGreaterThan(before.blur + 20);
+  expect(during.backgroundImage).toBe("none");
+
+  await page.mouse.up();
+  await page.waitForTimeout(560);
+  const after = await readPanelState();
+  expect(after.alpha).toBeCloseTo(before.alpha, 2);
+  expect(after.blur).toBeCloseTo(before.blur, 0);
+  expect(after.backgroundImage).toBe(before.backgroundImage);
 });
 
 test("login submit has no left-side hover flash", async ({ page }) => {
