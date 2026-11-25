@@ -2089,6 +2089,14 @@
               </span>
               ${icon("chevron-right", "row-chevron")}
             </button>
+            <button class="phone-row is-danger" data-action="logout" type="button">
+              <span class="row-glyph">${icon("log-out")}</span>
+              <span class="phone-row-main">
+                <span class="phone-row-label">退出登录</span>
+                <span class="phone-row-description">退出当前账号，返回登录页</span>
+              </span>
+              ${icon("chevron-right", "row-chevron")}
+            </button>
           </div>
           ${renderActions(page.actions, page.id)}
         </div>
@@ -8306,7 +8314,18 @@ export async function run(input, context) {
             showToast(error.message || "解绑失败", "circle-alert");
           });
       } else if (action === "logout") {
-        showDialog("退出登录？", "本地演示不会真正退出任何账号。", "退出登录", action);
+        if (api) {
+          api
+            .logout()
+            .catch(() => {})
+            .finally(() => {
+              localStorage.removeItem("qianbian-mobile-auth");
+              window.location.reload();
+            });
+        } else {
+          localStorage.removeItem("qianbian-mobile-auth");
+          window.location.reload();
+        }
       } else if (action === "restart") {
         showDialog("重启引擎？", "运行中的回复会中断，已完成的内容会保留。", "重启", action);
       } else if (action === "reset") {
