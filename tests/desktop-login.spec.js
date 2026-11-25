@@ -332,7 +332,7 @@ test("default starfield animates as a single theme", async ({ page }) => {
   expect(result.pixels.maxChannel).toBeGreaterThan(24);
 });
 
-test("login panel stays fixed when long pressed", async ({
+test("login panel can be dragged after long press", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -357,14 +357,16 @@ test("login panel stays fixed when long pressed", async ({
   await page.mouse.move(startX, startY);
   await page.mouse.down();
   await page.waitForTimeout(320);
-  await expect(wrap).not.toHaveClass(/is-dragging/);
+  await expect(wrap).toHaveClass(/is-dragging/);
   await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
   const offset = await wrap.evaluate((element) => ({
     x: element.style.getPropertyValue("--login-drag-x"),
     y: element.style.getPropertyValue("--login-drag-y"),
   }));
-  expect(offset).toEqual({ x: "", y: "" });
+  expect(Number.parseFloat(offset.x)).toBeGreaterThan(160);
+  expect(Number.parseFloat(offset.y)).toBeGreaterThan(80);
   await page.mouse.up();
+  await page.waitForTimeout(600);
   const settledBox = await page.locator(".login-panel").boundingBox();
   expect(
     Math.abs(settledBox.x + settledBox.width / 2 - initialCenter.x),
@@ -414,7 +416,7 @@ test("matte glass panel keeps its material stable on long press", async ({
   const before = await readPanelState();
   expect(before.radius).toBeGreaterThanOrEqual(32);
   expect(before.alpha).toBeGreaterThanOrEqual(0.32);
-  expect(before.alpha).toBeLessThanOrEqual(0.68);
+  expect(before.alpha).toBeLessThanOrEqual(0.45);
   expect(before.backgroundImage).toBe("none");
   expect(before.backdrop).toContain("blur");
   expect(before.beforeDisplay).toBe("none");
@@ -425,7 +427,7 @@ test("matte glass panel keeps its material stable on long press", async ({
   await page.mouse.move(startX + 240, startY + 140, { steps: 5 });
   const during = await readPanelState();
   const wrap = page.locator("#login-panel-wrap");
-  await expect(wrap).not.toHaveClass(/is-dragging/);
+  await expect(wrap).toHaveClass(/is-dragging/);
   await expect(wrap).not.toHaveClass(/is-snapping/);
   await page.mouse.up();
 
@@ -433,4 +435,16 @@ test("matte glass panel keeps its material stable on long press", async ({
   expect(during.alpha).toBe(before.alpha);
   expect(during.backgroundImage).toBe(before.backgroundImage);
   expect(during.backdrop).toBe(before.backdrop);
+});
+
+test("login submit has no left-side hover flash", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openFreshDesktop(page, { starfieldPreview: true });
+  await page.locator("#login-gate.is-ready").waitFor();
+
+  const submit = page.locator(".login-submit");
+  await expect(page.locator(".login-submit-glow")).toHaveCount(0);
+  await submit.hover();
+  await page.waitForTimeout(220);
+  await expect(page.locator(".login-submit-glow")).toHaveCount(0);
 });
