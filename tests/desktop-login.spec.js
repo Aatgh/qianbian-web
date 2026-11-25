@@ -358,6 +358,62 @@ test("default starfield animates as a single theme", async ({ page }) => {
   expect(result.pixels.maxChannel).toBeGreaterThan(24);
 });
 
+test("login panel contains a zoomable particle galaxy", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openFreshDesktop(page, { starfieldPreview: true });
+  await page.locator("#login-gate.is-ready").waitFor();
+  await page
+    .locator(".login-panel-wrap")
+    .evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished)),
+    );
+
+  const canvas = page.locator("#login-galaxy-canvas");
+  await expect(canvas).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.QianbianLoginGalaxy?.stats()),
+    )
+    .toMatchObject({
+      particleCount: expect.any(Number),
+      frame: expect.any(Number),
+    });
+  const stats = await page.evaluate(() => window.QianbianLoginGalaxy.stats());
+  expect(stats.particleCount).toBeGreaterThanOrEqual(140);
+  const paintedPixels = await canvas.evaluate((element) => {
+    const context = element.getContext("2d");
+    const data = context.getImageData(
+      0,
+      0,
+      element.width,
+      element.height,
+    ).data;
+    let painted = 0;
+    for (let index = 3; index < data.length; index += 4) {
+      if (data[index] > 0) painted += 1;
+    }
+    return painted;
+  });
+  expect(paintedPixels).toBeGreaterThan(200);
+
+  const initialZoom = await page.evaluate(
+    () => window.QianbianLoginGalaxy.zoom,
+  );
+  await page.locator(".login-panel").hover();
+  await page.mouse.wheel(0, -420);
+  await expect
+    .poll(() => page.evaluate(() => window.QianbianLoginGalaxy.zoom))
+    .toBeGreaterThan(initialZoom);
+  const zoomedIn = await page.evaluate(
+    () => window.QianbianLoginGalaxy.zoom,
+  );
+  await page.mouse.wheel(0, 320);
+  await expect
+    .poll(() => page.evaluate(() => window.QianbianLoginGalaxy.zoom))
+    .toBeLessThan(zoomedIn);
+  await expect(page.getByLabel("账号/邮箱/手机号", { exact: true })).toBeVisible();
+});
+
 test("login panel can be dragged after long press", async ({
   page,
 }) => {
