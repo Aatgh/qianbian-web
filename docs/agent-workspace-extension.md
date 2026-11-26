@@ -2,7 +2,8 @@
 
 > 目标：让 Agent 能像改自己的工作台一样，给当前用户新增侧边栏按钮、面板、widget（例如「最近新闻」），并支持定时任务。
 >
-> 状态：**设计评审中，后端未开工**。前端先看第 7 节「前端契约」和第 12 节「待确认问题」。
+> 状态：**P0 后端已在本地实现并验证（2026-11-26），尚未部署生产；前端渲染器未开始。**
+> 前端先看第 7 节「前端契约」和第 12 节「待确认问题」，以及第 5 节末尾的「实现状态」。
 
 ## 1. 目标与非目标
 
@@ -130,6 +131,19 @@ data: {"method":"ui/dataUpdated","widgetId":123}
 ```
 
 注意：现有 bridge 的 `broadcastMsp` 对没有 `sessionId` 的事件会全局广播；用户级 `ui` 事件必须走单独的 `broadcastToUser(userId, event, data)`，不能复用全局广播。
+
+### 实现状态（2026-11-26，本地已验证）
+
+- 表：`qb_ui_widget`、`qb_ui_audit`（SQL：`sql/qianbian_ui_20261126.sql`）。
+- 接口：
+  - `GET /app/ui` → `{"widgets":[{id,slot,kind,title,icon,config,sortOrder,enabled,version,status,createTime,updateTime}]}`
+  - `POST /app/ui/widgets`、`PATCH /app/ui/widgets/{id}`、`DELETE /app/ui/widgets/{id}`
+  - bridge 对应 `/api/ui`、`/api/ui/widgets...`，全部要求登录 Cookie。
+- Agent 工具：`ui_list_widgets`（只读）、`ui_add_widget`（WRITE，走审批）、`ui_remove_widget`（DESTRUCTIVE，必审批）。
+- 隔离已实测：A 创建的模块 B 看不到；B 修改/删除 A 的模块返回「模块不存在或已删除」；SSE `ui` 事件只有 A 收到，B 收到 0 个。
+- 版本冲突（PATCH 带旧 version）返回错误信息「模块已被修改，请刷新后重试」，前端按 `msg/error` 提示即可。
+- **P0 限制**：Agent 在后台创建的模块不会通过 bridge 推送（后端工具执行时拿不到 SSE hub）。请前端在每轮 `turn/completed` 后重新拉一次 `GET /api/ui`；用户主动通过 `/api/ui/widgets` 修改时才会收到 `ui` 事件。
+- 新闻数据源尚未接入（等第 12 节第 4 条确认），P0 先把按钮/面板/审批/隔离跑通。
 
 ## 6. Agent 工具（拟）
 
