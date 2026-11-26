@@ -237,14 +237,25 @@ data: {"method":"ui/dataUpdated","widgetId":123}
 前端已答复第 12 节的 5 个问题，后端确认如下：
 
 1. **两阶段渲染器**：同意。第一阶段先做 feed / Markdown / 表格等安全渲染器，第二阶段再做独立域沙箱 iframe；暂估每阶段一个开发迭代。
-2. **桌面先行**：同意桌面端先做 P0；移动端复用同一套 schema，但单独适配全屏面板、滚动和安全区。
-3. **沙箱子域**：`widget.agiqianbian.com` 可以使用。DNS、证书、nginx 和 CSP 由后端/运维配合；iframe 不带宿主 Cookie，`frame-src` 只放行这个子域。
+   - P0：schema 驱动的 `feed` / `markdown` / `table` 渲染器 + 侧边栏扩展位 + 数据请求 + 错误态 + 版本冲突处理。
+   - P1：独立 origin 的 iframe，`sandbox="allow-scripts"`、不授予 `allow-same-origin`，通过 `postMessage` 通信；服务端配置严格 CSP 和 `frame-ancestors`。
+2. **桌面先行**：同意桌面端先做 P0；移动端复用同一套 schema，但单独适配全屏抽屉、滚动容器、安全区和触控，不复用桌面右栏布局。
+3. **沙箱子域**：`widget.agiqianbian.com` 可以使用。DNS、独立证书、部署、nginx 和 CSP 由后端/运维配合；沙箱页面不得读取宿主 Cookie、localStorage 或父页面 DOM。
 4. **新闻源**：同意不抓未授权站点。后端负责找可商用 API（可能涉及费用和资质）；数据源确定前，P0 只做按钮 / 面板 / 审批 / 用户隔离，`/app/ui/widgets/{id}/data` 等数据源定了再补。
 5. **feed 位置**：桌面放右侧工作区的独立标签/面板；移动端用全屏抽屉，不做小弹层。
 
+### P0 前端实现约束（前端补充）
+
+- Agent 在后台创建 widget 后，当前 bridge 不保证推送 `ui` 事件；前端在每轮 `turn/completed` 后重新拉取 `GET /api/ui`。
+- PATCH 遇到版本冲突时，按后端 `msg/error` 展示「模块已被修改，请刷新后重试」。
+- 数据源失败时必须显示可重试错误态，不显示空白，也不透传后端堆栈。
+- 前端不解析 Prompt、不执行 Agent 生成的 JavaScript，也不接收任意 HTML 注入。
+- 桌面连接器的 ZIP、签名和发布工作继续暂停，不作为本扩展的前置条件。
+
 ### 合并与发布
 
-- 后端确认 `codex/device-management-stage-a-complete` 可以**快进合并**到 `main`（当时领先 49、落后 0），合并动作由前端执行。
+- 2026-11-26 当前状态：`main` = `5d3923f`（多 1 个文档提交），`codex/device-management-stage-a-complete` = `d9648c3`（多 50 个提交），**双方都改了本文档，已经不能直接快进**。
+- 合并顺序：先把 `origin/main` 合进 `codex`，文档冲突以 `main` 的本文档为准（已经包含前端回复和 P0 约束），再把 `codex` 合并到 `main` 并推送。
 - 合并后后端负责：拉取 `main` → 同步生产 `bridge/web`（生产 C 端由 bridge 静态托管，不是 GitHub Pages）→ 用两个账号验证「所在地」和 SSE 隔离。
 - 生产同步属于发布操作，需产品负责人明确授权后再执行。
 - 桌面连接器继续暂停，不做 ZIP / 签名相关工作。
