@@ -3106,16 +3106,10 @@
           key: "locale",
           selected: 0,
         }),
-        row("通知", { icon: "bell", description: "设置完成、错误、审批和提问时的提醒方式。", value: "已开启", nav: "notifications" }),
-      ]),
-      section("社区与分享", [
-        row("社区", { icon: "users", description: "查看交流渠道与社区入口。", nav: "community" }),
-        row("论坛", { icon: "messages-square", description: "查看论坛内容与讨论。", nav: "forum" }),
-        row("分享配置", { icon: "share-2", description: "生成分享链接、二维码或分享卡。", nav: "share-config" }),
       ]),
     ], {
       icon: "settings-2",
-      summary: "账号、技能、外观、通用和社区与分享。",
+      summary: "账号、技能、外观与通用设置。",
       path: ["设置"],
     })
   );

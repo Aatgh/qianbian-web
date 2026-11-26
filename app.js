@@ -10,6 +10,7 @@
     "phone",
     "companion",
     "tavern",
+    "community",
   ]);
   const HIDDEN_PAGE_IDS = new Set([
     "model-sheet",
@@ -87,6 +88,13 @@
     "pets",
     "pet-picker",
     "pet-custom",
+    "skill-repository",
+    "notifications",
+    "session-workbench",
+    "welcome",
+    "chat-running",
+    "chat-approval",
+    "chat-question",
   ]);
   const RETAINED_SUB_PAGE_IDS = new Set([
     "notifications",
