@@ -427,6 +427,72 @@ test("mobile publish action floats at the bottom of skill space", async ({
   await expect(page.locator(".skill-builder-page")).toBeVisible();
 });
 
+test("mobile message copy and quote use real state, and share is removed", async ({
+  page,
+}) => {
+  const calls = [];
+  await mockBackend(page, calls, { resumeItems: [] });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+  await page.locator('[data-action="open-history"]').click();
+  await page.locator('[data-session-id="23"]').click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/session/resume"))
+    .toBeTruthy();
+
+  await page.evaluate(() => {
+    window.__qianbianMobileBackend.handleEvent("turn/started", {
+      turnId: "actions-turn",
+    });
+    window.__qianbianMobileBackend.handleEvent("item/completed", {
+      item: {
+        itemId: "actions-answer",
+        turnId: "actions-turn",
+        kind: "agentMessage",
+        text: "可以复制和引用的内容",
+        status: "completed",
+        done: true,
+      },
+    });
+    window.__copiedText = "";
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: () => Promise.reject(new Error("clipboard denied")),
+      },
+    });
+    document.execCommand = (command) => {
+      if (command !== "copy") return false;
+      window.__copiedText = document.activeElement?.value || "";
+      return true;
+    };
+  });
+
+  const answer = page.locator(".assistant-message").last();
+  await expect(answer).toContainText("可以复制和引用的内容");
+  await expect(answer.getByRole("button", { name: "分享" })).toHaveCount(0);
+
+  await answer.getByRole("button", { name: "复制" }).click();
+  expect(await page.evaluate(() => window.__copiedText)).toBe(
+    "可以复制和引用的内容",
+  );
+
+  await page.locator("#chat-input").fill("保留输入");
+  await answer.getByRole("button", { name: "引用" }).click();
+  await expect(page.locator("#chat-input")).toHaveValue("保留输入");
+  const quote = page.locator(".mobile-quote-preview");
+  await expect(quote).toContainText("可以复制和引用的内容");
+  expect(
+    await quote.evaluate((element) => {
+      const quoteBox = element.getBoundingClientRect();
+      const inputBox = document
+        .querySelector("#chat-input")
+        ?.getBoundingClientRect();
+      return inputBox && quoteBox.bottom <= inputBox.top;
+    }),
+  ).toBe(true);
+});
+
 test("mobile renders backend approvals and user questions", async ({ page }) => {
   const calls = [];
   await mockBackend(page, calls);
@@ -628,7 +694,8 @@ test("mobile formats backend markdown without allowing unsafe html", async ({
         kind: "agentMessage",
         status: "completed",
         done: true,
-        text: `哈尔滨今天天气：
+        text: `\`\`\`markdown
+哈尔滨今天天气：
 
 **温度**：-10～-6℃
 **天气**：多云
@@ -637,7 +704,8 @@ test("mobile formats backend markdown without allowing unsafe html", async ({
 - 注意路面结冰
 
 [危险链接](javascript:alert(1))
-<script>window.__markdownHacked = true</script>`,
+<script>window.__markdownHacked = true</script>
+\`\`\``,
       },
     });
   });
@@ -647,7 +715,9 @@ test("mobile formats backend markdown without allowing unsafe html", async ({
     "温度",
   );
   await expect(answer.locator("li")).toHaveCount(2);
+  await expect(answer.locator("pre")).toHaveCount(0);
   await expect(answer).not.toContainText("**");
+  await expect(answer).not.toContainText("```");
   await expect(answer.locator("script")).toHaveCount(0);
   expect(await page.evaluate(() => window.__markdownHacked)).toBeUndefined();
   const unsafeHref = await answer
@@ -764,6 +834,12 @@ test("mobile groups tool activity by turn above assistant replies", async ({
   await expect(activities.nth(1).locator("summary")).toContainText(
     "尝试 1 次 · 0 次成功",
   );
+  await expect(
+    activities.nth(0).locator(".backend-workflow-status strong"),
+  ).toBeVisible();
+  await expect(
+    activities.nth(0).locator(".backend-workflow-status small"),
+  ).toContainText("local_weather");
   await expect(activities.nth(0)).not.toHaveAttribute("open");
   await expect(activities.nth(1)).not.toHaveAttribute("open");
 
@@ -787,6 +863,57 @@ test("mobile groups tool activity by turn above assistant replies", async ({
   await expect(activities.nth(0)).toContainText("local_weather");
   await expect(activities.nth(0)).toContainText("怀化 9°C 小雨");
   await expect(page.locator(".tool-card")).toHaveCount(0);
+});
+
+test("mobile shows a two-line active agent workflow status", async ({ page }) => {
+  const calls = [];
+  await mockBackend(page, calls, { resumeItems: [] });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+  await page.locator('[data-action="open-history"]').click();
+  await page.locator('[data-session-id="23"]').click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/session/resume"))
+    .toBeTruthy();
+
+  await page.evaluate(() => {
+    const handle = window.__qianbianMobileBackend.handleEvent;
+    handle("turn/started", { turnId: "live-turn" });
+    handle("item/completed", {
+      item: {
+        itemId: "live-user",
+        turnId: "live-turn",
+        kind: "userMessage",
+        text: "打开页面并检查内容",
+        status: "completed",
+      },
+    });
+    handle("item/started", {
+      item: {
+        itemId: "live-tool",
+        turnId: "live-turn",
+        kind: "toolCall",
+        tool: "browser_navigate",
+        args: '{"url":"https://example.com"}',
+        status: "inProgress",
+        done: false,
+      },
+    });
+  });
+
+  const status = page.locator(".backend-workflow-status").first();
+  await expect(status).toHaveAttribute("data-workflow-state", "active");
+  await expect(status.locator("strong")).toContainText("正在");
+  await expect(status.locator("small")).toContainText("browser_navigate");
+  const linePositions = await status.evaluate((element) => {
+    const strong = element.querySelector("strong")?.getBoundingClientRect();
+    const small = element.querySelector("small")?.getBoundingClientRect();
+    return {
+      strongTop: strong?.top ?? NaN,
+      smallTop: small?.top ?? NaN,
+    };
+  });
+  expect(linePositions.smallTop).toBeGreaterThan(linePositions.strongTop);
 });
 
 test("composer input has no colored focus outline", async ({ page }) => {

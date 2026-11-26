@@ -615,6 +615,12 @@ test("desktop groups tool activity by turn above assistant replies", async ({
   await expect(activities.nth(1).locator("summary")).toContainText(
     "尝试 1 次 · 0 次成功",
   );
+  await expect(
+    activities.nth(0).locator(".backend-workflow-status strong"),
+  ).toBeVisible();
+  await expect(
+    activities.nth(0).locator(".backend-workflow-status small"),
+  ).toContainText("local_weather");
   await expect(activities.nth(0)).not.toHaveAttribute("open");
   await expect(activities.nth(1)).not.toHaveAttribute("open");
 
@@ -637,6 +643,102 @@ test("desktop groups tool activity by turn above assistant replies", async ({
   await activities.nth(0).locator("summary").click();
   await expect(activities.nth(0)).toContainText("local_weather");
   await expect(activities.nth(0)).toContainText("怀化 9°C 小雨");
+});
+
+test("desktop message copy and quote use real state, and share is removed", async ({
+  page,
+}) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+
+  await page.evaluate(() => {
+    window.__qianbianBackend.handleEvent("turn/started", {
+      turnId: "actions-turn",
+    });
+    window.__qianbianBackend.handleEvent("item/completed", {
+      item: {
+        itemId: "actions-answer",
+        turnId: "actions-turn",
+        kind: "agentMessage",
+        text: "这是一条可以复制和引用的回复",
+        status: "completed",
+        done: true,
+      },
+    });
+    window.__copiedText = "";
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: () => Promise.reject(new Error("clipboard denied")),
+      },
+    });
+    document.execCommand = (command) => {
+      if (command !== "copy") return false;
+      window.__copiedText = document.activeElement?.value || "";
+      return true;
+    };
+  });
+
+  const answer = page.locator(".message-row.assistant").last();
+  await expect(answer).toContainText("这是一条可以复制和引用的回复");
+  await expect(
+    answer.locator('[data-message-action="share"]'),
+  ).toHaveCount(0);
+
+  await answer.locator('[data-message-action="copy"]').click();
+  expect(await page.evaluate(() => window.__copiedText)).toBe(
+    "这是一条可以复制和引用的回复",
+  );
+
+  const input = page.locator("#desktop-composer-input");
+  await input.fill("保留输入");
+  await answer.locator('[data-message-action="quote"]').click();
+  await expect(input).toHaveValue("保留输入");
+  const quote = page.locator(".desktop-quote-preview");
+  await expect(quote).toContainText("这是一条可以复制和引用的回复");
+  expect(
+    await quote.evaluate((element) => {
+      const quoteBox = element.getBoundingClientRect();
+      const inputBox = document
+        .querySelector("#desktop-composer-input")
+        ?.getBoundingClientRect();
+      return inputBox && quoteBox.bottom <= inputBox.top;
+    }),
+  ).toBe(true);
+});
+
+test("desktop renders fenced markdown replies instead of code blocks", async ({
+  page,
+}) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+
+  await page.evaluate(() => {
+    window.__qianbianBackend.handleEvent("turn/started", {
+      turnId: "markdown-turn",
+    });
+    window.__qianbianBackend.handleEvent("item/completed", {
+      item: {
+        itemId: "markdown-answer",
+        turnId: "markdown-turn",
+        kind: "agentMessage",
+        status: "completed",
+        done: true,
+        text: `\`\`\`markdown
+**温度**：-10～-6℃
+
+- 穿羽绒服
+- 注意路面结冰
+\`\`\``,
+      },
+    });
+  });
+
+  const answer = page.locator(".message-row.assistant").last();
+  await expect(answer.locator(".message-bubble strong")).toContainText("温度");
+  await expect(answer.locator(".message-bubble li")).toHaveCount(2);
+  await expect(answer.locator(".message-bubble pre")).toHaveCount(0);
+  await expect(answer).not.toContainText("```");
 });
 
 test("desktop composer input has no colored focus outline", async ({ page }) => {
