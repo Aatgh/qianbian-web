@@ -2468,6 +2468,13 @@
     render();
   }
 
+  if (new URLSearchParams(location.search).get("debug") === "1") {
+    window.__qianbianDebug = {
+      getState: () => state,
+      setDesktopPublishPackage,
+    };
+  }
+
   window.__qianbianBackend = {
     handleEvent(method, params = {}) {
       // 测试便捷：会话级事件没带 sessionId 时补当前会话（没有会话则造一个测试会话）；
