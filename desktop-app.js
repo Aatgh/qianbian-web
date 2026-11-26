@@ -2081,7 +2081,30 @@
     updateIcons(backendPromptHost);
   }
 
-  function handleBackendEvent(method, params) {
+  const SESSION_SCOPED_MSP_METHODS = new Set([
+    "turn/started",
+    "turn/completed",
+    "item/started",
+    "item/delta",
+    "item/completed",
+    "approval/requested",
+    "approval/resolved",
+    "userInput/requested",
+    "userInput/settled",
+    "session/tokenUsage",
+    "session/contextUsage",
+  ]);
+
+  function handleBackendEvent(method, params = {}) {
+    const eventSessionId = params.sessionId || params.session?.sessionId;
+    if (
+      SESSION_SCOPED_MSP_METHODS.has(method) &&
+      eventSessionId &&
+      state.activeSession &&
+      String(eventSessionId) !== String(state.activeSession)
+    ) {
+      return;
+    }
     if (method === "turn/started") {
       state.activeTurnId = params.turnId || null;
       state.typing = true;

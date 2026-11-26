@@ -972,7 +972,30 @@
     updateIcons();
   }
 
+  const SESSION_SCOPED_MSP_METHODS = new Set([
+    "turn/started",
+    "turn/completed",
+    "item/started",
+    "item/delta",
+    "item/completed",
+    "approval/requested",
+    "approval/resolved",
+    "userInput/requested",
+    "userInput/settled",
+    "session/tokenUsage",
+    "session/contextUsage",
+  ]);
+
   function handleMobileBackendEvent(method, params = {}) {
+    const eventSessionId = params.sessionId || params.session?.sessionId;
+    if (
+      SESSION_SCOPED_MSP_METHODS.has(method) &&
+      eventSessionId &&
+      state.backendSessionId &&
+      String(eventSessionId) !== String(state.backendSessionId)
+    ) {
+      return;
+    }
     if (method === "turn/started") {
       state.backendTurnId = params.turnId || null;
       state.backendTyping = true;
