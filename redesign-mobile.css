@@ -565,6 +565,15 @@
   border-bottom: 0;
 }
 
+#phone-screen .phone-row-trailing {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  justify-self: end;
+}
+
 #phone-screen .phone-row-label {
   color: var(--phone-ink);
   font-size: 15px;

@@ -2126,7 +2126,7 @@
           <span class="phone-row-label">${escapeHtml(row.label)}</span>
           ${row.description ? `<span class="phone-row-description">${escapeHtml(row.description)}</span>` : ""}
         </span>
-        ${trailing}
+        <span class="phone-row-trailing">${trailing}</span>
       </${element}>
     `;
   }
