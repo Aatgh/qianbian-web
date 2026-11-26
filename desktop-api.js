@@ -260,6 +260,9 @@
     sessions(params = {}, signal) {
       return request(`/sessions${query(params)}`, { signal });
     },
+    location(signal) {
+      return request("/location", { signal });
+    },
     startSession(payload, signal) {
       return request("/session/start", {
         method: "POST",

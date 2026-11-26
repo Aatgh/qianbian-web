@@ -1027,7 +1027,8 @@
     accountPhone: storedAccountProfile.phone || "",
     accountRole: storedAccountProfile.role || "产品与设计",
     accountCompany: storedAccountProfile.company || "千变实验室",
-    accountLocation: storedAccountProfile.location || "杭州",
+    accountLocation: storedAccountProfile.location || "",
+    accountLocationAuto: storedAccountProfile.locationAuto !== false,
     accountTimezone:
       storedAccountProfile.timezone || "Asia/Shanghai",
     accountLanguage: storedAccountProfile.language || "简体中文",
@@ -2227,6 +2228,21 @@
     }
   }
 
+  async function refreshAccountLocation() {
+    if (!api || !state.accountLocationAuto) return;
+    try {
+      const payload = await api.location();
+      const label = payload?.resolved
+        ? String(payload.label || payload.city || "").trim()
+        : "";
+      if (!label || label === state.accountLocation) return;
+      state.accountLocation = label;
+      persistAccountProfile();
+      renderAccountDialog();
+      renderContext();
+    } catch {}
+  }
+
   async function refreshBackendSessions() {
     if (!api || !state.apiAvailable) return;
     try {
@@ -2263,6 +2279,7 @@
       await api.health();
       state.apiAvailable = true;
       if (engineLabel) engineLabel.textContent = "后端已连接";
+      refreshAccountLocation();
     } catch (error) {
       state.apiAvailable = false;
       state.apiStatus = { connected: false, error: error.message };
@@ -4299,6 +4316,7 @@ export const skill = {
         role: state.accountRole,
         company: state.accountCompany,
         location: state.accountLocation,
+        locationAuto: state.accountLocationAuto,
         timezone: state.accountTimezone,
         language: state.accountLanguage,
         loggedIn: state.loggedIn,
@@ -4882,9 +4900,12 @@ export const skill = {
     state.accountCompany =
       document.getElementById("account-company")?.value.trim() ||
       state.accountCompany;
-    state.accountLocation =
-      document.getElementById("account-location")?.value.trim() ||
-      state.accountLocation;
+    const locationInput =
+      document.getElementById("account-location")?.value.trim() || "";
+    if (locationInput && locationInput !== state.accountLocation) {
+      state.accountLocationAuto = false;
+    }
+    state.accountLocation = locationInput || state.accountLocation;
     state.accountTimezone =
       document.getElementById("account-timezone")?.value ||
       state.accountTimezone;
@@ -4929,7 +4950,8 @@ export const skill = {
     state.accountPhone = "";
     state.accountRole = account.name;
     state.accountCompany = "千变实验室";
-    state.accountLocation = "杭州";
+    state.accountLocation = "";
+    state.accountLocationAuto = true;
     state.accountTimezone = "Asia/Shanghai";
     state.accountLanguage = "简体中文";
     const workspace =
@@ -7676,7 +7698,8 @@ export const skill = {
       state.accountPhone = "";
       state.accountRole = "产品与设计";
       state.accountCompany = "千变实验室";
-      state.accountLocation = "杭州";
+      state.accountLocation = "";
+      state.accountLocationAuto = true;
       state.accountTimezone = "Asia/Shanghai";
       state.accountLanguage = "简体中文";
       state.loggedIn = true;
