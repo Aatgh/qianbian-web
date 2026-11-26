@@ -200,7 +200,6 @@ test("mobile supports real SMS login", async ({ page }) => {
   );
   await expect(gate).toBeHidden({ timeout: 10000 });
   await page.locator('[data-action="logout"]').click();
-  await page.locator('[data-action="confirm-dialog"]').click();
   await expect
     .poll(() => calls.find((call) => call.pathname === "/auth/logout"))
     .toBeTruthy();

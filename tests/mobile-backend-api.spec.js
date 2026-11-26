@@ -918,7 +918,7 @@ test("mobile shows a two-line active agent workflow status", async ({ page }) =>
 
 test("composer input has no colored focus outline", async ({ page }) => {
   await page.goto(mobileUrl);
-  await waitForMobileBackend(page);
+  await page.waitForSelector("#chat-input");
 
   const input = page.locator("#chat-input");
   await input.focus();

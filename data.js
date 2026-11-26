@@ -3269,7 +3269,6 @@
       },
       actions: [
         { label: "切换账号", icon: "users-round", action: "switch-account" },
-        { label: "退出登录", icon: "log-out", action: "logout", danger: true, secondary: true },
       ],
     })
   );

@@ -251,4 +251,4 @@ IP 定位只能到城市级，而且不同 IP 库结果可能不一致（同一�
 2. 移动端是否同步做，还是桌面端先行？
 3. 沙箱是否需要单独子域（建议要，例如 `widget.agiqianbian.com`）？
 
-设计文档出来后会在本仓库 `docs/` 和 Issue 里同步。
+设计文档已出：`docs/agent-workspace-extension.md`（草案 v0.1，待评审）。
