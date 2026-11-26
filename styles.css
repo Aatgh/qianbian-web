@@ -205,7 +205,7 @@ svg {
 .brand-subtitle {
   margin-top: 1px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -227,7 +227,7 @@ svg {
   border-radius: 999px;
   background: color-mix(in srgb, var(--panel-strong) 62%, transparent);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -340,7 +340,7 @@ svg {
   background: var(--panel);
   color: var(--faint);
   font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .workspace {
@@ -389,7 +389,7 @@ svg {
   margin: 0;
   color: var(--accent-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -404,7 +404,7 @@ svg {
   border-radius: 8px;
   background: color-mix(in srgb, var(--panel-strong) 62%, transparent);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -438,7 +438,7 @@ svg {
   border-radius: 6px;
   background: transparent;
   color: var(--ink-soft);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-align: left;
 }
@@ -559,7 +559,7 @@ svg {
 }
 
 .catalog-empty span {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .catalog-footer {
@@ -569,7 +569,7 @@ svg {
   padding: 12px 16px;
   border-top: 1px solid var(--line);
   color: var(--faint);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .catalog-legend {
@@ -622,7 +622,7 @@ svg {
   align-items: center;
   gap: 10px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .stage-kicker {
@@ -749,7 +749,7 @@ svg {
   border-radius: 7px;
   background: color-mix(in srgb, var(--panel) 82%, transparent);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
   backdrop-filter: blur(10px);
 }
@@ -778,7 +778,7 @@ svg {
   outline: 0;
   background: transparent;
   color: inherit;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .toast-region {
@@ -855,7 +855,7 @@ svg {
   margin: 3px 0 0;
   overflow: hidden;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -869,7 +869,7 @@ svg {
   background: color-mix(in srgb, var(--panel-strong) 56%, transparent);
   color: var(--muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -881,7 +881,7 @@ svg {
   gap: 12px;
   margin-bottom: 13px;
   color: var(--ink-soft);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -891,7 +891,7 @@ svg {
   border-radius: 4px;
   color: var(--faint);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -902,7 +902,7 @@ svg {
   gap: 12px;
   min-height: 36px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .segmented-control {
@@ -919,7 +919,7 @@ svg {
   border-radius: 5px;
   background: transparent;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .segmented-control button.is-active {
@@ -991,7 +991,7 @@ svg {
   outline: 0;
   background: var(--panel);
   color: var(--ink-soft);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .training-slider-wrap {
@@ -1009,7 +1009,7 @@ svg {
   width: 30px;
   color: var(--ink-soft);
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 500;
   text-align: right;
 }
@@ -1033,7 +1033,7 @@ svg {
 .inspector-copy {
   margin: 9px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.65;
 }
 
@@ -1051,7 +1051,7 @@ svg {
   min-height: 38px;
   padding: 0 12px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -1118,7 +1118,7 @@ svg {
   padding: 0 19px;
   flex: none;
   color: var(--phone-ink);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -1169,7 +1169,7 @@ svg {
 .phone-header p {
   margin: 2px 0 0;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .phone-header-title {
@@ -1239,14 +1239,14 @@ svg {
   gap: 10px;
   margin: 0 2px 7px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .phone-section-note {
   margin: 7px 3px 0;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -1317,7 +1317,7 @@ button.phone-row:hover {
   margin-top: 2px;
   overflow: hidden;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.42;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1329,7 +1329,7 @@ button.phone-row:hover {
   gap: 5px;
   max-width: 105px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -1348,7 +1348,7 @@ button.phone-row:hover {
   outline: 0;
   background-color: var(--phone-surface-soft);
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .phone-row-select:focus {
@@ -1371,7 +1371,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1435,7 +1435,7 @@ button.phone-row:hover {
   border-radius: 5px;
   background: transparent;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .phone-segment button.is-active {
@@ -1499,7 +1499,7 @@ button.phone-row:hover {
   gap: 9px;
   background: color-mix(in srgb, var(--accent) 7%, var(--phone-surface));
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -1549,7 +1549,7 @@ button.phone-row:hover {
 .phone-empty p {
   max-width: 250px;
   margin: 0;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.55;
 }
 
@@ -1568,7 +1568,7 @@ button.phone-row:hover {
   border-radius: 6px;
   background: transparent;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -1627,7 +1627,7 @@ button.phone-row:hover {
 
 .welcome-brand span {
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .welcome-copy {
@@ -1772,7 +1772,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1796,7 +1796,7 @@ button.phone-row:hover {
 
 .setup-field label {
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -1809,7 +1809,7 @@ button.phone-row:hover {
   outline: 0;
   background: var(--phone-surface);
   font-family: "JetBrains Mono", monospace;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .setup-field input:focus {
@@ -1822,7 +1822,7 @@ button.phone-row:hover {
   justify-content: space-between;
   gap: 8px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 /* Drawer */
@@ -1883,7 +1883,7 @@ button.phone-row:hover {
 
 .drawer-lockup span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .drawer-new-chat {
@@ -1895,7 +1895,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -1915,7 +1915,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: color-mix(in srgb, var(--phone-surface) 72%, transparent);
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .drawer-search svg {
@@ -1929,7 +1929,7 @@ button.phone-row:hover {
   gap: 8px;
   padding: 7px 13px 5px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .drawer-workspace svg {
@@ -1948,7 +1948,7 @@ button.phone-row:hover {
 .drawer-list-label {
   padding: 9px 10px 4px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -1988,7 +1988,7 @@ button.phone-row:hover {
 
 .drawer-session-name {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1996,7 +1996,7 @@ button.phone-row:hover {
 
 .drawer-session time {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .drawer-footer {
@@ -2033,7 +2033,7 @@ button.phone-row:hover {
 
 .drawer-host span {
   overflow: hidden;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2044,7 +2044,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 4px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .drawer-host small::before {
@@ -2161,7 +2161,7 @@ button.phone-row:hover {
 .main-nav-affinity-value {
   color: var(--accent-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 11px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2169,7 +2169,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .main-nav-affinity-track {
@@ -2220,12 +2220,12 @@ button.phone-row:hover {
   justify-content: space-between;
   gap: 8px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-ui-widget-nav-head strong {
   color: var(--phone-ink);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .mobile-ui-widget-list {
@@ -2249,7 +2249,7 @@ button.phone-row:hover {
 
 .mobile-ui-widget-entry > span:nth-child(2) {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 620;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2315,7 +2315,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-ui-widget-body {
@@ -2368,7 +2368,7 @@ button.phone-row:hover {
 .ui-widget-feed-copy > span {
   margin-top: 5px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -2378,7 +2378,7 @@ button.phone-row:hover {
   justify-items: end;
   gap: 4px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -2407,7 +2407,7 @@ button.phone-row:hover {
 }
 
 .ui-widget-state span {
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -2419,7 +2419,7 @@ button.phone-row:hover {
   border-radius: 8px;
   background: var(--phone-surface);
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .ui-widget-inline-error {
@@ -2432,7 +2432,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: color-mix(in srgb, var(--danger) 5%, var(--phone-surface));
   color: var(--danger);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .ui-widget-inline-error > svg {
@@ -2463,7 +2463,7 @@ button.phone-row:hover {
 .ui-widget-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .ui-widget-table th,
@@ -2501,7 +2501,7 @@ button.phone-row:hover {
   border-radius: 8px;
   background: var(--phone-surface-soft);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -2575,7 +2575,7 @@ button.phone-row:hover {
 
 .skill-hub-entry-copy strong {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -2583,7 +2583,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 3px;
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -2606,7 +2606,7 @@ button.phone-row:hover {
   margin-left: auto;
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -2663,7 +2663,7 @@ button.phone-row:hover {
   border-radius: 0;
   background: transparent;
   color: var(--accent);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -2703,7 +2703,7 @@ button.phone-row:hover {
 
 .skill-hot .skill-hub-card-copy small {
   margin-top: 4px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .skill-recommended-head {
@@ -2724,7 +2724,7 @@ button.phone-row:hover {
 .skill-recommended-head span {
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2802,7 +2802,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .skill-settings-body {
@@ -2852,7 +2852,7 @@ button.phone-row:hover {
 .skill-settings-affinity > div > span {
   display: block;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .skill-settings-affinity strong {
@@ -2897,7 +2897,7 @@ button.phone-row:hover {
   min-height: 45px;
   border-bottom: 1px solid color-mix(in srgb, var(--phone-line) 70%, transparent);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .skill-settings-option:last-child {
@@ -2931,14 +2931,14 @@ button.phone-row:hover {
 .skill-settings-installed-head span {
   color: var(--accent-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .skill-settings-installed-head p {
   max-width: 190px;
   margin: 0;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
   text-align: right;
   text-wrap: pretty;
@@ -3016,7 +3016,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--phone-ink) 4%, transparent);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -3061,13 +3061,13 @@ button.phone-row:hover {
 
 .skill-settings-installed-copy strong {
   color: var(--phone-ink);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .skill-settings-installed-copy small {
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .skill-installed-batch {
@@ -3085,7 +3085,7 @@ button.phone-row:hover {
 
 .skill-installed-batch > span {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .skill-installed-batch button {
@@ -3095,7 +3095,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--warning) 7%, transparent);
   color: var(--warning);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -3130,14 +3130,14 @@ button.phone-row:hover {
 .skill-conflict-heading span {
   color: var(--accent-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .skill-conflict-heading p {
   max-width: 182px;
   margin: 0;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
   text-align: right;
   text-wrap: pretty;
@@ -3179,13 +3179,13 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--warning) 14%, transparent);
   color: var(--warning);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .skill-conflict-card > header strong {
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .skill-conflict-choices {
@@ -3260,13 +3260,13 @@ button.phone-row:hover {
 
 .skill-conflict-choice-copy strong {
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .skill-conflict-choice-copy small {
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .skill-conflict-recommended {
@@ -3274,7 +3274,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--success) 12%, transparent);
   color: var(--success);
-  font-size: 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -3298,7 +3298,7 @@ button.phone-row:hover {
 
 .skill-conflict-suggestion p {
   margin: 0;
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.5;
   text-wrap: pretty;
 }
@@ -3331,7 +3331,7 @@ button.phone-row:hover {
 
 .skill-conflict-empty span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -3353,7 +3353,7 @@ button.phone-row:hover {
 
 .skill-delete-bar > span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .skill-delete-bar button {
@@ -3362,7 +3362,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--danger);
   color: white;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -3407,7 +3407,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .skill-browser-add {
@@ -3451,7 +3451,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--phone-surface) 80%, transparent);
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -3486,7 +3486,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--phone-surface) 80%, transparent);
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -3538,7 +3538,7 @@ button.phone-row:hover {
   background: transparent;
   color: var(--phone-ink);
   font: inherit;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .skill-browser-search input::placeholder {
@@ -3560,7 +3560,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--phone-surface) 78%, transparent);
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -3622,7 +3622,7 @@ button.phone-row:hover {
   border-radius: 7px;
   background: transparent;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   text-align: left;
   white-space: nowrap;
 }
@@ -3673,7 +3673,7 @@ button.phone-row:hover {
 
 .published-skill-card-footer > span {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .published-skill-card-footer button {
@@ -3683,7 +3683,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--danger) 6%, transparent);
   color: var(--danger);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -3756,13 +3756,13 @@ button.phone-row:hover {
 }
 
 .published-skill-copy strong {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .published-skill-copy small {
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .published-skill-badge {
@@ -3770,7 +3770,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--success) 10%, transparent);
   color: var(--success);
-  font-size: 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -3795,11 +3795,11 @@ button.phone-row:hover {
 
 .skill-browser-empty strong {
   color: var(--phone-ink);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .skill-browser-empty span {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 @keyframes skill-browser-in {
@@ -3872,7 +3872,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 4px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .skill-modal-close,
@@ -3947,7 +3947,7 @@ button.phone-row:hover {
   max-width: 260px;
   margin: 8px auto 0;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.65;
   text-wrap: pretty;
 }
@@ -3970,7 +3970,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--phone-surface-soft);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .skill-detail-meta svg {
@@ -3988,7 +3988,7 @@ button.phone-row:hover {
 .skill-detail-section h4 {
   margin: 0 0 9px;
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -4009,7 +4009,7 @@ button.phone-row:hover {
 .skill-info-grid span {
   display: block;
   color: var(--phone-muted);
-  font-size: 7px;
+  font-size: 12px;
 }
 
 .skill-info-grid strong {
@@ -4018,7 +4018,7 @@ button.phone-row:hover {
   overflow: hidden;
   color: var(--phone-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4034,7 +4034,7 @@ button.phone-row:hover {
   background: color-mix(in srgb, var(--phone-ink) 94%, var(--phone-bg));
   color: #edf5f0;
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.65;
   text-align: left;
   white-space: pre-wrap;
@@ -4048,7 +4048,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: var(--phone-surface);
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.65;
   text-wrap: pretty;
 }
@@ -4069,7 +4069,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .skill-permission-list svg {
@@ -4090,7 +4090,7 @@ button.phone-row:hover {
   border-radius: 10px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   transition:
     filter 150ms ease,
@@ -4149,14 +4149,14 @@ button.phone-row:hover {
 
 .skill-hub-heading strong {
   color: var(--phone-ink);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .skill-hub-heading span {
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -4227,14 +4227,14 @@ button.phone-row:hover {
   overflow: hidden;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .skill-hub-card-meta {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -4260,7 +4260,7 @@ button.phone-row:hover {
   border-radius: 8px;
   background: color-mix(in srgb, var(--phone-surface) 88%, transparent);
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
   text-align: left;
 }
 
@@ -4328,7 +4328,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -4402,7 +4402,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -4418,7 +4418,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .history-search svg {
@@ -4434,7 +4434,7 @@ button.phone-row:hover {
   outline: 0;
   background: transparent;
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .history-search input::placeholder {
@@ -4458,7 +4458,7 @@ button.phone-row:hover {
   border-radius: 7px;
   background: transparent;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   transition:
     background-color 160ms ease,
@@ -4487,7 +4487,7 @@ button.phone-row:hover {
 .history-group-label {
   padding: 11px 11px 5px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -4532,7 +4532,7 @@ button.phone-row:hover {
 .history-session-main strong {
   display: block;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4541,7 +4541,7 @@ button.phone-row:hover {
 .history-session-main small,
 .history-session time {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .history-session time {
@@ -4555,7 +4555,7 @@ button.phone-row:hover {
 .history-empty {
   margin: 18px 4px 0;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
   text-wrap: pretty;
 }
@@ -4591,7 +4591,7 @@ button.phone-row:hover {
   appearance: none;
   background: transparent;
   color: var(--phone-ink);
-  font-size: 8px;
+  font-size: 12px;
   text-overflow: ellipsis;
 }
 
@@ -4684,7 +4684,7 @@ button.phone-row:hover {
 .history-settings-group > p {
   margin: 0 0 7px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -4705,7 +4705,7 @@ button.phone-row:hover {
   border-radius: 8px;
   background: var(--phone-surface-soft);
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
   text-align: left;
   transition:
     border-color 150ms ease,
@@ -4785,7 +4785,7 @@ button.phone-row:hover {
   gap: 5px;
   margin: 2px 0 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .chat-title p::before {
@@ -4820,7 +4820,7 @@ button.phone-row:hover {
 .chat-day {
   margin: 2px 0 16px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -4847,7 +4847,7 @@ button.phone-row:hover {
 .message-time {
   padding-right: 2px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -4862,7 +4862,7 @@ button.phone-row:hover {
   gap: 6px;
   margin-bottom: 6px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .agent-human-badge {
@@ -4870,7 +4870,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: rgba(22, 133, 102, 0.12);
   color: var(--success);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -4951,7 +4951,7 @@ button.phone-row:hover {
   border-radius: 4px;
   background: var(--phone-surface-soft);
   font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .assistant-text pre code {
@@ -4977,7 +4977,7 @@ button.phone-row:hover {
   width: 100%;
   margin: 9px 0;
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .assistant-text th,
@@ -5002,7 +5002,7 @@ button.phone-row:hover {
   gap: 7px;
   padding: 9px 10px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
   list-style: none;
 }
@@ -5035,14 +5035,14 @@ button.phone-row:hover {
 
 .backend-activity-copy strong {
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .backend-activity-copy small {
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -5083,13 +5083,13 @@ button.phone-row:hover {
 
 .backend-activity-row strong {
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .backend-activity-row small {
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -5097,7 +5097,7 @@ button.phone-row:hover {
   margin-top: 4px;
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 
@@ -5112,7 +5112,7 @@ button.phone-row:hover {
   border-radius: 4px;
   background: var(--phone-surface-soft);
   font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .tool-card {
@@ -5131,7 +5131,7 @@ button.phone-row:hover {
   padding: 0 10px;
   border-bottom: 1px solid var(--phone-line);
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .tool-card-head svg {
@@ -5142,7 +5142,7 @@ button.phone-row:hover {
 
 .tool-card-head strong {
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .tool-card-head .tool-status {
@@ -5156,7 +5156,7 @@ button.phone-row:hover {
   overflow-x: auto;
   color: var(--phone-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -5198,7 +5198,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .thinking-dots {
@@ -5235,7 +5235,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 7px;
   color: var(--warning);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -5247,7 +5247,7 @@ button.phone-row:hover {
 .approval-card p {
   margin: 6px 0 10px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -5260,7 +5260,7 @@ button.phone-row:hover {
   min-height: 31px;
   padding: 0 12px;
   border-radius: 7px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -5285,13 +5285,13 @@ button.phone-row:hover {
 
 .question-card strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .question-card p {
   margin: 4px 0 9px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .question-options {
@@ -5306,7 +5306,7 @@ button.phone-row:hover {
   border-radius: 7px;
   background: var(--phone-surface);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   text-align: left;
 }
 
@@ -5376,14 +5376,14 @@ button.phone-row:hover {
 
 .mobile-quote-copy strong {
   color: var(--accent-ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .mobile-quote-copy span {
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-quote-remove {
@@ -5475,7 +5475,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--glass-strong);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   backdrop-filter: blur(12px);
 }
 
@@ -5533,7 +5533,7 @@ button.phone-row:hover {
   resize: none;
   background: transparent;
   color: var(--phone-ink);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -5590,7 +5590,7 @@ button.phone-row:hover {
   display: block;
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.8px;
 }
@@ -5615,7 +5615,7 @@ button.phone-row:hover {
   max-width: 238px;
   margin: 8px auto 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
   text-align: center;
   text-wrap: pretty;
@@ -5927,7 +5927,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -5972,7 +5972,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: var(--phone-surface);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   text-align: left;
 }
 
@@ -6023,12 +6023,12 @@ button.phone-row:hover {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .settings-overview .overview-status {
   color: var(--success);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -6043,7 +6043,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .settings-search svg {
@@ -6086,13 +6086,13 @@ button.phone-row:hover {
 .settings-detail-card strong {
   display: block;
   color: var(--phone-ink);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .settings-detail-card p {
   margin: 4px 0 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
   text-wrap: pretty;
 }
@@ -6145,7 +6145,7 @@ button.phone-row:hover {
 .skill-builder-intro p {
   margin: 5px 0 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -6157,7 +6157,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--success) 11%, var(--phone-surface));
   color: var(--success);
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -6183,7 +6183,7 @@ button.phone-row:hover {
 .skill-builder-questions label > span,
 .skill-builder-meta label > span {
   color: var(--phone-muted);
-  font-size: 8.5px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -6203,7 +6203,7 @@ button.phone-row:hover {
   background: var(--phone-surface-soft);
   color: var(--phone-ink);
   font: inherit;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .skill-builder-prompt textarea,
@@ -6231,7 +6231,7 @@ button.phone-row:hover {
   border-radius: 10px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 680;
 }
 
@@ -6256,7 +6256,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 4px;
   color: var(--success);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -6267,12 +6267,12 @@ button.phone-row:hover {
 
 .skill-builder-recognition strong {
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .skill-builder-recognition small {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -6300,7 +6300,7 @@ button.phone-row:hover {
 
 .skill-builder-script-head > div > span {
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 680;
 }
 
@@ -6309,7 +6309,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 5px;
   color: var(--phone-muted);
-  font-size: 7.5px;
+  font-size: 12px;
 }
 
 .skill-builder-script-head small i {
@@ -6329,7 +6329,7 @@ button.phone-row:hover {
   border-radius: 7px;
   background: var(--phone-surface-soft);
   color: var(--phone-muted);
-  font-size: 7.5px;
+  font-size: 12px;
 }
 
 .skill-builder-script-head button svg {
@@ -6350,7 +6350,7 @@ button.phone-row:hover {
   gap: 6px;
   color: var(--phone-muted);
   cursor: pointer;
-  font-size: 8.5px;
+  font-size: 12px;
   font-weight: 620;
 }
 
@@ -6407,12 +6407,12 @@ button.phone-row:hover {
 
 .skill-builder-import > button strong {
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .skill-builder-import > button small {
   color: var(--phone-muted);
-  font-size: 7.5px;
+  font-size: 12px;
 }
 
 .skill-builder-actions {
@@ -6429,7 +6429,7 @@ button.phone-row:hover {
 .skill-builder-actions > span {
   flex: 1;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .skill-builder-publish {
@@ -6442,7 +6442,7 @@ button.phone-row:hover {
   border-radius: 10px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 680;
 }
 
@@ -6481,7 +6481,7 @@ button.phone-row:hover {
 
 .publish-kicker {
   color: var(--accent-ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -6497,7 +6497,7 @@ button.phone-row:hover {
 .publish-hero p {
   margin: 5px 0 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
   text-wrap: pretty;
 }
@@ -6514,7 +6514,7 @@ button.phone-row:hover {
 .publish-readiness span {
   display: block;
   color: var(--phone-muted);
-  font-size: 7px;
+  font-size: 12px;
 }
 
 .publish-readiness strong {
@@ -6522,7 +6522,7 @@ button.phone-row:hover {
   margin-top: 2px;
   color: var(--accent-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 11px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -6551,7 +6551,7 @@ button.phone-row:hover {
 
 .publish-section-head span {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .publish-field {
@@ -6562,7 +6562,7 @@ button.phone-row:hover {
 
 .publish-field > span {
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -6577,7 +6577,7 @@ button.phone-row:hover {
   outline: 0;
   background: var(--phone-surface-soft);
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -6629,13 +6629,13 @@ button.phone-row:hover {
 }
 
 .publish-upload-zone strong {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .publish-upload-zone small {
   margin-top: 4px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -6658,7 +6658,7 @@ button.phone-row:hover {
   border-bottom: 1px solid var(--phone-line);
   background: var(--phone-surface-soft);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .publish-checklist div:last-child {
@@ -6672,7 +6672,7 @@ button.phone-row:hover {
 
 .publish-checklist b {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -6697,7 +6697,7 @@ button.phone-row:hover {
   gap: 6px;
   min-height: 40px;
   border-radius: 9px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -6751,7 +6751,7 @@ button.phone-row:hover {
 .publish-compact-intro p {
   margin: 4px 0 0;
   color: var(--phone-muted);
-  font-size: 8.5px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -6805,7 +6805,7 @@ button.phone-row:hover {
   gap: 6px;
   padding: 0 11px;
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 620;
   list-style: none;
   cursor: pointer;
@@ -6817,7 +6817,7 @@ button.phone-row:hover {
 
 .publish-more summary > span {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -6868,14 +6868,14 @@ button.phone-row:hover {
   border: 1px solid var(--phone-line);
   border-radius: 50%;
   background: var(--phone-surface);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .publish-wizard-progress small {
   overflow: hidden;
   max-width: 100%;
-  font-size: 7.5px;
+  font-size: 12px;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -6904,7 +6904,7 @@ button.phone-row:hover {
 
 .publish-step-kicker {
   color: var(--accent-ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -6918,7 +6918,7 @@ button.phone-row:hover {
 .publish-step-card > p {
   margin: 6px 0 0;
   color: var(--phone-muted);
-  font-size: 9.5px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -6956,13 +6956,13 @@ button.phone-row:hover {
 }
 
 .publish-package-button strong {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .publish-package-button small {
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .publish-package-button.is-ready {
@@ -6990,7 +6990,7 @@ button.phone-row:hover {
   border-radius: 8px;
   background: transparent;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 620;
 }
 
@@ -7027,7 +7027,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 5px;
   color: var(--accent-ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 680;
 }
 
@@ -7038,7 +7038,7 @@ button.phone-row:hover {
 
 .publish-idea-guide-head > small {
   color: var(--phone-muted);
-  font-size: 7.5px;
+  font-size: 12px;
 }
 
 .publish-idea-input {
@@ -7048,7 +7048,7 @@ button.phone-row:hover {
 
 .publish-idea-input > span {
   color: var(--phone-ink);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -7063,7 +7063,7 @@ button.phone-row:hover {
   background: var(--phone-surface);
   color: var(--phone-ink);
   font: inherit;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -7082,7 +7082,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -7103,12 +7103,12 @@ button.phone-row:hover {
 
 .publish-idea-profile span {
   color: var(--phone-faint);
-  font-size: 7.5px;
+  font-size: 12px;
 }
 
 .publish-idea-profile strong {
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .publish-idea-questionnaire {
@@ -7123,7 +7123,7 @@ button.phone-row:hover {
 
 .publish-idea-field > span {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -7140,7 +7140,7 @@ button.phone-row:hover {
   background: var(--phone-surface);
   color: var(--phone-ink);
   font: inherit;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .publish-idea-field textarea {
@@ -7172,7 +7172,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 5px;
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .publish-idea-code-head strong svg {
@@ -7186,7 +7186,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 5px;
   color: var(--phone-muted);
-  font-size: 7.5px;
+  font-size: 12px;
 }
 
 .publish-idea-code-head small i {
@@ -7207,7 +7207,7 @@ button.phone-row:hover {
   border-radius: 7px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 7px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -7248,7 +7248,7 @@ button.phone-row:hover {
   background: #111915 !important;
   color: #dbe8df !important;
   font-family: "JetBrains Mono", monospace !important;
-  font-size: 9px !important;
+  font-size: 12px !important;
   line-height: 1.65 !important;
   white-space: pre;
 }
@@ -7259,7 +7259,7 @@ button.phone-row:hover {
   gap: 6px;
   margin-top: 8px;
   color: var(--success);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .publish-package-ready svg {
@@ -7287,13 +7287,13 @@ button.phone-row:hover {
 
 .publish-review span {
   color: var(--phone-muted);
-  font-size: 8.5px;
+  font-size: 12px;
 }
 
 .publish-review strong {
   overflow: hidden;
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -7308,7 +7308,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: var(--phone-surface-soft);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -7339,7 +7339,7 @@ button.phone-row:hover {
   justify-content: center;
   gap: 6px;
   border-radius: 11px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -7404,7 +7404,7 @@ button.phone-row:hover {
 .generic-hero p {
   margin: 6px 0 0;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -7443,7 +7443,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .status-card {
@@ -7478,14 +7478,14 @@ button.phone-row:hover {
 
 .status-card strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .status-card span {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 /* All features */
@@ -7531,7 +7531,7 @@ button.phone-row:hover {
 
 .feature-tile strong {
   margin-top: 12px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .feature-tile span {
@@ -7539,7 +7539,7 @@ button.phone-row:hover {
   margin-top: 3px;
   overflow: hidden;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -7576,7 +7576,7 @@ button.phone-row:hover {
   overflow-y: auto;
   padding: 13px;
   font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.65;
 }
 
@@ -7609,7 +7609,7 @@ button.phone-row:hover {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(10, 17, 14, 0.96);
   font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .terminal-input-row input {
@@ -7637,7 +7637,7 @@ button.phone-row:hover {
   background: rgba(255, 255, 255, 0.06);
   color: #aabcb3;
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 /* Files */
@@ -7654,7 +7654,7 @@ button.phone-row:hover {
   background: var(--phone-surface);
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -7671,7 +7671,7 @@ button.phone-row:hover {
 .file-size {
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 /* Providers and models */
@@ -7711,7 +7711,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .provider-hero .badge {
@@ -7746,14 +7746,14 @@ button.phone-row:hover {
 
 .model-option strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .model-option span {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 /* Hosts and engine */
@@ -7800,7 +7800,7 @@ button.phone-row:hover {
   gap: 4px;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .host-card span::before {
@@ -7867,7 +7867,7 @@ button.phone-row:hover {
 .engine-ring-content span {
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 /* Plugins */
@@ -7909,7 +7909,7 @@ button.phone-row:hover {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .plugin-hero .phone-icon-button {
@@ -7954,19 +7954,19 @@ button.phone-row:hover {
 
 .plugin-card strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .plugin-card span {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .plugin-card small {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 /* Community and bots */
@@ -8007,7 +8007,7 @@ button.phone-row:hover {
   max-width: 240px;
   margin: 6px 0 0;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -8032,13 +8032,13 @@ button.phone-row:hover {
   border-radius: 50%;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .forum-topic strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -8047,7 +8047,7 @@ button.phone-row:hover {
   margin: 3px 0 0;
   overflow: hidden;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -8058,12 +8058,12 @@ button.phone-row:hover {
   gap: 8px;
   margin-top: 5px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .forum-topic time {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .bot-card {
@@ -8104,7 +8104,7 @@ button.phone-row:hover {
 .bot-card p {
   margin: 2px 0 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .bot-card .badge {
@@ -8154,7 +8154,7 @@ button.phone-row:hover {
   border: 1px solid var(--phone-line);
   border-radius: 12px 12px 12px 4px;
   background: var(--glass-strong);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.6;
   box-shadow: var(--phone-shadow);
   backdrop-filter: blur(16px);
@@ -8179,7 +8179,7 @@ button.phone-row:hover {
   border-radius: 10px;
   background: var(--phone-surface);
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .companion-action svg {
@@ -8227,7 +8227,7 @@ button.phone-row:hover {
 .tavern-cover-copy p {
   margin: 5px 0 0;
   color: rgba(244, 240, 230, 0.7);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .tavern-body {
@@ -8240,7 +8240,7 @@ button.phone-row:hover {
   border-radius: 10px;
   background: var(--phone-surface);
   color: var(--phone-ink);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.7;
 }
 
@@ -8257,7 +8257,7 @@ button.phone-row:hover {
   border-radius: 8px;
   background: var(--phone-surface);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   text-align: left;
 }
 
@@ -8302,14 +8302,14 @@ button.phone-row:hover {
 
 .workshop-card strong {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .workshop-card span {
   display: block;
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 /* Media and share */
@@ -8350,7 +8350,7 @@ button.phone-row:hover {
   border-radius: 6px;
   background: rgba(10, 17, 14, 0.58);
   color: #fff;
-  font-size: 8px;
+  font-size: 12px;
   backdrop-filter: blur(10px);
 }
 
@@ -8389,7 +8389,7 @@ button.phone-row:hover {
 .share-card-cover p {
   margin: 6px 0 0;
   color: rgba(246, 248, 247, 0.68);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .share-card-footer {
@@ -8402,7 +8402,7 @@ button.phone-row:hover {
 
 .share-card-footer span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 /* Schedule */
@@ -8439,13 +8439,13 @@ button.phone-row:hover {
 
 .schedule-card strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .schedule-card p {
   margin: 2px 0 0;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .schedule-card .phone-toggle {
@@ -8458,7 +8458,7 @@ button.phone-row:hover {
   margin-top: 8px;
   padding-left: 42px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 /* Search */
@@ -8489,7 +8489,7 @@ button.phone-row:hover {
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .search-result-group {
@@ -8529,14 +8529,14 @@ button.phone-row:hover {
 
 .search-result strong {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .search-result span {
   display: block;
   margin-top: 1px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 /* Sheets, dialogs, toasts */
@@ -8635,7 +8635,7 @@ button.phone-row:hover {
   overflow: hidden;
   max-width: 100%;
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -8683,7 +8683,7 @@ button.phone-row:hover {
 .sheet-head p {
   margin: 4px 0 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .sheet-close {
@@ -8745,7 +8745,7 @@ button.phone-row:hover {
 .phone-dialog p {
   margin: 7px 0 15px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -8759,7 +8759,7 @@ button.phone-row:hover {
   min-height: 33px;
   padding: 0 12px;
   border-radius: 7px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -8789,7 +8789,7 @@ button.phone-row:hover {
   background: var(--glass-strong);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   backdrop-filter: blur(18px);
   animation: toast-up 180ms ease both;
 }
@@ -8847,7 +8847,7 @@ button.phone-row:hover {
 .workbench-session-head p {
   margin: 5px 0 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -8858,7 +8858,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--success) 10%, transparent);
   color: var(--success);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -8904,7 +8904,7 @@ button.phone-row:hover {
 .workbench-metric span {
   margin-top: 3px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .workbench-section-heading {
@@ -8924,7 +8924,7 @@ button.phone-row:hover {
 .workbench-section-heading > span {
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -8948,7 +8948,7 @@ button.phone-row:hover {
 .workbench-step-index {
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .workbench-step-icon,
@@ -8972,7 +8972,7 @@ button.phone-row:hover {
   display: block;
   overflow: hidden;
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -8980,7 +8980,7 @@ button.phone-row:hover {
 .workbench-step p {
   margin: 3px 0 0;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
   text-wrap: pretty;
 }
@@ -8988,7 +8988,7 @@ button.phone-row:hover {
 .workbench-step-time {
   color: var(--phone-muted);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -9019,7 +9019,7 @@ button.phone-row:hover {
 
 .workbench-usage-summary span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .workbench-usage-track {
@@ -9061,7 +9061,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 7px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .workbench-usage-parts svg {
@@ -9073,7 +9073,7 @@ button.phone-row:hover {
 .workbench-usage-parts strong {
   color: var(--phone-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -9093,7 +9093,7 @@ button.phone-row:hover {
   padding: 0 7px;
   border-radius: 7px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -9122,13 +9122,13 @@ button.phone-row:hover {
 .workbench-mode-detail strong {
   display: block;
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .workbench-mode-detail p {
   margin: 3px 0 0;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -9137,7 +9137,7 @@ button.phone-row:hover {
   overflow: hidden;
   color: var(--accent-ink);
   font-family: "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -9198,12 +9198,12 @@ button.phone-row:hover {
 
 .workbench-action strong {
   color: var(--phone-ink);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .workbench-action small {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .workshop-thumb img {
@@ -9255,7 +9255,7 @@ button.phone-row:hover {
 .account-profile-hero p {
   margin: 5px 0 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .account-edit-button {
@@ -9269,7 +9269,7 @@ button.phone-row:hover {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -9281,7 +9281,7 @@ button.phone-row:hover {
 .account-section-heading {
   margin: 0 16px 8px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -9305,7 +9305,7 @@ button.phone-row:hover {
   align-items: center;
   gap: 5px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .account-edit-form label > span svg {
@@ -9322,7 +9322,7 @@ button.phone-row:hover {
   background: var(--phone-bg);
   color: var(--phone-ink);
   font: inherit;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .account-edit-form input:focus {
@@ -9341,7 +9341,7 @@ button.phone-row:hover {
   border-radius: 9px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -9373,7 +9373,7 @@ button.phone-row:hover {
   gap: 7px;
   margin: 0 18px 14px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -9441,7 +9441,7 @@ button.phone-row:hover {
 .voice-call-page p {
   margin: 6px 0 0;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .call-captions {
@@ -9452,7 +9452,7 @@ button.phone-row:hover {
   border-radius: 10px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -9468,7 +9468,7 @@ button.phone-row:hover {
   gap: 5px;
   min-width: 58px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   background: transparent;
 }
 
@@ -9516,7 +9516,7 @@ button.phone-row:hover {
 .web-content p {
   margin: 8px 0 0;
   color: #6d7772;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .web-thread {
@@ -9533,7 +9533,7 @@ button.phone-row:hover {
 }
 
 .web-thread p {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .sr-only {
@@ -10057,7 +10057,7 @@ svg {
 .mobile-login-card > p {
   margin: 0;
   color: var(--phone-muted);
-  font-size: 11px;
+  font-size: 13px;
   text-align: center;
 }
 
@@ -10065,7 +10065,7 @@ svg {
   display: grid;
   gap: 6px;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .mobile-login-card input {
@@ -10091,7 +10091,7 @@ svg {
   border-radius: 10px;
   background: var(--phone-surface-soft);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .mobile-login-code-row button:disabled {
@@ -10101,7 +10101,7 @@ svg {
 .mobile-login-error {
   min-height: 16px;
   color: var(--danger);
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -10116,7 +10116,7 @@ svg {
 
 .mobile-login-card small {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -10156,7 +10156,7 @@ svg {
 
 .mobile-devices-head span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-devices-head > .mobile-devices-pair {
@@ -10169,7 +10169,7 @@ svg {
   border-radius: 9px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .mobile-devices-head > .mobile-devices-pair svg {
@@ -10212,7 +10212,7 @@ svg {
 .mobile-device-pair-form-head span,
 .mobile-device-pair-form label > span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-pair-form label {
@@ -10255,7 +10255,7 @@ svg {
   border-radius: 9px;
   background: var(--phone-surface-soft);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .mobile-device-pair-form-actions button.is-primary {
@@ -10279,7 +10279,7 @@ svg {
 
 .mobile-device-pair-card > span {
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .mobile-device-pair-card > strong {
@@ -10299,7 +10299,7 @@ svg {
 .mobile-device-pair-card small {
   margin: 0;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -10311,7 +10311,7 @@ svg {
   border-radius: 8px;
   background: var(--phone-surface-soft);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .mobile-device-pair-card button svg {
@@ -10382,7 +10382,7 @@ svg {
 .mobile-device-copy small {
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-actions {
@@ -10431,7 +10431,7 @@ svg {
   border-radius: 12px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -10476,12 +10476,12 @@ svg {
 }
 
 .mobile-device-tasks-head strong {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .mobile-device-tasks-head span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-tasks-head button {
@@ -10489,7 +10489,7 @@ svg {
   align-items: center;
   gap: 4px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-tasks-head button svg {
@@ -10541,14 +10541,14 @@ svg {
 }
 
 .mobile-device-task-copy strong {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .mobile-device-task-copy small,
 .mobile-device-task-duration {
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .mobile-device-task-duration {
@@ -10579,13 +10579,13 @@ svg {
 }
 
 .mobile-device-permissions-head strong {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .mobile-device-permissions-head span {
   margin-top: 2px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-permissions-head button {
@@ -10616,7 +10616,7 @@ svg {
   align-items: center;
   gap: 4px;
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-permission-summary svg {
@@ -10626,7 +10626,7 @@ svg {
 
 .mobile-device-permission-summary strong {
   overflow-wrap: anywhere;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -10642,7 +10642,7 @@ svg {
   border-radius: 6px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .mobile-device-permission-chips span.is-enabled {
@@ -10653,7 +10653,7 @@ svg {
 
 .mobile-device-permissions > small {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -10664,7 +10664,7 @@ svg {
 
 .mobile-device-permission-roots > span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-permission-roots textarea {
@@ -10677,7 +10677,7 @@ svg {
   outline: 0;
   background: var(--phone-surface);
   color: var(--phone-ink);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -10701,7 +10701,7 @@ svg {
   border-radius: 8px;
   background: var(--phone-surface);
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-permission-toggles input {
@@ -10731,7 +10731,7 @@ svg {
   border-radius: 9px;
   background: var(--accent);
   color: var(--accent-on);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -10757,12 +10757,12 @@ svg {
 }
 
 .mobile-device-audit-head strong {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mobile-device-audit-head span {
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .mobile-device-audit-entry {
@@ -10774,7 +10774,7 @@ svg {
   border: 1px solid var(--phone-line);
   border-radius: 8px;
   background: var(--phone-surface);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .mobile-device-audit-entry > span:nth-child(2) {
@@ -10792,7 +10792,7 @@ svg {
 .task-status {
   padding: 3px 6px;
   border-radius: 999px;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -10833,7 +10833,7 @@ svg {
   border-radius: 6px;
   background: var(--phone-surface-soft);
   color: var(--phone-muted);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .mobile-approval-context svg {
@@ -10881,12 +10881,12 @@ svg {
 }
 
 .mobile-devices-help strong {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .mobile-devices-help span {
   color: var(--phone-muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -10896,7 +10896,7 @@ svg {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 3px);
   z-index: 1001;
   color: var(--phone-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1;
   text-decoration: none;
   pointer-events: auto;

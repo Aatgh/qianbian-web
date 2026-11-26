@@ -2583,7 +2583,7 @@
         <div class="welcome-page" style="min-height:100%;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,rgba(45,109,246,.3),transparent 34%),#0c1714">
           <img src="assets/brand/qianbian-tile.png" alt="千变" style="width:74px;height:74px;border-radius:20px;object-fit:cover;margin-bottom:22px" />
           <strong style="font-size:30px;font-weight:300">${escapeHtml(page.heroTitle || "千变")}</strong>
-          <span style="margin-top:8px;color:rgba(242,246,243,.56);font-size:10px">AI Agent</span>
+          <span style="margin-top:8px;color:rgba(242,246,243,.56);font-size: 12px">AI Agent</span>
           <button class="phone-secondary-button" data-nav="home" type="button" style="margin-top:48px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.14);color:#fff">
             ${icon("arrow-right")}进入首页
           </button>
@@ -2597,7 +2597,7 @@
     return `
       <div class="user-message">
         <div class="user-bubble">
-          ${name ? `<div style="font-size:8px;opacity:.72;margin-bottom:3px">${escapeHtml(name)}</div>` : ""}
+          ${name ? `<div style="font-size: 12px;opacity:.72;margin-bottom:3px">${escapeHtml(name)}</div>` : ""}
           ${escapeHtml(text)}
         </div>
         ${time ? `<time class="message-time">${escapeHtml(time)}</time>` : ""}
@@ -5148,12 +5148,12 @@ export async function review(target) {
               <div style="display:flex;gap:9px;align-items:center;margin-bottom:10px">
                 <span class="forum-avatar">${escapeHtml(topic.avatar || "F")}</span>
                 <div>
-                  <strong style="font-size:11px">${escapeHtml(topic.author || "论坛用户")}</strong>
-                  <div style="color:var(--phone-muted);font-size:8px">${escapeHtml(topic.time || "")}</div>
+                  <strong style="font-size: 13px">${escapeHtml(topic.author || "论坛用户")}</strong>
+                  <div style="color:var(--phone-muted);font-size: 12px">${escapeHtml(topic.time || "")}</div>
                 </div>
               </div>
               <h2 style="margin:0;font-size:18px">${escapeHtml(topic.title || page.title)}</h2>
-              <p style="margin:7px 0 0;color:var(--phone-muted);font-size:10px;line-height:1.65">${escapeHtml(
+              <p style="margin:7px 0 0;color:var(--phone-muted);font-size: 12px;line-height:1.65">${escapeHtml(
                 topic.body || ""
               )}</p>
               <div class="message-actions" style="margin-top:8px">
@@ -5427,7 +5427,7 @@ export async function review(target) {
                 <span class="forum-avatar" style="width:42px;height:42px">林</span>
                 <div>
                   <strong style="font-size:12px">林雾</strong>
-                  <div style="color:var(--phone-muted);font-size:8px">灯塔看守人 · 好感 12</div>
+                  <div style="color:var(--phone-muted);font-size: 12px">灯塔看守人 · 好感 12</div>
                 </div>
                 <span class="badge" style="margin-left:auto">场景中</span>
               </div>
@@ -5763,11 +5763,11 @@ export async function review(target) {
                   <div style="display:grid;grid-template-columns:31px minmax(0,1fr);gap:10px;margin-bottom:15px;position:relative">
                     <span class="row-glyph" style="position:relative;z-index:1">${icon(item.icon || "circle")}</span>
                     <div class="phone-list" style="padding:11px">
-                      <strong style="font-size:11px">${escapeHtml(item.title)}</strong>
-                      <p style="margin:4px 0 0;color:var(--phone-muted);font-size:9px;line-height:1.55">${escapeHtml(
+                      <strong style="font-size: 13px">${escapeHtml(item.title)}</strong>
+                      <p style="margin:4px 0 0;color:var(--phone-muted);font-size: 12px;line-height:1.55">${escapeHtml(
                         item.detail
                       )}</p>
-                      <div style="margin-top:6px;color:var(--phone-muted);font-family:'JetBrains Mono',monospace;font-size:8px">${escapeHtml(
+                      <div style="margin-top:6px;color:var(--phone-muted);font-family:'JetBrains Mono',monospace;font-size: 12px">${escapeHtml(
                         item.time
                       )}</div>
                     </div>
@@ -5892,7 +5892,7 @@ export async function review(target) {
         })}
         <div class="phone-scroll">
           <div class="file-path">${icon("file-text")}<span>${escapeHtml(page.fileName || page.title)}</span></div>
-          <div class="phone-profile-card" style="margin:0 14px;font-family:'JetBrains Mono',monospace;font-size:9px;line-height:1.75;white-space:pre-wrap">${escapeHtml(
+          <div class="phone-profile-card" style="margin:0 14px;font-family:'JetBrains Mono',monospace;font-size: 12px;line-height:1.75;white-space:pre-wrap">${escapeHtml(
             page.fileContent || ""
           )}</div>
         </div>
@@ -5913,7 +5913,7 @@ export async function review(target) {
           <div class="phone-profile-card" style="margin:0 14px 14px;text-align:center;padding:22px">
             <img src="assets/brand/qianbian-tile.png" alt="千变" style="width:56px;height:56px;border-radius:16px;object-fit:cover;margin:0 auto 13px" />
             <h2 style="margin:0;font-size:18px">${escapeHtml(page.artifactTitle || page.title)}</h2>
-            <p style="margin:6px 0 0;color:var(--phone-muted);font-size:10px">${escapeHtml(
+            <p style="margin:6px 0 0;color:var(--phone-muted);font-size: 12px">${escapeHtml(
               page.artifactSubtitle || ""
             )}</p>
             <button class="phone-primary-button" data-nav="session-workbench" type="button" style="margin-top:16px">${icon(
@@ -6026,7 +6026,7 @@ export async function review(target) {
                 <strong>千变 界面复刻</strong>
                 <p>把手机端全部可触达页面整理成 HTML 演示。</p>
                 <div style="height:1px;background:rgba(28,36,33,.08);margin:10px 0"></div>
-                <div style="display:flex;gap:8px;color:#71807a;font-size:9px">
+                <div style="display:flex;gap:8px;color:#71807a;font-size: 12px">
                   <span>通用模型 V4</span><span>·</span><span>12.4k Tokens</span><span style="margin-left:auto">刚刚</span>
                 </div>
               </div>
@@ -7715,7 +7715,7 @@ export async function run(input, context) {
             <button class="catalog-group-head" data-group-toggle="${escapeHtml(group.id)}" type="button">
               ${icon(group.icon)}
               <span>${escapeHtml(group.title)}</span>
-              <span style="margin-left:auto;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size:9px">${String(
+              <span style="margin-left:auto;color:var(--faint);font-family:'JetBrains Mono',monospace;font-size: 12px">${String(
                 visiblePages.length
               ).padStart(2, "0")}</span>
               ${icon("chevron-down", "group-caret")}

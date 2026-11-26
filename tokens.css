@@ -1,0 +1,23 @@
+/*
+ * 千变排版令牌（P1 单一真源）
+ * 新代码只用这些变量；存量 CSS 逐步迁移。字号下限：正文 16px（移动）/14px（桌面），
+ * 辅助信息 12px，11px 仅用于装饰性英文小标。
+ */
+:root {
+  --type-family-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --type-size-2xs: 11px;
+  --type-size-xs: 12px;
+  --type-size-sm: 13px;
+  --type-size-md: 14px;
+  --type-size-base: 16px;
+  --type-size-lg: 18px;
+  --type-size-xl: 24px;
+  --type-size-2xl: 32px;
+  --type-leading-tight: 1.35;
+  --type-leading-body: 1.6;
+  --type-weight-regular: 400;
+  --type-weight-medium: 500;
+  --type-weight-strong: 600;
+}

@@ -209,7 +209,7 @@ body.context-closed .context-panel {
   margin-top: 1px;
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
   text-transform: uppercase;
 }
 
@@ -255,7 +255,7 @@ body.context-closed .context-panel {
   margin-left: auto;
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 400;
 }
 
@@ -322,7 +322,7 @@ body.context-closed .context-panel {
   background: var(--surface);
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -349,7 +349,7 @@ body.context-closed .context-panel {
   margin: 0;
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
 }
@@ -427,14 +427,14 @@ body.context-closed .context-panel {
 }
 
 .session-copy strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .session-copy small {
   margin-top: 2px;
   color: var(--faint);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .sidebar-footer {
@@ -488,14 +488,14 @@ body.context-closed .context-panel {
 }
 
 .profile-copy strong {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
 .profile-copy small {
   margin-top: 1px;
   color: var(--faint);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .profile-button > svg {
@@ -579,7 +579,7 @@ body.context-closed .context-panel {
   align-items: center;
   gap: 4px;
   color: var(--faint);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .breadcrumb svg {
@@ -607,7 +607,7 @@ body.context-closed .context-panel {
   border-radius: 999px;
   background: var(--surface);
   color: var(--ink-soft);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .status-pill svg {
@@ -668,7 +668,7 @@ body.context-closed .context-panel {
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .empty-kicker span {
@@ -756,14 +756,14 @@ body.context-closed .context-panel {
 
 .suggestion-button strong {
   align-self: end;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .suggestion-button small {
   align-self: start;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -781,7 +781,7 @@ body.context-closed .context-panel {
   margin-bottom: 24px;
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .thread-meta::before,
@@ -829,7 +829,7 @@ body.context-closed .context-panel {
 .message-author {
   margin-bottom: 5px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -930,7 +930,7 @@ body.context-closed .context-panel {
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 76%, transparent);
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .context-chip:hover {
@@ -947,7 +947,7 @@ body.context-closed .context-panel {
   margin-left: auto;
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .desktop-composer-stack {
@@ -1131,7 +1131,7 @@ body.context-closed .context-panel {
   overflow: hidden;
   max-width: 100%;
   color: var(--ink-soft);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   line-height: 1.3;
   text-overflow: ellipsis;
@@ -1161,7 +1161,7 @@ body.context-closed .context-panel {
 .eyebrow {
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
   text-transform: uppercase;
 }
 
@@ -1186,7 +1186,7 @@ body.context-closed .context-panel {
   border-radius: 8px;
   background: transparent;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -1228,14 +1228,14 @@ body.context-closed .context-panel {
   gap: 8px;
   margin-bottom: 10px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 650;
 }
 
 .context-section-title span:last-child {
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1289,14 +1289,14 @@ body.context-closed .context-panel {
 }
 
 .workspace-card-copy strong {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
 .workspace-card-copy span {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .progress-track {
@@ -1326,7 +1326,7 @@ body.context-closed .context-panel {
   justify-content: space-between;
   gap: 10px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .detail-row span:first-child {
@@ -1345,7 +1345,7 @@ body.context-closed .context-panel {
 .detail-row strong {
   overflow: hidden;
   color: var(--ink-soft);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1363,7 +1363,7 @@ body.context-closed .context-panel {
   border-radius: 999px;
   background: var(--surface-soft);
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .file-row,
@@ -1374,7 +1374,7 @@ body.context-closed .context-panel {
   gap: 8px;
   padding: 7px 0;
   color: var(--ink-soft);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .file-row {
@@ -1414,21 +1414,21 @@ body.context-closed .context-panel {
 }
 
 .file-copy strong {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .file-copy small {
   margin-top: 1px;
   color: var(--faint);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .file-row > span,
 .activity-row > span {
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: 11px;
 }
 
 /* Generic views */
@@ -1459,7 +1459,7 @@ body.context-closed .context-panel {
   max-width: 520px;
   margin: 7px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.65;
 }
 
@@ -1478,7 +1478,7 @@ body.context-closed .context-panel {
   gap: 7px;
   padding: 0 13px;
   border-radius: 10px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -1513,7 +1513,7 @@ body.context-closed .context-panel {
   border-radius: 999px;
   background: var(--surface);
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .filter-button.is-active {
@@ -1572,7 +1572,7 @@ body.context-closed .context-panel {
 .skill-card-copy p {
   margin: 4px 0 8px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -1584,7 +1584,7 @@ body.context-closed .context-panel {
   border-radius: 9px;
   background: var(--surface-soft);
   color: var(--ink-soft);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -1594,7 +1594,7 @@ body.context-closed .context-panel {
   border-radius: 8px;
   background: transparent;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .skill-detail:hover {
@@ -1660,14 +1660,14 @@ body.context-closed .context-panel {
 }
 
 .automation-copy strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .automation-copy span {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .schedule-pill,
@@ -1676,7 +1676,7 @@ body.context-closed .context-panel {
   border-radius: 999px;
   background: var(--surface-soft);
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -1736,7 +1736,7 @@ body.context-closed .context-panel {
   border-radius: 9px;
   background: transparent;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   text-align: left;
 }
 
@@ -1772,14 +1772,14 @@ body.context-closed .context-panel {
 }
 
 .settings-copy strong {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
 .settings-copy small {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .segmented {
@@ -1795,7 +1795,7 @@ body.context-closed .context-panel {
   border-radius: 7px;
   background: transparent;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .segmented button.is-active {
@@ -1841,14 +1841,14 @@ body.context-closed .context-panel {
 }
 
 .detail-block-head strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 680;
 }
 
 .detail-block-head span {
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .choice-list {
@@ -1913,7 +1913,7 @@ body.context-closed .context-panel {
 
 .choice-copy strong {
   overflow: hidden;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1923,7 +1923,7 @@ body.context-closed .context-panel {
   overflow: hidden;
   margin-top: 2px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1941,13 +1941,13 @@ body.context-closed .context-panel {
   margin-bottom: 9px;
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .detail-note {
   margin: 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.65;
   text-wrap: pretty;
 }
@@ -1958,13 +1958,13 @@ body.context-closed .context-panel {
 }
 
 .status-summary strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .status-summary small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .workspace-stats {
@@ -1993,7 +1993,7 @@ body.context-closed .context-panel {
 .workspace-stats span {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .detail-session-list {
@@ -2038,14 +2038,14 @@ body.context-closed .context-panel {
 }
 
 .detail-session-row strong {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 650;
 }
 
 .detail-session-row small {
   margin-top: 2px;
   color: var(--faint);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .detail-session-row > svg:last-child {
@@ -2060,7 +2060,7 @@ body.context-closed .context-panel {
   background: var(--surface-soft);
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -2090,14 +2090,14 @@ body.context-closed .context-panel {
 
 .market-item h3 {
   margin: 0;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 670;
 }
 
 .market-item p {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .detail-form {
@@ -2112,7 +2112,7 @@ body.context-closed .context-panel {
 
 .detail-form label > span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -2127,7 +2127,7 @@ body.context-closed .context-panel {
   outline: 0;
   background: var(--surface-soft);
   color: var(--ink);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .detail-form textarea {
@@ -2165,7 +2165,7 @@ body.context-closed .context-panel {
   background: #111915;
   color: #dbe8df;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.65;
   white-space: pre;
 }
@@ -2191,12 +2191,12 @@ body.context-closed .context-panel {
 }
 
 .source-dropzone strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .source-dropzone > span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .source-dropzone .primary-button {
@@ -2233,7 +2233,7 @@ body.context-closed .context-panel {
 
 .voice-capture small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .voice-capture .primary-button {
@@ -2296,7 +2296,7 @@ body.context-closed .context-panel {
 .action-dialog-head p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -2324,7 +2324,7 @@ body.context-closed .context-panel {
   padding: 11px 18px 13px;
   border-top: 1px solid var(--line);
   color: var(--faint);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -2393,7 +2393,7 @@ body.context-closed .context-panel {
 .command-input-wrap kbd {
   color: var(--faint);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .command-results {
@@ -2412,7 +2412,7 @@ body.context-closed .context-panel {
   border-radius: 9px;
   background: transparent;
   color: var(--ink-soft);
-  font-size: 10px;
+  font-size: 11px;
   text-align: left;
 }
 
@@ -2431,7 +2431,7 @@ body.context-closed .context-panel {
 .command-item small {
   margin-left: auto;
   color: var(--faint);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 /* Toasts and overlays */
@@ -2456,7 +2456,7 @@ body.context-closed .context-panel {
   background: var(--glass-strong);
   box-shadow: var(--shadow-sm);
   color: var(--ink);
-  font-size: 10px;
+  font-size: 11px;
   backdrop-filter: blur(18px);
   animation: toast-in 180ms ease both;
 }

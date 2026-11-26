@@ -1,0 +1,19 @@
+/* P1 可读性基线：移动端正文 16px；消息内容允许长按选择/复制 */
+.phone-screen,
+#phone-screen,
+.mobile-devices-screen {
+  font-size: var(--type-size-base);
+  line-height: var(--type-leading-body);
+}
+
+.assistant-message,
+.user-message,
+.assistant-text,
+.message-bubble,
+.phone-message,
+.backend-message,
+.ui-widget-feed-item,
+.ui-widget-markdown {
+  -webkit-user-select: text;
+  user-select: text;
+}
