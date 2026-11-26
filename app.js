@@ -139,6 +139,7 @@
     segments: {},
     chatMessages: [],
     chatDraft: "",
+    quotedMessage: null,
     backendChatActive: false,
     backendReady: false,
     backendConnected: false,
@@ -241,6 +242,47 @@
 
   function icon(name, extra = "") {
     return `<i data-lucide="${name}"${extra ? ` class="${extra}"` : ""}></i>`;
+  }
+
+  async function copyTextToClipboard(text) {
+    const value = String(text || "");
+    if (!value) return false;
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(value);
+        return true;
+      } catch {}
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    textarea.style.pointerEvents = "none";
+    document.body.append(textarea);
+    textarea.select();
+    let copied = false;
+    try {
+      copied = Boolean(document.execCommand?.("copy"));
+    } catch {}
+    textarea.remove();
+    return copied;
+  }
+
+  function messageActionText(target) {
+    const message = target?.closest(".assistant-message, .user-message");
+    const explicit = target?.dataset?.messageText || message?.dataset?.messageText;
+    if (explicit) return explicit.trim();
+    if (!message) return "";
+    const assistantText = message.querySelector(".assistant-text");
+    if (assistantText) {
+      const clone = assistantText.cloneNode(true);
+      clone
+        .querySelectorAll(".tool-card, .backend-activity, .thinking-pill")
+        .forEach((node) => node.remove());
+      return clone.innerText.trim();
+    }
+    return message.innerText.trim();
   }
 
   function conversationNavIcon(name) {
@@ -2241,7 +2283,7 @@
 
   function renderChatMessageAssistant(page, options = {}) {
     return `
-      <div class="assistant-message" data-message-item-id="${escapeHtml(options.itemId || "")}">
+      <div class="assistant-message" data-message-item-id="${escapeHtml(options.itemId || "")}" data-message-text="${escapeHtml(options.copyText || "")}">
         <div class="assistant-meta">
           <span class="assistant-avatar">${icon(options.avatar || "sparkles")}</span>
           <strong>${escapeHtml(options.name || "千变")}</strong>
@@ -2253,9 +2295,8 @@
           ${options.tool || ""}
         </div>
         <div class="message-actions">
-          <button class="message-action" data-toast="已复制" type="button" aria-label="复制">${icon("copy")}</button>
-          <button class="message-action" data-toast="已引用" type="button" aria-label="引用">${icon("quote")}</button>
-          <button class="message-action" data-sheet="share" type="button" aria-label="分享">${icon("share-2")}</button>
+          <button class="message-action" data-action="copy-message" type="button" aria-label="复制">${icon("copy")}</button>
+          <button class="message-action" data-action="quote-message" type="button" aria-label="引用">${icon("quote")}</button>
           <button class="message-action" data-toast="正在重新生成" type="button" aria-label="重新生成">${icon("refresh-cw")}</button>
         </div>
       </div>
@@ -2408,14 +2449,32 @@
       .join("");
   }
 
-  function renderMobileActivityBlock(items) {
+  function renderMobileActivityBlock(items, isActiveTurn = false) {
     const summary = window.QianbianTimeline.summarize(items);
-    if (!summary.text) return "";
+    if (!summary.text && !isActiveTurn) return "";
+    const latest = items.at(-1);
+    const latestName =
+      latest?.tool ||
+      (latest?.kind === "reasoning" ? "思考摘要" : "工具调用") ||
+      "";
+    const latestOutput = latest
+      ? window.QianbianTimeline.activityText(latest)
+      : "";
+    const active =
+      isActiveTurn ||
+      items.some((item) => item.status === "inProgress" && item.done !== true);
+    const primary = active ? "Agent 正在工作" : "Agent 工作流";
+    const secondary =
+      [summary.text, latestName, latestOutput].filter(Boolean).join(" · ") ||
+      "正在整理上下文，准备下一步";
     return `
       <details class="backend-activity">
-        <summary>
+        <summary class="backend-workflow-status" data-workflow-state="${active ? "active" : "complete"}">
           ${icon("sparkles")}
-          <span>${escapeHtml(summary.text)}</span>
+          <span class="backend-activity-copy">
+            <strong>${escapeHtml(primary)}</strong>
+            <small>${escapeHtml(secondary)}</small>
+          </span>
           ${icon("chevron-right", "backend-activity-chevron")}
         </summary>
         <div class="backend-activity-list">
@@ -2480,6 +2539,7 @@
           .join("");
         const activity = renderMobileActivityBlock(
           window.QianbianTimeline.activities(turn),
+          state.backendTyping && turn === turns.at(-1),
         );
         const assistantMessages = turn.items
           .filter((item) => item.kind === "agentMessage")
@@ -2487,6 +2547,7 @@
             renderChatMessageAssistant(null, {
               itemId: item.itemId,
               content: renderBackendMarkdown(item.text),
+              copyText: item.text,
               time: formatChatTime(item.createdAt, item.status),
             }),
           )
@@ -3172,12 +3233,27 @@
     `;
   }
 
+  function renderMobileQuotePreview() {
+    if (!state.quotedMessage) return "";
+    return `
+      <div class="mobile-quote-preview" data-mobile-quote>
+        <span class="mobile-quote-icon">${icon("quote")}</span>
+        <span class="mobile-quote-copy">
+          <strong>${escapeHtml(state.quotedMessage.author || "千变")}</strong>
+          <span>${escapeHtml(state.quotedMessage.text)}</span>
+        </span>
+        <button class="mobile-quote-remove" data-action="clear-quote" type="button" aria-label="取消引用">${icon("x")}</button>
+      </div>
+    `;
+  }
+
   function renderComposer(page) {
     if (state.sheet === "plus") {
       const isOpening = pendingSheetAnimation === "plus";
       return `
         <div class="chat-composer-wrap is-extended">
           <div class="composer-extension-stack">
+            ${renderMobileQuotePreview()}
             ${renderComposerControls({ embedded: true })}
             <div class="composer-extension-panel-wrap ${isOpening ? "is-opening" : ""}">
               <section class="composer-extension-panel" role="group" aria-label="添加内容">
@@ -3199,6 +3275,7 @@
     }
     return `
       <div class="chat-composer-wrap">
+        ${renderMobileQuotePreview()}
         ${renderComposerControls()}
       </div>
     `;
@@ -7405,15 +7482,20 @@ export async function run(input, context) {
 
   async function handleSendMessage() {
     const input = document.getElementById("chat-input");
-    const text = input?.value.trim();
-    if (!text) {
+    const draftText = input?.value.trim();
+    if (!draftText) {
       showToast("先输入一条消息", "info");
       return;
     }
+    const quotedText = state.quotedMessage?.text.trim();
+    const text = quotedText
+      ? `> ${quotedText.replaceAll("\n", "\n> ")}\n\n${draftText}`
+      : draftText;
     const wasNewChat =
       state.current === "home" ||
       (state.page?.kind === "chat" && state.page?.mode === "empty");
     state.chatDraft = "";
+    state.quotedMessage = null;
     showToast("消息已发送", "send");
     if (api && state.backendConnected) {
       if (wasNewChat) resetBackendChat();
@@ -7859,6 +7941,34 @@ export async function run(input, context) {
       else if (action === "mobile-input-cancel") {
         cancelMobileInput(actionTarget.dataset.inputId);
       }
+      else if (action === "copy-message") {
+        const text = messageActionText(actionTarget);
+        copyTextToClipboard(text).then((copied) => {
+          showToast(
+            copied ? "消息已复制" : "复制失败，请手动选择文本",
+            copied ? "copy" : "circle-alert",
+          );
+        });
+      }
+      else if (action === "quote-message") {
+        const text = messageActionText(actionTarget);
+        if (!text) return;
+        state.chatDraft =
+          document.getElementById("chat-input")?.value ?? state.chatDraft;
+        state.quotedMessage = { text, author: "千变" };
+        renderPhone();
+        updateIcons();
+        document.getElementById("chat-input")?.focus();
+        showToast("消息已引用", "quote");
+      }
+      else if (action === "clear-quote") {
+        state.chatDraft =
+          document.getElementById("chat-input")?.value ?? state.chatDraft;
+        state.quotedMessage = null;
+        renderPhone();
+        updateIcons();
+        document.getElementById("chat-input")?.focus();
+      }
       else if (action === "open-main-nav") {
         openMainNavOverlay();
       } else if (action === "close-main-nav") {
@@ -8282,10 +8392,9 @@ export async function run(input, context) {
       } else if (action === "copy-pair-code") {
         const code = state.pairing?.pairingCode || "";
         if (code) {
-          navigator.clipboard?.writeText(code).then(
-            () => showToast("配对码已复制", "copy"),
-            () => showToast(`配对码：${code}`, "copy"),
-          );
+          copyTextToClipboard(code).then((copied) => {
+            showToast(copied ? "配对码已复制" : `配对码：${code}`, "copy");
+          });
         }
       } else if (action === "delete-device") {
         const deviceId = actionTarget.dataset.deviceId;
@@ -8362,10 +8471,9 @@ export async function run(input, context) {
     document.getElementById("phone-settings").addEventListener("click", () => navigate("settings"));
     document.getElementById("go-all-features").addEventListener("click", () => navigate("session-workbench"));
     document.getElementById("copy-link").addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
+      if (await copyTextToClipboard(window.location.href)) {
         showToast("当前页链接已复制", "link");
-      } catch {
+      } else {
         showToast("浏览器未允许剪贴板访问", "triangle-alert");
       }
     });
@@ -8433,11 +8541,14 @@ export async function run(input, context) {
       swipeStart = {
         x: event.clientX,
         y: event.clientY,
+        lastX: event.clientX,
+        lastY: event.clientY,
         pointerId: event.pointerId,
         canPreview: !state.mainNavOpen && !state.historyOpen && !state.dialog && !state.sheet,
         preview: null,
         width: phoneScreen.clientWidth,
       };
+      phoneScreen.setPointerCapture?.(event.pointerId);
       swipeHoldTimer = window.setTimeout(() => {
         if (!swipeStart || swipeStart.preview) return;
         swipeStart = null;
@@ -8446,6 +8557,8 @@ export async function run(input, context) {
     window.addEventListener("pointermove", (event) => {
       if (!isConversationSurface()) return;
       if (!swipeStart || swipeStart.pointerId !== event.pointerId) return;
+      swipeStart.lastX = event.clientX;
+      swipeStart.lastY = event.clientY;
       const dx = event.clientX - swipeStart.x;
       const dy = event.clientY - swipeStart.y;
       if (
@@ -8462,6 +8575,7 @@ export async function run(input, context) {
         updateIcons();
       }
       if (!swipeStart.preview) return;
+      event.preventDefault();
       const overlay = phoneScreen.querySelector(
         swipeStart.preview === "nav" ? ".main-nav-screen" : ".history-screen",
       );
@@ -8482,8 +8596,8 @@ export async function run(input, context) {
       if (!isConversationSurface()) return;
       if (!swipeStart || swipeStart.pointerId !== event.pointerId) return;
       window.clearTimeout(swipeHoldTimer);
-      const dx = event.clientX - swipeStart.x;
-      const dy = event.clientY - swipeStart.y;
+      const dx = (swipeStart.lastX ?? event.clientX) - swipeStart.x;
+      const dy = (swipeStart.lastY ?? event.clientY) - swipeStart.y;
       const preview = swipeStart.preview;
       swipeStart = null;
       if (preview) {
@@ -8503,13 +8617,6 @@ export async function run(input, context) {
           overlay.style.transition = "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease";
           overlay.style.transform = "translateX(0)";
           overlay.style.opacity = "1";
-          window.setTimeout(() => {
-            if (!overlay.isConnected) return;
-            overlay.style.animation = "";
-            overlay.style.transition = "";
-            overlay.style.transform = "";
-            overlay.style.opacity = "";
-          }, 280);
         }
         return;
       }
@@ -8537,10 +8644,24 @@ export async function run(input, context) {
     window.addEventListener("pointercancel", () => {
       window.clearTimeout(swipeHoldTimer);
       if (swipeStart?.preview) {
-        state.mainNavOpen = false;
-        state.historyOpen = false;
-        renderPhone();
-        updateIcons();
+        const dx = (swipeStart.lastX ?? 0) - swipeStart.x;
+        const dy = (swipeStart.lastY ?? 0) - swipeStart.y;
+        const accepted = Math.abs(dx) >= 48 && Math.abs(dx) >= Math.abs(dy) * 1.1;
+        const overlay = phoneScreen.querySelector(
+          swipeStart.preview === "nav" ? ".main-nav-screen" : ".history-screen",
+        );
+        if (accepted && overlay) {
+          overlay.style.animation = "none";
+          overlay.style.transition =
+            "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease";
+          overlay.style.transform = "translateX(0)";
+          overlay.style.opacity = "1";
+        } else {
+          state.mainNavOpen = false;
+          state.historyOpen = false;
+          renderPhone();
+          updateIcons();
+        }
       }
       swipeStart = null;
     });

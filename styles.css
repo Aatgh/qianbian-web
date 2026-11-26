@@ -4720,11 +4720,12 @@ button.phone-row:hover {
 }
 
 .backend-activity summary {
-  display: flex;
-  min-height: 34px;
-  align-items: center;
+  display: grid;
+  min-height: 54px;
+  grid-template-columns: 16px minmax(0, 1fr) 14px;
+  align-items: start;
   gap: 7px;
-  padding: 0 10px;
+  padding: 9px 10px;
   color: var(--phone-muted);
   font-size: 10px;
   cursor: pointer;
@@ -4741,8 +4742,38 @@ button.phone-row:hover {
 }
 
 .backend-activity summary .backend-activity-chevron {
-  margin-left: auto;
+  margin-top: 2px;
   transition: transform 160ms ease;
+}
+
+.backend-activity-copy {
+  min-width: 0;
+}
+
+.backend-activity-copy strong,
+.backend-activity-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backend-activity-copy strong {
+  color: var(--phone-ink);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.backend-activity-copy small {
+  margin-top: 3px;
+  color: var(--phone-muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.backend-workflow-status[data-workflow-state="active"] > svg:first-child {
+  color: var(--accent);
+  animation: status-pulse 1.4s ease-in-out infinite;
 }
 
 .backend-activity[open] summary .backend-activity-chevron {
@@ -5025,6 +5056,80 @@ button.phone-row:hover {
 
 .chat-composer-wrap.is-extended {
   padding-top: 10px;
+}
+
+.mobile-quote-preview {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 22px minmax(0, 1fr) 26px;
+  align-items: start;
+  gap: 7px;
+  margin: 0 3px 7px;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--phone-line));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--phone-surface) 88%, transparent);
+  box-shadow: 0 7px 18px rgba(14, 26, 21, 0.08);
+}
+
+.mobile-quote-icon {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--phone-accent-soft);
+  color: var(--accent-ink);
+}
+
+.mobile-quote-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.mobile-quote-copy {
+  min-width: 0;
+}
+
+.mobile-quote-copy strong,
+.mobile-quote-copy span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-quote-copy strong {
+  color: var(--accent-ink);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.mobile-quote-copy span {
+  margin-top: 2px;
+  color: var(--phone-muted);
+  font-size: 9px;
+}
+
+.mobile-quote-remove {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  padding: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--phone-muted);
+}
+
+.mobile-quote-remove:hover {
+  background: var(--phone-surface-soft);
+  color: var(--phone-ink);
+}
+
+.mobile-quote-remove svg {
+  width: 13px;
+  height: 13px;
 }
 
 .composer-extension-stack {

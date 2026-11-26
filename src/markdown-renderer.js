@@ -34,8 +34,16 @@ const allowedTags = [
   "ul",
 ];
 
-function render(text) {
+function unwrapMarkdownFence(text) {
   const source = String(text ?? "");
+  const match = source
+    .trim()
+    .match(/^```(?:markdown|md)[ \t]*\r?\n([\s\S]*?)\r?\n```$/i);
+  return match ? match[1] : source;
+}
+
+function render(text) {
+  const source = unwrapMarkdownFence(text);
   const parsed = marked.parse(source, { async: false });
   const sanitized = DOMPurify.sanitize(parsed, {
     ALLOWED_TAGS: allowedTags,

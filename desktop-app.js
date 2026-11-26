@@ -872,6 +872,7 @@
     messages: [],
     typing: false,
     draft: localStorage.getItem("qianbian-desktop-draft") || "",
+    quotedMessage: null,
     theme: storedTheme === "dark" ? "dark" : "light",
     composerOpen: false,
     composerOpening: false,
@@ -1177,6 +1178,14 @@
       .split(/\n{2,}/)
       .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
       .join("");
+  }
+
+  function formatMessageContent(message) {
+    if (message.role === "user") return formatParagraphs(message.text);
+    if (window.QianbianMarkdown?.render) {
+      return window.QianbianMarkdown.render(message.text);
+    }
+    return formatParagraphs(message.text);
   }
 
   function getDetailInfo(detail) {
@@ -2417,11 +2426,10 @@
         }
         <div class="message-content">
           <div class="message-author">${isUser ? "你" : "千变"}</div>
-          <div class="message-bubble">${formatParagraphs(message.text)}</div>
+          <div class="message-bubble">${formatMessageContent(message)}</div>
           <div class="message-actions" aria-label="消息操作">
             <button data-message-action="copy" data-message-index="${index}" type="button" aria-label="复制消息">${icon("copy")}<span>复制</span></button>
             <button data-message-action="quote" data-message-index="${index}" type="button" aria-label="引用消息">${icon("quote")}<span>引用</span></button>
-            <button data-message-action="share" data-message-index="${index}" type="button" aria-label="分享消息">${icon("share-2")}<span>分享</span></button>
           </div>
         </div>
         ${
@@ -2460,7 +2468,7 @@
           `[data-message-item-id="${CSS.escape(id)}"] .message-bubble`,
         );
         if (message && bubble) {
-          bubble.innerHTML = formatParagraphs(message.text);
+          bubble.innerHTML = formatMessageContent(message);
         }
       }
       document.querySelectorAll(".message-row.is-typing").forEach((node) => {
@@ -2470,14 +2478,32 @@
     });
   }
 
-  function renderBackendActivityBlock(items) {
+  function renderBackendActivityBlock(items, isActiveTurn = false) {
     const summary = window.QianbianTimeline.summarize(items);
-    if (!summary.text) return "";
+    if (!summary.text && !isActiveTurn) return "";
+    const latest = items.at(-1);
+    const latestName =
+      latest?.tool ||
+      (latest?.kind === "reasoning" ? "思考摘要" : "工具调用") ||
+      "";
+    const latestOutput = latest
+      ? window.QianbianTimeline.activityText(latest)
+      : "";
+    const active =
+      isActiveTurn ||
+      items.some((item) => item.status === "inProgress" && item.done !== true);
+    const primary = active ? "Agent 正在工作" : "Agent 工作流";
+    const secondary =
+      [summary.text, latestName, latestOutput].filter(Boolean).join(" · ") ||
+      "正在整理上下文，准备下一步";
     return `
       <details class="backend-activity">
-        <summary>
+        <summary class="backend-workflow-status" data-workflow-state="${active ? "active" : "complete"}">
           ${icon("brain-circuit")}
-          <span>${escapeHtml(summary.text)}</span>
+          <span class="backend-activity-copy">
+            <strong>${escapeHtml(primary)}</strong>
+            <small>${escapeHtml(secondary)}</small>
+          </span>
           ${icon("chevron-right", "backend-activity-chevron")}
         </summary>
         <div class="backend-activity-list">
@@ -2522,7 +2548,10 @@
           .map((item) => renderMessage(item, state.messages.indexOf(item)))
           .join("");
         const activityItems = window.QianbianTimeline.activities(turn);
-        const activity = renderBackendActivityBlock(activityItems);
+        const activity = renderBackendActivityBlock(
+          activityItems,
+          state.typing && turn === turns.at(-1),
+        );
         const assistantMessages = turn.items
           .filter((item) => item.kind === "agentMessage")
           .map((item) => renderMessage(item, state.messages.indexOf(item)))
@@ -5053,6 +5082,20 @@ export const skill = {
     const open = state.composerOpen;
     composerHost.innerHTML = `
       <div class="desktop-composer-stack ${open ? "is-open" : ""} ${open && state.composerOpening ? "is-opening" : ""}">
+        ${
+          state.quotedMessage
+            ? `
+              <div class="desktop-quote-preview">
+                <span class="desktop-quote-icon">${icon("quote")}</span>
+                <span class="desktop-quote-copy">
+                  <strong>${escapeHtml(state.quotedMessage.author || "千变")}</strong>
+                  <span>${escapeHtml(state.quotedMessage.text)}</span>
+                </span>
+                <button data-clear-quote type="button" aria-label="取消引用">${icon("x")}</button>
+              </div>
+            `
+            : ""
+        }
         <div class="desktop-composer-surface">
           <button class="composer-plus ${open ? "is-open" : ""}" id="composer-plus" type="button" aria-label="${open ? "关闭添加内容" : "添加内容"}" aria-expanded="${open}">
             ${icon(open ? "x" : "plus")}
@@ -5980,6 +6023,7 @@ export const skill = {
     state.messages = [];
     state.typing = false;
     state.draft = "";
+    state.quotedMessage = null;
     state.detail = null;
     state.railDialog = null;
     state.actionDialog = null;
@@ -6090,33 +6134,46 @@ export const skill = {
   }
 
   async function copyMessageText(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.append(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      textarea.remove();
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {}
     }
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    textarea.style.pointerEvents = "none";
+    document.body.append(textarea);
+    textarea.select();
+    let copied = false;
+    try {
+      copied = Boolean(document.execCommand("copy"));
+    } catch {}
+    textarea.remove();
+    return copied;
   }
 
   async function handleMessageAction(action, index) {
     const message = state.messages[index];
     if (!message) return;
     if (action === "copy") {
-      await copyMessageText(message.text);
-      showToast("消息已复制", "copy");
+      const copied = await copyMessageText(message.text);
+      showToast(
+        copied ? "消息已复制" : "复制失败，请手动选择文本",
+        copied ? "copy" : "circle-alert",
+      );
       return;
     }
     if (action === "quote") {
-      state.draft = `> ${message.text.replaceAll("\n", "\n> ")}\n\n`;
+      state.quotedMessage = {
+        text: message.text,
+        author: message.role === "user" ? "你" : "千变",
+      };
       state.composerOpen = false;
       state.composerClosing = false;
-      localStorage.setItem("qianbian-desktop-draft", state.draft);
       render();
       window.requestAnimationFrame(() => {
         const input = document.getElementById("desktop-composer-input");
@@ -6126,18 +6183,6 @@ export const skill = {
       showToast("消息已引用", "quote");
       return;
     }
-    if (action === "share") {
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: "千变对话", text: message.text });
-        } catch {
-          // Sharing can be cancelled by the user.
-        }
-        return;
-      }
-      await copyMessageText(message.text);
-      showToast("分享内容已复制", "share-2");
-    }
   }
 
   async function sendMessage() {
@@ -6146,12 +6191,16 @@ export const skill = {
       await cancelBackendTurn();
       return;
     }
-    const text = state.draft.trim();
-    if (!text) {
+    const draftText = state.draft.trim();
+    if (!draftText) {
       showToast("先输入一条消息", "info");
       document.getElementById("desktop-composer-input")?.focus();
       return;
     }
+    const quotedText = state.quotedMessage?.text.trim();
+    const text = quotedText
+      ? `> ${quotedText.replaceAll("\n", "\n> ")}\n\n${draftText}`
+      : draftText;
     const localTurnId = `pending-${Date.now()}`;
     state.messages.push({
       kind: "userMessage",
@@ -6161,6 +6210,7 @@ export const skill = {
     });
     renderContext();
     state.draft = "";
+    state.quotedMessage = null;
     state.composerOpen = false;
     state.composerClosing = false;
     localStorage.removeItem("qianbian-desktop-draft");
@@ -6998,10 +7048,9 @@ export const skill = {
     if (event.target.closest("[data-copy-device-pair]")) {
       const code = state.devicePairing?.pairingCode || "";
       if (code) {
-        navigator.clipboard?.writeText(code).then(
-          () => showToast("配对码已复制", "copy"),
-          () => showToast(`配对码：${code}`, "copy"),
-        );
+        copyMessageText(code).then((copied) => {
+          showToast(copied ? "配对码已复制" : `配对码：${code}`, "copy");
+        });
       }
       return;
     }
@@ -7191,6 +7240,12 @@ export const skill = {
         rightDetailTarget.dataset.rightDetail,
         rightDetailTarget.dataset.rightDetailId,
       );
+      return;
+    }
+    if (event.target.closest("[data-clear-quote]")) {
+      state.quotedMessage = null;
+      renderComposer();
+      document.getElementById("desktop-composer-input")?.focus();
       return;
     }
     const messageAction = event.target.closest("[data-message-action]");

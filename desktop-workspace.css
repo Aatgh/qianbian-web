@@ -3886,11 +3886,12 @@ body.settings-sheet-open {
 }
 
 .backend-activity summary {
-  display: flex;
-  min-height: 38px;
-  align-items: center;
+  display: grid;
+  min-height: 58px;
+  grid-template-columns: 18px minmax(0, 1fr) 14px;
+  align-items: start;
   gap: 7px;
-  padding: 0 11px;
+  padding: 10px 11px;
   color: var(--muted);
   font-size: 9px;
   cursor: pointer;
@@ -3907,8 +3908,38 @@ body.settings-sheet-open {
 }
 
 .backend-activity summary .backend-activity-chevron {
-  margin-left: auto;
+  margin-top: 2px;
   transition: transform 160ms ease;
+}
+
+.backend-activity-copy {
+  min-width: 0;
+}
+
+.backend-activity-copy strong,
+.backend-activity-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backend-activity-copy strong {
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.backend-activity-copy small {
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 8.5px;
+  line-height: 1.4;
+}
+
+.backend-workflow-status[data-workflow-state="active"] > svg:first-child {
+  color: var(--accent);
+  animation: status-pulse 1.4s ease-in-out infinite;
 }
 
 .backend-activity[open] summary .backend-activity-chevron {
