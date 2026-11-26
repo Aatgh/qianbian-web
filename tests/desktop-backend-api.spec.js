@@ -816,7 +816,7 @@ test("desktop restores active session and right panel after reload", async ({
     /is-active/,
   );
   await expect(page.locator("#message-thread")).toContainText(
-    "桌面端产品结构",
+    "可以先建立三栏工作区",
   );
 });
 
@@ -838,12 +838,11 @@ test("desktop account selects use themed control styles", async ({ page }) => {
 
   const styles = await page.locator("#account-timezone").evaluate((element) => {
     const style = getComputedStyle(element);
-    const box = element.getBoundingClientRect();
     return {
       appearance: style.appearance,
       borderRadius: parseFloat(style.borderRadius),
       backgroundImage: style.backgroundImage,
-      height: box.height,
+      height: element.offsetHeight,
       paddingRight: parseFloat(style.paddingRight),
     };
   });

@@ -768,6 +768,30 @@
   const storedTheme = localStorage.getItem("qianbian-desktop-theme");
   const storedWorkspace = localStorage.getItem("qianbian-desktop-workspace");
   const storedAffinity = Number(localStorage.getItem("dshgo-agent-training"));
+  const storedActiveSessionId = localStorage.getItem(
+    "qianbian-desktop-active-session",
+  );
+  const initialActiveSession =
+    SESSIONS.find((session) => session.id === storedActiveSessionId) || null;
+  const storedInsightTab = localStorage.getItem(
+    "qianbian-desktop-insight-tab",
+  );
+  const initialInsightTab = [
+    "skill-config",
+    "task-activity",
+    "reminders",
+    "memory",
+  ].includes(storedInsightTab)
+    ? storedInsightTab
+    : "skill-config";
+  const storedSkillFilter = localStorage.getItem(
+    "qianbian-desktop-skill-filter",
+  );
+  const initialSkillFilter = ["all", "enabled", "disabled"].includes(
+    storedSkillFilter,
+  )
+    ? storedSkillFilter
+    : "all";
   const initialWorkspace =
     WORKSPACES.find((workspace) => workspace.id === storedWorkspace) ||
     WORKSPACES[0];
@@ -867,9 +891,17 @@
     }));
   const state = {
     view: "chat",
-    activeSession: null,
+    activeSession: initialActiveSession?.id || null,
     historyPanelQuery: "",
-    messages: [],
+    messages: initialActiveSession
+      ? initialActiveSession.messages.map((message) => ({
+          ...message,
+          role: message.role || "assistant",
+          kind:
+            message.kind ||
+            (message.role === "user" ? "userMessage" : "agentMessage"),
+        }))
+      : [],
     typing: false,
     draft: localStorage.getItem("qianbian-desktop-draft") || "",
     quotedMessage: null,
@@ -899,7 +931,7 @@
       feed: "all",
       library: "all",
       documents: "all",
-      skillConfig: "all",
+      skillConfig: initialSkillFilter,
     },
     goalFormOpen: false,
     goals: initialGoals,
@@ -934,7 +966,7 @@
     settingsTab:
       localStorage.getItem("qianbian-desktop-settings-tab") || "appearance",
     settingsSheetOpen: false,
-    insightTab: "skill-config",
+    insightTab: initialInsightTab,
     skillMarketQuery: "",
     skillMarketFilter: "all",
     skillMarketTab: "market",
@@ -2278,11 +2310,15 @@
 
   async function refreshBackendSkills(query = "") {
     if (!api || !state.apiAvailable) return;
-    const [market, installed, mine] = await Promise.allSettled([
+    const results = await Promise.allSettled([
       api.skills({ scope: "market", q: query }),
       api.skills({ scope: "installed", q: query }),
       api.mineSkills(),
     ]);
+    if (results.every((result) => result.status === "rejected")) {
+      throw results[0].reason || new Error("技能市场刷新失败");
+    }
+    const [market, installed, mine] = results;
     applyBackendSkills({
       market: market.status === "fulfilled" ? market.value : undefined,
       installed: installed.status === "fulfilled" ? installed.value : undefined,
@@ -3391,7 +3427,7 @@
                   ${icon("search")}
                   <input id="skill-market-search" type="search" value="${escapeHtml(state.skillMarketQuery)}" placeholder="搜索技能名称、用途或来源" autocomplete="off" aria-label="搜索技能市场" />
                 </label>
-                <button class="icon-button skill-market-refresh" data-toast="技能市场已刷新" type="button" aria-label="刷新技能市场">${icon("refresh-cw")}</button>
+                <button class="icon-button skill-market-refresh" type="button" aria-label="刷新技能市场">${icon("refresh-cw")}</button>
               </div>
               <div class="workspace-filter-row skill-market-filters" aria-label="技能市场分类">
                 ${categories
@@ -6097,6 +6133,7 @@ export const skill = {
     state.composerOpening = false;
     state.composerClosing = false;
     localStorage.removeItem("qianbian-desktop-draft");
+    localStorage.removeItem("qianbian-desktop-active-session");
     setView("chat");
     window.requestAnimationFrame(() => {
       document.getElementById("desktop-composer-input")?.focus();
@@ -6107,7 +6144,14 @@ export const skill = {
     const session = SESSIONS.find((item) => item.id === id);
     if (!session) return;
     state.activeSession = id;
-    state.messages = session.messages.map((message) => ({ ...message }));
+    localStorage.setItem("qianbian-desktop-active-session", id);
+    state.messages = session.messages.map((message) => ({
+      ...message,
+      role: message.role || "assistant",
+      kind:
+        message.kind ||
+        (message.role === "user" ? "userMessage" : "agentMessage"),
+    }));
     state.typing = Boolean(api && state.apiAvailable);
     state.sessionLoading = state.typing;
     state.view = "chat";
@@ -6873,6 +6917,7 @@ export const skill = {
     if (!(scope in state.panelFilters)) return;
     state.panelFilters[scope] = value;
     if (scope === "skillConfig") {
+      localStorage.setItem("qianbian-desktop-skill-filter", value);
       renderInsightPanel();
       return;
     }
@@ -7571,13 +7616,29 @@ export const skill = {
       return;
     }
     if (event.target.closest(".skill-market-refresh")) {
+      const refreshButton = event.target.closest(".skill-market-refresh");
+      if (refreshButton.dataset.refreshing === "true") return;
+      refreshButton.dataset.refreshing = "true";
+      refreshButton.disabled = true;
+      refreshButton.classList.add("is-refreshing");
+      refreshButton.setAttribute("aria-busy", "true");
       if (api && state.apiAvailable) {
         try {
           await refreshBackendSkills(state.skillMarketQuery);
           showToast("技能市场已刷新", "refresh-cw");
         } catch (error) {
           showToast(error.message || "刷新失败", "circle-alert");
+        } finally {
+          if (refreshButton.isConnected) {
+            refreshButton.dataset.refreshing = "false";
+            refreshButton.disabled = false;
+            refreshButton.classList.remove("is-refreshing");
+            refreshButton.setAttribute("aria-busy", "false");
+          }
         }
+      } else {
+        renderRailDialog();
+        showToast("技能市场已刷新", "refresh-cw");
       }
       return;
     }
@@ -7669,6 +7730,7 @@ export const skill = {
     const insightTarget = event.target.closest("[data-insight-tab]");
     if (insightTarget) {
       state.insightTab = insightTarget.dataset.insightTab;
+      localStorage.setItem("qianbian-desktop-insight-tab", state.insightTab);
       if (state.insightTab !== "skill-config") {
         state.skillDeleteMode = false;
         state.selectedSkills.clear();

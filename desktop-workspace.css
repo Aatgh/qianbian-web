@@ -1412,6 +1412,16 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   color: var(--muted);
 }
 
+.skill-market-refresh.is-refreshing svg {
+  animation: skill-market-refresh-spin 800ms linear infinite;
+}
+
+@keyframes skill-market-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .skill-market-filters {
   gap: 6px;
 }
@@ -2692,6 +2702,34 @@ body.settings-sheet-open {
   border: 1px solid var(--line);
   border-radius: 9px;
   outline: 0;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.account-form select {
+  width: 100%;
+  min-height: 37px;
+  padding: 0 36px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  outline: 0;
+  background-color: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 34%, transparent);
+}
+
+.account-form select:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  background-color: var(--surface-soft);
+}
+
+.account-form select:focus {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--line));
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.account-form select option {
   background: var(--surface);
   color: var(--ink);
 }
