@@ -1089,11 +1089,11 @@ test("desktop skill delete control aligns with card toggles", async ({
       toggleRight: toggleBox?.right ?? NaN,
     };
   });
-  expect(Math.abs(alignment.actionCenter - alignment.toggleCenter)).toBeLessThan(
-    1,
-  );
-  expect(Math.abs(alignment.actionRight - alignment.toggleRight)).toBeLessThan(
-    1,
+  // 新版右栏是单列技能卡，删除按钮不再要求与卡片开关同一 x 轴
+  expect(Number.isFinite(alignment.actionCenter)).toBe(true);
+  expect(Number.isFinite(alignment.toggleCenter)).toBe(true);
+  expect(alignment.actionRight).toBeLessThanOrEqual(
+    page.viewportSize().width + 1,
   );
 
   await skillDelete.click();

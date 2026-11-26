@@ -1,0 +1,775 @@
+/*
+ * 千变桌面端重构层（P2）
+ * 暖白底 + 梅红强调色；三栏布局；统一字号/圆角/边框；只覆盖视觉，不改业务逻辑。
+ * 加载顺序：tokens.css -> 旧 desktop*.css -> typography.css -> redesign.css
+ */
+body.desktop-reference {
+  --canvas: #f7f6f2;
+  --canvas-deep: #efede7;
+  --sidebar: #f2f0ea;
+  --panel: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #f4f2ec;
+  --surface-strong: #e9e6de;
+  --ink: #1c1b18;
+  --ink-soft: #4a4741;
+  --muted: #74706a;
+  --faint: #9c978f;
+  --line: rgba(28, 27, 24, 0.09);
+  --line-strong: rgba(28, 27, 24, 0.16);
+  --accent: #a62466;
+  --accent-rgb: 166, 36, 102;
+  --accent-soft: rgba(166, 36, 102, 0.08);
+  --accent-ink: #7c174c;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgba(18, 16, 12, 0.04), 0 6px 18px rgba(18, 16, 12, 0.04);
+  --shadow-md: 0 18px 48px rgba(18, 16, 12, 0.1);
+  background: var(--canvas);
+  color: var(--ink);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+}
+
+html[data-theme="dark"] body.desktop-reference {
+  --canvas: #121210;
+  --canvas-deep: #0d0d0b;
+  --sidebar: #171614;
+  --panel: #1a1917;
+  --surface: #1d1c19;
+  --surface-soft: #24221f;
+  --surface-strong: #2c2925;
+  --ink: #f3f0ea;
+  --ink-soft: #ccc7bf;
+  --muted: #9a958c;
+  --faint: #726e66;
+  --line: rgba(243, 240, 234, 0.1);
+  --line-strong: rgba(243, 240, 234, 0.18);
+  --accent-soft: rgba(166, 36, 102, 0.2);
+}
+
+/* ---------- 三栏布局 ---------- */
+@media (min-width: 1180px) {
+  body.desktop-reference .app-shell {
+    grid-template-columns: 72px 280px minmax(0, 1fr) 360px;
+  }
+
+  body.desktop-reference .history-sidebar {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  body.desktop-reference .menu-button {
+    display: none;
+  }
+}
+
+body.desktop-reference .sidebar {
+  width: 72px;
+  padding: 16px 8px;
+  border-right: 1px solid var(--line);
+  background: var(--sidebar);
+}
+
+body.desktop-reference .sidebar::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 18px;
+  border-radius: 12px;
+  background: url("assets/brand/qianbian-tile.png") center / cover;
+  box-shadow: var(--shadow-sm);
+}
+
+body.desktop-reference .sidebar-actions {
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+body.desktop-reference .primary-nav {
+  width: 100%;
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 0;
+}
+
+body.desktop-reference .sidebar-settings {
+  margin-top: auto;
+}
+
+body.desktop-reference .nav-item {
+  width: 48px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+body.desktop-reference .history-sidebar {
+  background: var(--sidebar);
+  border-right: 1px solid var(--line);
+}
+
+body.desktop-reference .history-panel-head h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+body.desktop-reference .context-panel {
+  padding: 20px;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  overflow-y: auto;
+}
+
+/* ---------- 顶部栏：修复裁切 ---------- */
+body.desktop-reference .workspace-header {
+  height: 64px;
+  min-height: 64px;
+  padding: 0 28px;
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+body.desktop-reference .workspace-header .header-leading {
+  align-items: center;
+  gap: 12px;
+}
+
+body.desktop-reference .workspace-header .header-leading {
+  height: auto;
+}
+
+body.desktop-reference .workspace-header .page-heading {
+  display: grid;
+  min-height: 44px;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-content: start;
+  column-gap: 10px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  transform: none !important;
+  top: auto !important;
+}
+
+body.desktop-reference .workspace-header .breadcrumb {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin: 0;
+  gap: 6px;
+  color: var(--faint);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+body.desktop-reference .workspace-header .breadcrumb svg {
+  width: 12px;
+  height: 12px;
+}
+
+body.desktop-reference .workspace-header .page-heading h1 {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 2px 0 0;
+  overflow: visible;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -0.01em;
+}
+
+body.desktop-reference .workspace-header .header-environment {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+  margin: 2px 0 0;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+/* ---------- 右侧上下文：紧凑资料头 + 分段式 Tab ---------- */
+body.desktop-reference .desktop-brand-stage {
+  position: static;
+  display: grid;
+  width: auto;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 12px;
+  margin: 0 0 18px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  transform: none;
+}
+
+body.desktop-reference .desktop-affinity-ring {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+}
+
+body.desktop-reference .desktop-affinity-logo img {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+body.desktop-reference .desktop-brand-name {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+body.desktop-reference .desktop-affinity-value {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  margin: 0;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+body.desktop-reference .desktop-affinity-label {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+body.desktop-reference .insight-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 0 18px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+body.desktop-reference .insight-icon-button {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--muted);
+}
+
+body.desktop-reference .insight-icon-button.is-active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+body.desktop-reference .eyebrow {
+  margin: 0;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+body.desktop-reference .right-feature-detail > .eyebrow,
+body.desktop-reference .right-feature-detail .right-feature-title-row,
+body.desktop-reference .right-feature-detail h3 {
+  align-self: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+body.desktop-reference .right-feature-detail {
+  gap: 14px;
+}
+
+body.desktop-reference .right-feature-detail > h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+body.desktop-reference .right-feature-detail p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* ---------- 技能卡片：单列、可读 ---------- */
+body.desktop-reference .skill-config-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+body.desktop-reference .right-feature-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+body.desktop-reference .right-feature-head {
+  gap: 10px;
+  justify-items: start;
+}
+
+body.desktop-reference .right-feature-detail,
+body.desktop-reference .right-feature-card,
+body.desktop-reference .right-feature-head > div {
+  text-align: left;
+}
+
+body.desktop-reference .right-feature-head strong {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+body.desktop-reference .right-feature-head small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+body.desktop-reference .right-feature-card p {
+  margin: 8px 0 10px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+body.desktop-reference .skill-card-footer span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ---------- 空态与输入区 ---------- */
+body.desktop-reference .chat-empty {
+  display: grid;
+  place-items: center;
+  padding: 48px 24px;
+}
+
+body.desktop-reference .empty-inner {
+  width: min(620px, 100%);
+  padding: 0;
+  text-align: center;
+}
+
+body.desktop-reference .empty-inner h2 {
+  margin: 0 0 12px;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+body.desktop-reference .empty-inner h2 strong {
+  color: var(--accent);
+}
+
+body.desktop-reference .empty-inner p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+body.desktop-reference .composer-zone {
+  padding: 16px 28px 20px;
+}
+
+body.desktop-reference .desktop-composer {
+  width: min(760px, 100%);
+  margin: 0 auto;
+}
+
+body.desktop-reference .icp-footer {
+  color: var(--faint);
+  font-size: 12px;
+}
+
+/* ---------- 登录页：与主界面统一为暖白/梅红 ---------- */
+body.desktop-reference .login-gate {
+  background:
+    radial-gradient(900px 600px at 12% 18%, rgba(166, 36, 102, 0.08), transparent 60%),
+    linear-gradient(180deg, #fbfaf7 0%, #f4f1eb 100%);
+  color: var(--ink);
+}
+
+body.desktop-reference .login-atmosphere,
+body.desktop-reference .login-three-canvas,
+body.desktop-reference .login-galaxy-canvas,
+body.desktop-reference .login-orbit,
+body.desktop-reference .login-panel-border,
+body.desktop-reference .login-masthead,
+body.desktop-reference .login-footer-pulse {
+  display: none !important;
+}
+
+body.desktop-reference .login-layout {
+  display: grid;
+  width: min(1120px, calc(100% - 64px));
+  min-height: 100dvh;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: clamp(40px, 6vw, 96px);
+  align-items: center;
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+body.desktop-reference .login-visual {
+  position: static;
+  display: block;
+  padding: 0;
+  text-align: left;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+body.desktop-reference .login-visual-copy {
+  display: flex;
+  max-width: 600px;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+body.desktop-reference .login-visual-copy > * {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+body.desktop-reference .login-visual-copy p {
+  text-align: left;
+}
+
+body.desktop-reference .login-kicker {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+body.desktop-reference .login-visual-copy h1 {
+  margin: 18px 0;
+  color: var(--ink);
+  font-size: clamp(38px, 4.2vw, 56px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+body.desktop-reference .login-visual-copy h1 em {
+  color: var(--accent);
+  font-style: normal;
+}
+
+body.desktop-reference .login-visual-copy p {
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+body.desktop-reference .login-capability-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+body.desktop-reference .login-capability-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+body.desktop-reference .login-panel-wrap {
+  position: static;
+  width: 100%;
+  max-width: 420px;
+  margin: 0;
+  justify-self: end;
+  transform: none !important;
+}
+
+body.desktop-reference .login-panel {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+}
+
+body.desktop-reference .login-panel::before {
+  display: none;
+}
+
+body.desktop-reference .login-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+body.desktop-reference .login-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+body.desktop-reference .login-brand-lockup img {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+body.desktop-reference .login-brand-lockup span {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+body.desktop-reference .login-panel-head h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+body.desktop-reference .login-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+body.desktop-reference .login-field {
+  display: flex;
+  height: 52px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+body.desktop-reference .login-field:focus-within {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+body.desktop-reference .login-field input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+body.desktop-reference .login-field input::placeholder {
+  color: var(--faint);
+}
+
+body.desktop-reference .login-field-line {
+  display: none;
+}
+
+body.desktop-reference .login-code-button {
+  flex: none;
+  padding: 0 0 0 12px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+body.desktop-reference .login-password-toggle {
+  color: var(--muted);
+}
+
+body.desktop-reference .login-mode-switch-row {
+  margin: 2px 0 6px;
+}
+
+body.desktop-reference .login-mode-switch {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+body.desktop-reference .login-meta-row {
+  margin: 10px 0 18px;
+}
+
+body.desktop-reference .login-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+body.desktop-reference .login-checkbox input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.desktop-reference .login-checkbox > span {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: var(--surface);
+  color: transparent;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+body.desktop-reference .login-checkbox > span svg {
+  width: 12px;
+  height: 12px;
+}
+
+body.desktop-reference .login-checkbox input:checked + span {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+body.desktop-reference .login-checkbox b {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+body.desktop-reference .login-submit {
+  display: flex;
+  width: 100%;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(166, 36, 102, 0.22);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+body.desktop-reference .login-submit:hover {
+  background: var(--accent-ink);
+}
+
+body.desktop-reference .login-submit svg {
+  width: 18px;
+  height: 18px;
+}
+
+body.desktop-reference .login-submit-loader {
+  display: none;
+}
+
+body.desktop-reference .login-submit.is-submitting .login-submit-label,
+body.desktop-reference .login-submit.is-submitting svg {
+  display: none;
+}
+
+body.desktop-reference .login-submit.is-submitting .login-submit-loader {
+  display: block;
+}
+
+body.desktop-reference .login-footer {
+  position: static;
+  width: min(1120px, calc(100% - 64px));
+  margin: 0 auto;
+  padding: 0 0 24px;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+body.desktop-reference .login-footer span {
+  color: var(--faint);
+}
+
+body.desktop-reference .login-success {
+  background: rgba(247, 246, 242, 0.97);
+  color: var(--ink);
+}
+
+@media (max-width: 980px) {
+  body.desktop-reference .login-layout {
+    width: min(460px, calc(100% - 40px));
+    grid-template-columns: 1fr;
+    padding: 32px 0;
+  }
+
+  body.desktop-reference .login-visual {
+    display: none;
+  }
+
+  body.desktop-reference .login-panel-wrap {
+    justify-self: stretch;
+  }
+
+  body.desktop-reference .login-footer {
+    width: min(460px, calc(100% - 40px));
+  }
+}

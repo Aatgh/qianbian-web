@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="desktop-workspace.css?v=20261126p1" />
     <link rel="stylesheet" href="desktop-login.css?v=20261126p1" />
     <link rel="stylesheet" href="typography.css?v=20261126p1b" />
+    <link rel="stylesheet" href="redesign.css?v=20261126p2" />
   </head>
   <body class="desktop-reference">
     <div class="login-gate login-starfield-preview login-box-open" id="login-gate" hidden>
@@ -82,7 +83,12 @@
           <div class="login-panel">
             <span class="login-panel-border" aria-hidden="true"></span>
             <div class="login-panel-head">
+              <div class="login-brand-lockup">
+                <img src="assets/brand/qianbian-tile.png" alt="" />
+                <span>千变</span>
+              </div>
               <h2 id="login-title">登录千变</h2>
+              <p class="login-subtitle">继续你的工作空间</p>
             </div>
 
             <form class="login-form" id="login-form" novalidate>
@@ -158,6 +164,7 @@
               ></div>
 
               <button class="login-submit" type="submit" aria-label="登录">
+                <span class="login-submit-label">进入工作区</span>
                 <i data-lucide="arrow-right" aria-hidden="true"></i>
                 <span class="login-submit-loader" aria-hidden="true"></span>
               </button>

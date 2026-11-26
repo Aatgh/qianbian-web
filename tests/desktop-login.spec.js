@@ -19,14 +19,16 @@ async function openFreshDesktop(page, { starfieldPreview = false } = {}) {
   }
 }
 
-test("first visit shows the premium login gate", async ({ page }) => {
+test("first visit shows the redesigned login gate", async ({ page }) => {
   await openFreshDesktop(page);
 
   const gate = page.locator("#login-gate");
   await expect(gate).toBeVisible();
   await expect(gate.getByRole("heading", { name: "登录千变" })).toBeVisible();
-  await expect(gate.locator("#login-description")).toHaveCount(0);
-  await expect(gate.locator(".login-legal")).toHaveCount(0);
+  await expect(gate.locator(".login-brand-lockup")).toBeVisible();
+  await expect(gate.locator(".login-visual-copy h1")).toContainText(
+    "让每一次意图",
+  );
   const account = gate.getByLabel("账号/邮箱/手机号", { exact: true });
   const password = gate.getByLabel("密码", { exact: true });
   await expect(account).toBeVisible();
@@ -37,40 +39,32 @@ test("first visit shows the premium login gate", async ({ page }) => {
     gate.getByRole("button", { name: "验证码登录", exact: true }),
   ).toHaveClass(/login-mode-switch/);
   await expect(gate.getByLabel("验证码", { exact: true })).toBeHidden();
-  const submit = gate.getByRole("button", { name: "登录", exact: true });
+  await expect(gate.locator(".login-checkbox > span")).toBeVisible();
+
+  const submit = gate.locator(".login-submit");
   await expect(submit).toBeVisible();
-  await expect(submit.locator(".login-submit-label")).toHaveCount(0);
-  await expect(submit.locator("svg")).toHaveCount(1);
+  await expect(submit.locator(".login-submit-label")).toHaveText(
+    "进入工作区",
+  );
   const submitLayout = await submit.evaluate((button) => {
     const style = getComputedStyle(button);
     const panel = document.querySelector(".login-panel");
     return {
-      text: button.textContent.trim(),
       width: button.getBoundingClientRect().width,
-      height: button.getBoundingClientRect().height,
       panelWidth: panel.getBoundingClientRect().width,
       radius: Number.parseFloat(style.borderRadius),
-      marginLeft: style.marginLeft,
-      marginRight: style.marginRight,
+      background: style.backgroundColor,
     };
   });
-  expect(submitLayout.text).toBe("");
-  expect(submitLayout.width).toBeLessThan(submitLayout.panelWidth * 0.4);
-  expect(submitLayout.radius).toBeGreaterThanOrEqual(
-    submitLayout.height / 2,
-  );
-  expect(submitLayout.marginLeft).toBe(submitLayout.marginRight);
-  const headAlignment = await gate
-    .locator(".login-panel-head")
-    .evaluate((element) => getComputedStyle(element).textAlign);
-  expect(headAlignment).toBe("center");
-  await expect(gate.locator(".login-google-button")).toHaveCount(0);
+  expect(submitLayout.width).toBeGreaterThan(submitLayout.panelWidth * 0.8);
+  expect(submitLayout.radius).toBeGreaterThanOrEqual(10);
+  expect(submitLayout.background).not.toBe("rgba(0, 0, 0, 0)");
+
   await expect(page.locator("body")).toHaveClass(/login-locked/);
   await expect(page.locator("#app-shell")).toHaveAttribute("inert", "");
-  const radius = await page
-    .locator(".login-panel")
-    .evaluate((element) => Number.parseFloat(getComputedStyle(element).borderRadius));
-  expect(radius).toBeGreaterThanOrEqual(48);
+  await expect(page.locator("#login-three-canvas")).toBeHidden();
+  await expect(page.locator("#login-galaxy-canvas")).toBeHidden();
+  await expect(page.locator(".login-orbit")).toBeHidden();
 });
 
 test("phone code login enters the desktop workspace", async ({ page }) => {
@@ -204,6 +198,7 @@ test("login gate fills wide desktop viewports", async ({ page }) => {
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
       gate: [gate.left, gate.top, gate.width, gate.height],
+      layoutLeft: layout.left,
       layoutWidth: layout.width,
       panelTop: panel.top,
       panelBottom: panel.bottom,
@@ -216,9 +211,14 @@ test("login gate fills wide desktop viewports", async ({ page }) => {
     coverage.viewportWidth,
     coverage.viewportHeight,
   ]);
-  expect(coverage.layoutWidth).toBeGreaterThanOrEqual(
-    coverage.viewportWidth - 2,
-  );
+  expect(coverage.layoutWidth).toBeLessThanOrEqual(1124);
+  expect(
+    Math.abs(
+      coverage.layoutLeft +
+        coverage.layoutWidth / 2 -
+        coverage.viewportWidth / 2,
+    ),
+  ).toBeLessThan(2);
   expect(coverage.panelTop).toBeGreaterThanOrEqual(0);
   expect(coverage.panelBottom).toBeLessThanOrEqual(coverage.viewportHeight);
 });
@@ -244,7 +244,8 @@ test("login gate stays inside a short desktop viewport", async ({ page }) => {
   expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.viewportHeight);
 });
 
-test("login keeps only the fixed default starfield theme", async ({
+// 旧星空/毛玻璃/拖拽设计已在桌面重构中移除，下方用例保留作历史参考
+test.skip("login keeps only the fixed default starfield theme", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -358,7 +359,7 @@ test("default starfield animates as a single theme", async ({ page }) => {
   expect(result.pixels.maxChannel).toBeGreaterThan(24);
 });
 
-test("login background contains a zoomable particle galaxy", async ({ page }) => {
+test.skip("login background contains a zoomable particle galaxy", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await openFreshDesktop(page, { starfieldPreview: true });
   await page.locator("#login-gate.is-ready").waitFor();
@@ -435,7 +436,7 @@ test("login background contains a zoomable particle galaxy", async ({ page }) =>
   await expect(page.getByLabel("账号/邮箱/手机号", { exact: true })).toBeVisible();
 });
 
-test("login panel can be dragged after long press", async ({
+test.skip("login panel can be dragged after long press", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -507,7 +508,7 @@ test("login panel can be dragged after long press", async ({
   ).toBeLessThan(3);
 });
 
-test("login panel always uses the pressed frosted glass material", async ({
+test.skip("login panel always uses the pressed frosted glass material", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
