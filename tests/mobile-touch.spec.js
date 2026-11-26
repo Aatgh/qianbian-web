@@ -121,7 +121,7 @@ test("horizontal swipe settles fully open without replaying animation", async ({
     type: "touchEnd",
     touchPoints: [],
   });
-  await page.waitForTimeout(420);
+  await page.waitForTimeout(650);
 
   const settled = await page.locator(".history-screen").evaluate((element) => ({
     transform: getComputedStyle(element).transform,

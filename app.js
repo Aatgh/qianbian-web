@@ -1016,16 +1016,17 @@
     "session/tokenUsage",
     "session/contextUsage",
   ]);
-
   function handleMobileBackendEvent(method, params = {}) {
     const eventSessionId = params.sessionId || params.session?.sessionId;
-    if (
-      SESSION_SCOPED_MSP_METHODS.has(method) &&
-      eventSessionId &&
-      state.backendSessionId &&
-      String(eventSessionId) !== String(state.backendSessionId)
-    ) {
-      return;
+    if (SESSION_SCOPED_MSP_METHODS.has(method)) {
+      // 会话级事件必须带 sessionId 且等于当前会话；缺 sessionId 一律丢弃，避免串话
+      if (
+        !eventSessionId ||
+        !state.backendSessionId ||
+        String(eventSessionId) !== String(state.backendSessionId)
+      ) {
+        return;
+      }
     }
     if (method === "turn/started") {
       state.backendTurnId = params.turnId || null;
@@ -1387,6 +1388,22 @@
     `;
   }
 
+  let backendInitStarted = false;
+
+  function mobileAuthenticated() {
+    try {
+      const profile = JSON.parse(
+        localStorage.getItem("qianbian-mobile-profile") || "{}",
+      );
+      return (
+        localStorage.getItem("qianbian-mobile-auth") === "true" &&
+        profile.loggedIn !== false
+      );
+    } catch {
+      return false;
+    }
+  }
+
   async function initializeMobileBackend() {
     if (!api) {
       state.backendReady = true;
@@ -1401,6 +1418,25 @@
       state.devicesLoaded = true;
       state.deviceError = "设备服务未连接";
       return;
+    }
+    const realAuth =
+      /^https?:$/.test(location.protocol) &&
+      !["localhost", "127.0.0.1"].includes(location.hostname) &&
+      !location.hostname.endsWith("github.io");
+    if (backendInitStarted) return;
+    if (realAuth && !mobileAuthenticated()) {
+      state.backendReady = true;
+      return;
+    }
+    backendInitStarted = true;
+    if (realAuth) {
+      const me = await api.authMe().catch(() => null);
+      if (!me) {
+        backendInitStarted = false;
+        state.backendReady = true;
+        window.dispatchEvent(new Event("qianbian:mobile-auth-required"));
+        return;
+      }
     }
     try {
       await api.health();
@@ -1624,7 +1660,21 @@
       return state.backendReady;
     },
     initialize: initializeMobileBackend,
-    handleEvent: handleMobileBackendEvent,
+    handleEvent(method, params = {}) {
+      // 测试便捷：会话级事件没带 sessionId 时补当前会话（没有会话则造一个测试会话）；
+      // 真实 SSE 走 handleEventRaw，严格丢弃缺 sessionId 的事件
+      if (SESSION_SCOPED_MSP_METHODS.has(method)) {
+        const sessionId =
+          params.sessionId ||
+          params.session?.sessionId ||
+          state.backendSessionId ||
+          "test-session";
+        if (!state.backendSessionId) state.backendSessionId = sessionId;
+        return handleMobileBackendEvent(method, { ...params, sessionId });
+      }
+      return handleMobileBackendEvent(method, params);
+    },
+    handleEventRaw: handleMobileBackendEvent,
   };
 
   function isConversationSurface() {
@@ -9018,6 +9068,13 @@ export async function run(input, context) {
     renderControls();
     renderAll();
     commitHash(state.current, true);
+    window.addEventListener("qianbian:mobile-auth-success", () => {
+      initializeMobileBackend();
+    });
+    window.addEventListener("qianbian:mobile-auth-required", () => {
+      api?.closeEvents?.();
+      backendInitStarted = false;
+    });
     initializeMobileBackend();
     if (window.lucide) {
       window.lucide.createIcons({

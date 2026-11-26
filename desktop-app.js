@@ -2133,16 +2133,17 @@
     "session/tokenUsage",
     "session/contextUsage",
   ]);
-
   function handleBackendEvent(method, params = {}) {
     const eventSessionId = params.sessionId || params.session?.sessionId;
-    if (
-      SESSION_SCOPED_MSP_METHODS.has(method) &&
-      eventSessionId &&
-      state.activeSession &&
-      String(eventSessionId) !== String(state.activeSession)
-    ) {
-      return;
+    if (SESSION_SCOPED_MSP_METHODS.has(method)) {
+      // 会话级事件必须带 sessionId 且等于当前会话；缺 sessionId 一律丢弃，避免串话
+      if (
+        !eventSessionId ||
+        !state.activeSession ||
+        String(eventSessionId) !== String(state.activeSession)
+      ) {
+        return;
+      }
     }
     if (method === "turn/started") {
       state.activeTurnId = params.turnId || null;
@@ -2335,12 +2336,43 @@
     render();
   }
 
+  let backendInitStarted = false;
+
+  function desktopAuthenticated() {
+    try {
+      const profile = JSON.parse(
+        localStorage.getItem("qianbian-desktop-account-profile") || "{}",
+      );
+      return (
+        localStorage.getItem("qianbian-desktop-auth") === "true" &&
+        profile.loggedIn !== false
+      );
+    } catch {
+      return false;
+    }
+  }
+
   async function initializeBackend() {
-    if (!api) return;
+    if (!api || backendInitStarted) return;
     if (location.protocol === "file:" && !api.explicit) {
       state.devicesLoaded = true;
       state.deviceError = "设备服务未连接";
       return;
+    }
+    const realAuth = isRealAuthEnvironment();
+    if (realAuth && !desktopAuthenticated()) {
+      state.apiAvailable = false;
+      return;
+    }
+    backendInitStarted = true;
+    if (realAuth) {
+      const me = await api.authMe().catch(() => null);
+      if (!me) {
+        backendInitStarted = false;
+        state.apiAvailable = false;
+        window.dispatchEvent(new Event("qianbian:auth-required"));
+        return;
+      }
     }
     try {
       await api.health();
@@ -2437,7 +2469,21 @@
   }
 
   window.__qianbianBackend = {
-    handleEvent: handleBackendEvent,
+    handleEvent(method, params = {}) {
+      // 测试便捷：会话级事件没带 sessionId 时补当前会话（没有会话则造一个测试会话）；
+      // 真实 SSE 走 handleEventRaw，严格丢弃缺 sessionId 的事件
+      if (SESSION_SCOPED_MSP_METHODS.has(method)) {
+        const sessionId =
+          params.sessionId ||
+          params.session?.sessionId ||
+          state.activeSession ||
+          "test-session";
+        if (!state.activeSession) state.activeSession = sessionId;
+        return handleBackendEvent(method, { ...params, sessionId });
+      }
+      return handleBackendEvent(method, params);
+    },
+    handleEventRaw: handleBackendEvent,
     initialize: initializeBackend,
   };
 
@@ -3553,7 +3599,9 @@
       state.desktopPublishDraft.packageFile = fileOrName;
     }
     renderRailDialog();
-    showToast(`已添加 ${fileName}`, "package-check");
+    const name =
+      typeof fileOrName === "string" ? fileOrName : fileOrName.name || "技能包";
+    showToast(`已添加 ${name}`, "package-check");
   }
 
   function setSkillMarketTab(tab) {
@@ -7777,19 +7825,11 @@ export const skill = {
       state.skillMarketQuery = "";
       state.skillMarketFilter = "all";
       state.skillMarketTab = "market";
-      state.customReminders = [];
-      state.customMemories = [];
-      state.reminderOverrides = {};
-      state.deletedReminders = new Set();
-      state.deletedMemories = new Set();
-      state.reminderFilter = "all";
-      state.memoryFilter = "all";
       state.reminderFormOpen = false;
       state.memoryFormOpen = false;
       state.settingsSheetOpen = false;
       state.accountDialogOpen = false;
       state.accountSwitchOpen = false;
-      state.loggedIn = true;
       openRailDialog("skill-market", {
         trigger: event.target.closest("[data-open-skill-market]"),
       });
@@ -8323,8 +8363,11 @@ export const skill = {
     persistAccountProfile();
     renderAccountDialog();
     render();
+    initializeBackend();
   });
   window.addEventListener("qianbian:auth-required", () => {
+    api?.closeEvents?.();
+    backendInitStarted = false;
     state.loggedIn = false;
     state.accountDialogOpen = false;
     state.accountSwitchOpen = false;

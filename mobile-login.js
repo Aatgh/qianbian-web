@@ -424,6 +424,15 @@
         persistSession(profile);
       } catch {}
       unlockApp();
+      window.dispatchEvent(
+        new CustomEvent("qianbian:mobile-auth-success", {
+          detail: {
+            phone: profile.phone,
+            nickname: profile.nickname,
+            mode: "remote",
+          },
+        }),
+      );
     } catch {
       if (session?.profile?.authMode === "remote") clearSession();
       showGate();
@@ -487,6 +496,8 @@
     initialize,
     signOut() {
       clearSession();
+      window.QianbianApi?.closeEvents?.();
+      window.dispatchEvent(new Event("qianbian:mobile-auth-required"));
       showGate({ focusPhone: true });
     },
   };

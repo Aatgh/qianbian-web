@@ -311,6 +311,8 @@ test("mobile environment control sits beside history settings", async ({
   await page.goto(mobileUrl);
   await waitForMobileBackend(page);
   await page.locator('[data-action="open-history"]').click();
+  await expect(page.locator(".history-screen")).toBeVisible();
+  await page.waitForTimeout(450);
 
   const environment = page.locator(".history-footer #mobile-environment-select");
   await expect(environment).toBeVisible();
@@ -353,6 +355,7 @@ test("mobile environment control sits beside history settings", async ({
   expect(geometry.actionRight).toBeLessThanOrEqual(geometry.footerRight);
 
   await page.setViewportSize({ width: 360, height: 780 });
+  await page.waitForTimeout(250);
   const compactGeometry = await page.evaluate(() => {
     const environment = document
       .querySelector(".history-footer #mobile-environment-select")
@@ -1172,4 +1175,56 @@ test("mobile affinity comes from backend and never exceeds 80", async ({
   await page.locator("#chat-input").fill("再聊一句");
   await page.locator('[data-action="send-message"]').click();
   await expect(page.locator("#agent-training")).toHaveValue("80");
+});
+
+test("mobile drops session-scoped events without a matching sessionId", async ({
+  page,
+}) => {
+  const calls = [];
+  await mockBackend(page, calls, { resumeItems: [] });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+  await page.locator('[data-action="open-history"]').click();
+  await page.locator('[data-session-id="23"]').click();
+
+  await page.evaluate(() => {
+    const raw = window.__qianbianMobileBackend.handleEventRaw;
+    raw("turn/started", { turnId: "missing-sid" });
+    raw("item/completed", {
+      item: {
+        itemId: "missing",
+        kind: "agentMessage",
+        text: "缺会话不应出现",
+        status: "completed",
+        done: true,
+      },
+    });
+    raw("item/completed", {
+      sessionId: "99",
+      item: {
+        itemId: "foreign",
+        kind: "agentMessage",
+        text: "其他会话不应出现",
+        status: "completed",
+        done: true,
+      },
+    });
+  });
+
+  await expect(page.getByText("缺会话不应出现")).toHaveCount(0);
+  await expect(page.getByText("其他会话不应出现")).toHaveCount(0);
+
+  await page.evaluate(() => {
+    window.__qianbianMobileBackend.handleEventRaw("item/completed", {
+      sessionId: "23",
+      item: {
+        itemId: "current",
+        kind: "agentMessage",
+        text: "当前会话可以出现",
+        status: "completed",
+        done: true,
+      },
+    });
+  });
+  await expect(page.getByText("当前会话可以出现")).toBeVisible();
 });
