@@ -4,6 +4,8 @@
 >
 > 状态：**P0 后端已在本地实现并验证（2026-11-26），尚未部署生产；前端已答复 5 个问题（见第 13 节），等待 codex → main 合并。**
 > 前端先看第 7 节「前端契约」和第 12 节「待确认问题」，以及第 5 节末尾的「实现状态」。
+>
+> 📌 **执行计划以 `agent-workspace-plan-2026-11-26.md` 为准**（2026-11-26 修正：不做新闻/小说等分类功能，做通用 feed + 沙箱原语）。
 
 ## 1. 目标与非目标
 
@@ -95,10 +97,12 @@
 
 `source.type` 取值：
 
-- `news`：后端内置新闻源（合规 API / 已授权 RSS），前端只读。
-- `http`：后端白名单代理，`source.url` 必须命中白名单；不把第三方 Key 下发给浏览器。
+- `feed`（主）：通用 RSS/Atom/JSON 数据源，Agent 在运行时填任意公网 URL；后端做 SSRF 防护、超时、大小限制和缓存。新闻/小说/技术资讯都走这个，不按分类写代码。
+- `news`：`feed` 的默认示例（中国新闻网 RSS），保留作为兼容别名。
+- `http`：其他 JSON 接口的受控代理，和 `feed` 共用安全限制。
 - `static`：Agent 生成的静态内容（markdown / table）。
 - `session`：引用某个会话的摘要（例如「我的待办」）。
+- `iframe`：P1 沙箱资产，Agent 运行时生成 HTML/JS，独立 origin 运行。
 
 `kind: iframe` 的定制代码不放在 `config_json` 里，而是存到独立表 `qb_ui_asset`（带版本）；前端用单独子域的沙箱 iframe 加载，严格 CSP，禁止 `document.cookie`、禁止访问父页面 DOM。
 
@@ -194,6 +198,8 @@ data: {"method":"ui/dataUpdated","widgetId":123}
 - 限额：单用户 widget 数量（例如 20）、单 widget 数据大小、定时任务数量（例如 10）。
 
 ## 10. 分期
+
+> 分期以 `agent-workspace-plan-2026-11-26.md` 为准；下面是概要。
 
 **P0（约 1 周）**
 
