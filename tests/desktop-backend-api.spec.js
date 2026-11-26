@@ -795,6 +795,65 @@ test("desktop renders fenced markdown replies instead of code blocks", async ({
   await expect(answer).not.toContainText("```");
 });
 
+test("desktop restores active session and right panel after reload", async ({
+  page,
+}) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  await page
+    .locator('[data-session="design-system"]')
+    .first()
+    .dispatchEvent("click");
+  await page.locator('[data-insight-tab="task-activity"]').click();
+
+  await page.reload();
+  await unlockDesktop(page);
+
+  await expect(
+    page.locator('[data-session="design-system"]').first(),
+  ).toHaveClass(/is-active/);
+  await expect(page.locator('[data-insight-tab="task-activity"]')).toHaveClass(
+    /is-active/,
+  );
+  await expect(page.locator("#message-thread")).toContainText(
+    "桌面端产品结构",
+  );
+});
+
+test("desktop skill market refresh gives feedback in demo mode", async ({
+  page,
+}) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  await page.locator("#skill-market-launcher").click();
+  await page.locator(".skill-market-refresh").click();
+
+  await expect(page.locator(".toast-region")).toContainText("技能市场已刷新");
+});
+
+test("desktop account selects use themed control styles", async ({ page }) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  await page.locator("#account-menu-button").click();
+
+  const styles = await page.locator("#account-timezone").evaluate((element) => {
+    const style = getComputedStyle(element);
+    const box = element.getBoundingClientRect();
+    return {
+      appearance: style.appearance,
+      borderRadius: parseFloat(style.borderRadius),
+      backgroundImage: style.backgroundImage,
+      height: box.height,
+      paddingRight: parseFloat(style.paddingRight),
+    };
+  });
+  expect(styles.appearance).toBe("none");
+  expect(styles.borderRadius).toBeGreaterThanOrEqual(8);
+  expect(styles.backgroundImage).not.toBe("none");
+  expect(styles.height).toBeGreaterThanOrEqual(34);
+  expect(styles.paddingRight).toBeGreaterThanOrEqual(28);
+});
+
 test("desktop composer input has no colored focus outline", async ({ page }) => {
   await page.goto(desktopUrl);
   await unlockDesktop(page);
