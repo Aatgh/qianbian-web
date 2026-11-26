@@ -17,3 +17,16 @@
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* 桌面登录页的功能性文字不低于 12px（装饰性小标允许 11px） */
+.login-secure-status span,
+.login-code-button,
+.login-mode-switch,
+.login-remember b,
+.login-footer span,
+.login-success small,
+.login-orbit-label,
+.login-kicker,
+.icp-footer {
+  font-size: 12px;
+}
