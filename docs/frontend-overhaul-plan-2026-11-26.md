@@ -3,6 +3,8 @@
 > 由 6 个只读 Explore 智能体（移动端、桌面端、共享/API/安全、视觉、后端部署、测试）+ 1 个 Plan 智能体产出。
 > 项目：前端 `qianbian-web`（main `fe12e49`），后端 Java + `muse-bridge`，生产 `agiqianbian.com`。
 >
+> 🖥️ **桌面端重构第一版已上线（2026-11-26）**：`redesign.css` 统一暖白/梅红设计；三栏布局（图标栏 72 + 会话 280 + 聊天 + 上下文 360）；修复顶部「千变/新对话」被裁切；右栏改为紧凑资料头 + 单列技能卡；登录页改为左品牌文案 + 右白色登录卡的现代布局，去掉星空/毛玻璃/拖拽；Playwright 82 通过、4 个旧设计用例跳过。生产备份 `bridge-web-20261126-1515.tar.gz`。**下一步：移动端重构。**
+>
 > 🎨 **P1 第一轮已完成并上线（2026-11-26）**：新增 `tokens.css`（字体阶梯）与 `typography.css`；移动端 8–11px 正文字号清零（8/9/10→12px，11→13px），桌面功能文字 ≥12px；消息内容允许长按选择；`tokens.css`/`typography.css` 已引入三个页面；Playwright 86 用例仍全绿。P1 结构部分（移除 UI Atlas 演示壳、合并桌面 CSS、拆分 app.js/desktop-app.js、删除演示数据）待继续。
 >
 > ✅ **P0 已完成并上线（2026-11-26）**：登录门与后端启动解耦（匿名零用户请求）、SSE 严格按会话过滤、桌面「技能市场清空提醒/记忆」与「技能包拖拽 ReferenceError」修复、`GET /api/ui/widgets/{id}/data` 上线（RSS/Atom + 静态源 + SSRF + 缓存）、Agent 工具已在生产开启；Playwright **86 用例全绿**；本地 E2E 已验证 Agent 自动创建「最近新闻」→ 审批 → 数据返回 5 条。生产备份：`bridge-web-20261126-1215.tar.gz`、`app.jar.bak-20261126-1310`、`server.mjs.bak-20261126-1310`。下一步进入 P1（tokens.css、字号/对比度、结构拆分）。
