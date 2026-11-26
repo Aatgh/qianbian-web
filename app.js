@@ -233,18 +233,11 @@
     accountEditing: false,
     accountDraft: null,
     accountProfile: {
-      ...(pages.account?.profile || {}),
-      ...(storedMobileAccount
-        ? {
-            nickname:
-              storedMobileAccount.nickname ||
-              pages.account?.profile?.nickname,
-            accountId:
-              storedMobileAccount.accountId ||
-              pages.account?.profile?.accountId,
-            phone: maskedMobilePhone || pages.account?.profile?.phone,
-          }
-        : {}),
+      nickname: storedMobileAccount?.nickname || "千变用户",
+      accountId: storedMobileAccount?.accountId || "",
+      phone: maskedMobilePhone || "",
+      email: "",
+      region: "",
     },
   };
   const COMPOSE_ACTIONS = [
@@ -353,29 +346,8 @@
   }
 
   function getFallbackMobileSessions() {
-    return [
-      {
-        id: "demo-ui",
-        name: "千变界面复刻",
-        time: "09:41",
-        icon: "message-circle",
-        kind: "chat",
-      },
-      {
-        id: "demo-theme",
-        name: "主题与图标检查",
-        time: "昨天",
-        icon: "palette",
-        kind: "chat",
-      },
-      {
-        id: "demo-pages",
-        name: "页面交互检查",
-        time: "08:26",
-        icon: "scan-search",
-        kind: "chat",
-      },
-    ];
+    // 真实用户不再看到任何伪造会话；后端未加载时显示真实空态
+    return [];
   }
 
   function formatBackendTime(value) {
@@ -2426,7 +2398,7 @@
                           <span class="row-glyph">${icon(field.icon)}</span>
                           <span class="phone-row-main">
                             <span class="phone-row-label">${escapeHtml(field.label)}</span>
-                            <span class="phone-row-description">${escapeHtml(profile[field.key] || "")}</span>
+                            <span class="phone-row-description">${escapeHtml(profile[field.key] || "未设置")}</span>
                           </span>
                         </div>
                       `,
@@ -4695,6 +4667,9 @@ export async function review(target) {
       <button class="history-scrim" data-action="close-history" type="button" aria-label="关闭历史记录"></button>
       <section class="history-screen" role="dialog" aria-modal="true" aria-label="历史记录">
         <header class="history-head">
+          <button class="phone-icon-button ghost" data-action="close-history-top" type="button" aria-label="关闭历史记录">${icon(
+            "chevron-left"
+          )}</button>
           <div class="history-heading">
             <h2>历史记录</h2>
           </div>
@@ -4712,24 +4687,6 @@ export async function review(target) {
             autocomplete="off"
           />
         </label>
-        <div class="history-views" role="tablist" aria-label="历史记录类型">
-          <button
-            class="history-view ${state.historyView === "chat" ? "is-active" : ""}"
-            data-history-view="chat"
-            type="button"
-            role="tab"
-            aria-selected="${state.historyView === "chat"}"
-            tabindex="${state.historyView === "chat" ? "0" : "-1"}"
-          >聊天</button>
-          <button
-            class="history-view ${state.historyView === "work" ? "is-active" : ""}"
-            data-history-view="work"
-            type="button"
-            role="tab"
-            aria-selected="${state.historyView === "work"}"
-            tabindex="${state.historyView === "work" ? "0" : "-1"}"
-          >工作</button>
-        </div>
         <div class="history-list">
           <div class="history-group-label">最近对话</div>
           ${sessions
@@ -4754,7 +4711,7 @@ export async function review(target) {
             )
             .join("")}
         </div>
-        <p class="history-empty" id="history-empty" hidden>没有匹配的会话</p>
+        <p class="history-empty" id="history-empty" ${sessions.length ? "hidden" : ""}>暂无会话${state.historyQuery ? "，换个关键词试试" : ""}</p>
         <div class="history-footer">
           ${renderMobileEnvironmentControl()}
           <button
@@ -7641,8 +7598,7 @@ export async function run(input, context) {
     const empty = document.getElementById("history-empty");
     if (empty) {
       empty.hidden = visibleCount > 0;
-      empty.textContent =
-        state.historyView === "chat" ? "没有匹配的聊天会话" : "没有匹配的工作会话";
+      empty.textContent = state.historyQuery ? "暂无匹配会话" : "暂无会话";
     }
   }
 
@@ -8516,7 +8472,7 @@ export async function run(input, context) {
         state.mainNavOpen = false;
         renderPhone();
         updateIcons();
-      } else if (action === "close-history") {
+      } else if (action === "close-history" || action === "close-history-top") {
         state.historyOpen = false;
         renderPhone();
         updateIcons();

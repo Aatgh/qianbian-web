@@ -1,0 +1,630 @@
+/*
+ * 千变手机端重构层（P2）
+ * 与桌面端同一套暖白/梅红设计；全屏聊天、全屏历史、统一卡片/字号。
+ * 只覆盖视觉，不改业务逻辑。
+ */
+
+/* ---------- 手机端登录 ---------- */
+#mobile-login-gate {
+  --auth-paper: #fbfaf7;
+  --auth-surface: #ffffff;
+  --auth-ink: #1c1b18;
+  --auth-ink-soft: #4a4741;
+  --auth-line: rgba(28, 27, 24, 0.1);
+  --auth-line-strong: rgba(28, 27, 24, 0.16);
+  --auth-accent: #a62466;
+  --auth-accent-deep: #7c174c;
+  --auth-accent-soft: rgba(166, 36, 102, 0.08);
+  --auth-error: #b9323b;
+  --auth-success: #287052;
+  background:
+    radial-gradient(700px 420px at 82% -10%, rgba(166, 36, 102, 0.1), transparent 62%),
+    linear-gradient(180deg, #fbfaf7 0%, #f4f1eb 100%);
+  color: var(--auth-ink);
+}
+
+#mobile-login-gate::before,
+#mobile-login-gate .mobile-auth-backdrop {
+  display: none !important;
+}
+
+#mobile-login-gate .mobile-auth-intro {
+  color: var(--auth-ink);
+}
+
+#mobile-login-gate .mobile-auth-intro > p {
+  color: var(--auth-ink-soft);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+#mobile-login-gate .mobile-auth-signal strong {
+  color: var(--auth-ink);
+}
+
+#mobile-login-gate .mobile-auth-signal span:last-child,
+#mobile-login-gate .mobile-auth-signal small {
+  color: var(--auth-ink-soft);
+}
+
+#mobile-login-gate .mobile-auth-brand span,
+#mobile-login-gate .mobile-auth-brand small {
+  color: inherit;
+}
+
+#mobile-login-gate .mobile-auth-page {
+  width: min(440px, 100%);
+  margin: 0 auto;
+  padding: 18px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+}
+
+#mobile-login-gate .mobile-auth-stage {
+  gap: 26px;
+  padding-top: 24px;
+}
+
+#mobile-login-gate .mobile-auth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0 12px;
+}
+
+#mobile-login-gate .mobile-auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--auth-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#mobile-login-gate .mobile-auth-brand img {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+#mobile-login-gate .mobile-auth-secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--auth-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--auth-ink-soft);
+  font-size: 12px;
+}
+
+#mobile-login-gate .mobile-auth-kicker {
+  color: var(--auth-accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+#mobile-login-gate .mobile-auth-intro h1 {
+  margin: 12px 0 10px;
+  color: var(--auth-ink);
+  font-size: clamp(30px, 8.6vw, 38px);
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.035em;
+}
+
+#mobile-login-gate .mobile-auth-intro h1 em {
+  color: var(--auth-accent);
+  font-style: normal;
+}
+
+#mobile-login-gate .mobile-auth-signal {
+  margin: 0 0 16px;
+  padding: 7px 10px;
+  border: 1px solid var(--auth-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.66);
+  color: var(--auth-ink-soft);
+  font-size: 13px;
+}
+
+#mobile-login-gate .mobile-auth-form {
+  margin-top: 4px;
+  padding: 22px 20px;
+  border: 1px solid var(--auth-line);
+  border-radius: 20px;
+  background: var(--auth-surface);
+  box-shadow: 0 18px 46px rgba(28, 27, 24, 0.08);
+}
+
+#mobile-login-gate .mobile-auth-form-head {
+  margin-bottom: 16px;
+}
+
+#mobile-login-gate .mobile-auth-form-kicker {
+  color: var(--auth-accent);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+#mobile-login-gate .mobile-auth-step {
+  color: var(--auth-ink-soft);
+  font-size: 12px;
+}
+
+#mobile-login-gate .mobile-auth-field {
+  margin-bottom: 14px;
+}
+
+#mobile-login-gate .mobile-auth-field-label {
+  color: var(--auth-ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#mobile-login-gate .mobile-auth-input-shell {
+  height: 52px;
+  margin-top: 6px;
+  border: 1px solid var(--auth-line-strong);
+  border-radius: 12px;
+  background: #f5f3ee;
+}
+
+#mobile-login-gate .mobile-auth-input-shell:focus-within {
+  border-color: var(--auth-accent);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--auth-accent-soft);
+}
+
+#mobile-login-gate .mobile-auth-input-shell input {
+  color: var(--auth-ink);
+  font-size: 16px;
+}
+
+#mobile-login-gate .mobile-auth-input-shell input::placeholder {
+  color: #9c978f;
+}
+
+#mobile-login-gate .mobile-auth-prefix {
+  color: var(--auth-ink-soft);
+  font-size: 15px;
+}
+
+#mobile-login-gate .mobile-auth-code-button {
+  color: var(--auth-accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#mobile-login-gate .mobile-auth-feedback {
+  color: var(--auth-ink-soft);
+  font-size: 12px;
+}
+
+#mobile-login-gate .mobile-auth-remember {
+  color: var(--auth-ink-soft);
+  font-size: 13px;
+}
+
+#mobile-login-gate .mobile-auth-submit {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 16px;
+  border-radius: 12px;
+  background: var(--auth-accent);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 10px 24px rgba(166, 36, 102, 0.24);
+}
+
+#mobile-login-gate .mobile-auth-submit:hover {
+  background: var(--auth-accent-deep);
+}
+
+#mobile-login-gate .mobile-auth-legal,
+#mobile-login-gate .mobile-auth-footer,
+#mobile-login-gate .mobile-auth-assurances {
+  color: var(--auth-ink-soft);
+  font-size: 12px;
+}
+
+/* ---------- 主界面 ---------- */
+#phone-screen,
+.phone-screen {
+  --phone-bg: #fbfaf7;
+  --phone-surface: #ffffff;
+  --phone-surface-soft: #f4f1eb;
+  --phone-ink: #1c1b18;
+  --phone-muted: #74706a;
+  --phone-line: rgba(28, 27, 24, 0.1);
+  --phone-shadow: 0 12px 32px rgba(20, 18, 15, 0.08);
+  background: var(--phone-bg);
+}
+
+#phone-screen::before,
+#phone-screen::after {
+  display: none !important;
+}
+
+#phone-screen .chat-top,
+#phone-screen .unified-conversation-nav {
+  min-height: 56px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--phone-line);
+  background: rgba(251, 250, 247, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+#phone-screen .phone-icon-button {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 12px;
+  background: var(--phone-surface);
+  border: 1px solid var(--phone-line);
+  color: var(--phone-ink);
+}
+
+#phone-screen .phone-icon-button svg,
+#phone-screen .conversation-nav-icon {
+  width: 20px;
+  height: 20px;
+}
+
+#phone-screen .top-progress-cluster {
+  width: 44px;
+  height: 44px;
+}
+
+#phone-screen .top-progress-ring {
+  width: 44px;
+  height: 44px;
+}
+
+#phone-screen .top-progress-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+#phone-screen .top-progress-logo img {
+  width: 100%;
+  height: 100%;
+  border-radius: 11px;
+}
+
+#phone-screen .new-chat-slogan {
+  max-width: 340px;
+  transform: none;
+}
+
+#phone-screen .new-chat-slogan h1 {
+  color: var(--phone-ink);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+#phone-screen .new-chat-slogan h1 strong {
+  color: var(--accent-ink);
+}
+
+#phone-screen .slogan-note {
+  max-width: 300px;
+  margin: 12px auto 0;
+  color: var(--phone-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+#phone-screen .chat-page {
+  background: var(--phone-bg);
+}
+
+#phone-screen .chat-empty {
+  padding: 24px 26px 150px;
+}
+
+#phone-screen .main-nav-screen,
+#phone-screen .skill-browser,
+#phone-screen .skill-settings-layer,
+#phone-screen .welcome-page {
+  background: var(--phone-bg);
+}
+
+#phone-screen .phone-composer {
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--phone-line);
+  border-radius: 18px;
+  background: var(--phone-surface);
+  box-shadow: 0 10px 28px rgba(20, 18, 15, 0.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+#phone-screen .composer-plus,
+#phone-screen .composer-voice,
+#phone-screen .composer-send {
+  width: 40px;
+  height: 40px;
+}
+
+#phone-screen .composer-plus,
+#phone-screen .composer-voice {
+  background: var(--phone-surface-soft);
+  color: var(--phone-ink);
+}
+
+#phone-screen .composer-send {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+#phone-screen .composer-input {
+  min-height: 40px;
+  padding: 9px 4px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+#phone-screen .chat-composer-wrap {
+  padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background: linear-gradient(180deg, transparent, var(--phone-bg) 38%);
+}
+
+/* ---------- 历史记录：全屏 ---------- */
+#phone-screen .history-screen {
+  width: 100%;
+  max-width: none;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px
+    calc(env(safe-area-inset-bottom, 0px) + 16px);
+  border-right: 0;
+  border-radius: 0;
+  background: var(--phone-bg);
+  box-shadow: none;
+}
+
+#phone-screen .history-head {
+  align-items: center;
+}
+
+#phone-screen .history-heading h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+#phone-screen .history-search {
+  height: 48px;
+  margin: 14px 0;
+  border: 1px solid var(--phone-line);
+  border-radius: 12px;
+  background: var(--phone-surface);
+}
+
+#phone-screen .history-search input {
+  font-size: 15px;
+}
+
+#phone-screen .history-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+#phone-screen .history-group-label {
+  margin: 4px 0 2px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--phone-muted);
+  font-size: 12px;
+}
+
+#phone-screen .history-session {
+  padding: 12px;
+  border: 1px solid var(--phone-line);
+  border-radius: 12px;
+  background: var(--phone-surface);
+}
+
+#phone-screen .history-session strong {
+  font-size: 15px;
+}
+
+#phone-screen .history-session small,
+#phone-screen .history-session time {
+  color: var(--phone-muted);
+  font-size: 12px;
+}
+
+#phone-screen .history-session-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--phone-surface-soft);
+}
+
+#phone-screen .history-empty {
+  display: block;
+  padding: 28px 0;
+  color: var(--phone-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+#phone-screen .history-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+#phone-screen .history-environment {
+  min-width: 0;
+  max-width: none;
+  flex: 1 1 auto;
+}
+
+#phone-screen .history-footer #mobile-environment-select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid var(--phone-line);
+  border-radius: 12px;
+  background: var(--phone-surface);
+  color: var(--phone-ink);
+  font-size: 14px;
+}
+
+#phone-screen .history-settings-trigger {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 1px solid var(--phone-line);
+  border-radius: 12px;
+  background: var(--phone-surface);
+}
+
+/* ---------- 账号 / 设备 ---------- */
+#phone-screen .account-profile-hero {
+  padding: 14px 0 22px;
+}
+
+#phone-screen .account-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 26px;
+}
+
+#phone-screen .account-avatar img {
+  border-radius: 26px;
+}
+
+#phone-screen .account-profile-name {
+  margin: 12px 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+#phone-screen .account-profile-hero p {
+  color: var(--phone-muted);
+  font-size: 13px;
+}
+
+#phone-screen .account-edit-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--phone-line-strong);
+  border-radius: 999px;
+  background: var(--phone-surface);
+  color: var(--phone-ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#phone-screen .account-section-heading {
+  margin: 8px 4px;
+  color: var(--phone-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#phone-screen .phone-list {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--phone-line);
+  border-radius: 14px;
+  background: var(--phone-surface);
+}
+
+#phone-screen .phone-row,
+#phone-screen .account-profile-row {
+  min-height: 62px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--phone-line);
+  background: var(--phone-surface);
+}
+
+#phone-screen .phone-row:last-child,
+#phone-screen .account-profile-row:last-child {
+  border-bottom: 0;
+}
+
+#phone-screen .phone-row-label {
+  color: var(--phone-ink);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+#phone-screen .phone-row-description {
+  color: var(--phone-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#phone-screen .row-glyph {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--phone-surface-soft);
+  color: var(--ink-soft);
+}
+
+#phone-screen .mobile-devices-head strong {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+#phone-screen .mobile-devices-head span {
+  color: var(--phone-muted);
+  font-size: 13px;
+}
+
+#phone-screen .mobile-devices-screen {
+  background: var(--phone-bg);
+}
+
+#phone-screen .mobile-devices-error,
+#phone-screen .mobile-devices-empty,
+#phone-screen .mobile-devices-help {
+  border: 1px solid var(--phone-line);
+  border-radius: 14px;
+  background: var(--phone-surface);
+  font-size: 13px;
+}
+
+#phone-screen .mobile-devices-error {
+  color: var(--danger);
+}
+
+#phone-screen .mobile-device-pair-form,
+#phone-screen .mobile-device-pair-card {
+  border: 1px solid var(--phone-line);
+  border-radius: 14px;
+  background: var(--phone-surface);
+}
+
+/* 防止 iOS 输入时页面自动放大 */
+#phone-screen input,
+#phone-screen textarea,
+#phone-screen select,
+#mobile-login-gate input,
+#mobile-login-gate textarea,
+#mobile-login-gate select {
+  font-size: max(16px, 1em);
+}
