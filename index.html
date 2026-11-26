@@ -2,7 +2,10 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <script>
       (function () {
         window.__entryRedirectRan = true;
@@ -48,28 +51,204 @@
     <link rel="apple-touch-icon" href="assets/brand/icon-180.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css?v=20261126chat1" />
+    <link rel="stylesheet" href="mobile-login.css?v=20261126auth1" />
   </head>
   <body>
-    <section class="mobile-login-gate" id="mobile-login-gate" hidden>
-      <form class="mobile-login-card" id="mobile-login-form">
-        <img src="assets/brand/qianbian-tile.png" alt="千变" />
-        <h1>登录千变</h1>
-        <p>使用手机号验证码登录，继续管理你的设备。</p>
-        <label>
-          <span>手机号</span>
-          <input id="mobile-login-phone" inputmode="numeric" autocomplete="tel" placeholder="请输入手机号" />
-        </label>
-        <label>
-          <span>验证码</span>
-          <div class="mobile-login-code-row">
-            <input id="mobile-login-code" inputmode="numeric" autocomplete="one-time-code" placeholder="请输入验证码" />
-            <button data-action="mobile-send-sms" type="button">获取验证码</button>
+    <section
+      class="mobile-auth-gate"
+      id="mobile-login-gate"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobile-auth-title"
+      hidden
+    >
+      <div class="mobile-auth-backdrop" aria-hidden="true">
+        <span class="mobile-auth-grid"></span>
+        <span class="mobile-auth-beam mobile-auth-beam-a"></span>
+        <span class="mobile-auth-beam mobile-auth-beam-b"></span>
+      </div>
+
+      <div class="mobile-auth-page">
+        <header class="mobile-auth-topbar">
+          <div class="mobile-auth-brand">
+            <img src="assets/brand/qianbian-tile.png" alt="" />
+            <span>
+              <strong>千变</strong>
+              <small>移动工作空间</small>
+            </span>
           </div>
-        </label>
-        <p class="mobile-login-error" id="mobile-login-error" role="alert"></p>
-        <button class="mobile-login-submit" data-action="mobile-login-submit" type="submit">登录 / 注册</button>
-        <small>未注册手机号验证码通过后将自动注册。</small>
-      </form>
+          <span class="mobile-auth-secure">
+            <i data-lucide="shield-check"></i>
+            私密连接
+          </span>
+        </header>
+
+        <main class="mobile-auth-stage">
+          <section class="mobile-auth-intro">
+            <span class="mobile-auth-kicker">
+              <i data-lucide="sparkles"></i>
+              QIANBIAN MOBILE
+            </span>
+            <h1 id="mobile-auth-title">让灵感，<br /><em>继续发生。</em></h1>
+            <p>登录后同步你的对话、技能与设备连接，随时接着上次开始。</p>
+            <div class="mobile-auth-signal" aria-label="工作空间状态">
+              <span class="mobile-auth-signal-dot" aria-hidden="true"></span>
+              <span>
+                <strong>工作空间已就绪</strong>
+                <small>连接后自动同步</small>
+              </span>
+            </div>
+          </section>
+
+          <form class="mobile-auth-form" id="mobile-login-form" novalidate>
+            <header class="mobile-auth-form-head">
+              <div>
+                <span class="mobile-auth-form-kicker">ACCOUNT ACCESS</span>
+                <h2>登录千变</h2>
+              </div>
+              <span class="mobile-auth-step" aria-hidden="true">01 / 01</span>
+            </header>
+
+            <div class="mobile-auth-field" id="mobile-auth-phone-field">
+              <label class="mobile-auth-field-label" for="mobile-login-phone">
+                手机号
+              </label>
+              <span class="mobile-auth-input-shell">
+                <span class="mobile-auth-prefix" aria-hidden="true">+86</span>
+                <input
+                  id="mobile-login-phone"
+                  name="phone"
+                  type="tel"
+                  inputmode="numeric"
+                  autocomplete="tel"
+                  maxlength="11"
+                  enterkeyhint="next"
+                  placeholder="请输入 11 位手机号"
+                  aria-describedby="mobile-login-feedback"
+                />
+              </span>
+            </div>
+
+            <div class="mobile-auth-field" id="mobile-auth-code-field">
+              <label class="mobile-auth-field-label" for="mobile-login-code">
+                验证码
+              </label>
+              <span class="mobile-auth-input-shell mobile-auth-code-shell">
+                <input
+                  id="mobile-login-code"
+                  name="code"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  maxlength="6"
+                  enterkeyhint="go"
+                  placeholder="请输入验证码"
+                  aria-describedby="mobile-login-feedback"
+                />
+                <button
+                  class="mobile-auth-code-button"
+                  data-action="mobile-send-sms"
+                  type="button"
+                >
+                  获取验证码
+                </button>
+              </span>
+            </div>
+
+            <div
+              class="mobile-auth-feedback"
+              id="mobile-login-feedback"
+              role="status"
+              aria-live="polite"
+              data-tone="muted"
+            >
+              验证码将发送至你的手机号
+            </div>
+
+            <label class="mobile-auth-remember">
+              <input id="mobile-login-remember" type="checkbox" checked />
+              <span class="mobile-auth-checkbox" aria-hidden="true">
+                <i data-lucide="check"></i>
+              </span>
+              <span>在这台设备保持登录</span>
+            </label>
+
+            <button
+              class="mobile-auth-submit"
+              data-action="mobile-login-submit"
+              type="submit"
+            >
+              <span data-submit-label>进入工作空间</span>
+              <i data-lucide="arrow-up-right"></i>
+              <span class="mobile-auth-submit-loader" aria-hidden="true"></span>
+            </button>
+
+            <p class="mobile-auth-legal">
+              登录即表示你同意
+              <button type="button" data-auth-legal="terms">《服务条款》</button>
+              与
+              <button type="button" data-auth-legal="privacy">《隐私政策》</button>
+            </p>
+          </form>
+        </main>
+
+        <div class="mobile-auth-assurances" aria-label="账号能力">
+          <span><i data-lucide="monitor-smartphone"></i>多端同步</span>
+          <span><i data-lucide="key-round"></i>安全登录</span>
+          <span><i data-lucide="cloud-off"></i>本地可用</span>
+        </div>
+
+        <footer class="mobile-auth-footer">
+          <span><i data-lucide="lock-keyhole"></i>你的内容只属于你</span>
+          <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+            湘ICP备2026043985号-3
+          </a>
+        </footer>
+      </div>
+
+      <div class="mobile-auth-dialog" id="mobile-auth-legal-dialog" hidden>
+        <button
+          class="mobile-auth-dialog-scrim"
+          type="button"
+          data-auth-dialog-close
+          aria-label="关闭协议"
+        ></button>
+        <section
+          class="mobile-auth-dialog-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobile-auth-dialog-title"
+          tabindex="-1"
+        >
+          <header>
+            <div>
+              <span>QIANBIAN POLICY</span>
+              <h2 id="mobile-auth-dialog-title">服务条款</h2>
+            </div>
+            <button
+              class="mobile-auth-dialog-close"
+              type="button"
+              data-auth-dialog-close
+              aria-label="关闭协议"
+            >
+              <i data-lucide="x"></i>
+            </button>
+          </header>
+          <div class="mobile-auth-dialog-copy" id="mobile-auth-dialog-copy"></div>
+          <button class="mobile-auth-dialog-confirm" type="button" data-auth-dialog-close>
+            我知道了
+          </button>
+        </section>
+      </div>
+
+      <div class="mobile-auth-success" id="mobile-auth-success" hidden>
+        <span class="mobile-auth-success-mark" aria-hidden="true">
+          <i data-lucide="check"></i>
+        </span>
+        <strong>身份已确认</strong>
+        <p>正在同步你的移动工作空间</p>
+        <span class="mobile-auth-success-loader" aria-hidden="true"></span>
+      </div>
     </section>
     <div class="app-shell">
       <header class="topbar">
@@ -313,7 +492,7 @@
     <script src="device-settings.js?v=20261125stageb5"></script>
     <script src="assets/chat-timeline.js?v=20261125stagea"></script>
     <script src="desktop-api.js?v=20261125stageb5"></script>
-    <script src="mobile-login.js?v=20261125stagea"></script>
+    <script src="mobile-login.js?v=20261126auth1"></script>
     <script src="data.js?v=20261120ml"></script>
     <script src="app.js?v=20261126chat3"></script>
   </body>

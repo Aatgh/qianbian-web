@@ -115,6 +115,18 @@
   };
   const ACCENT_LABELS = { a62466: "深梅" };
   const storedAccent = localStorage.getItem("dshgo-atlas-accent");
+  const storedMobileAccount = (() => {
+    for (const storage of [window.localStorage, window.sessionStorage]) {
+      try {
+        const value = storage.getItem("qianbian-mobile-profile");
+        if (value) return JSON.parse(value);
+      } catch {}
+    }
+    return null;
+  })();
+  const maskedMobilePhone = storedMobileAccount?.phone
+    ? storedMobileAccount.phone.replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2")
+    : "";
 
   const state = {
     current: "home",
@@ -214,7 +226,20 @@
     installedSkillSelection: new Set(),
     accountEditing: false,
     accountDraft: null,
-    accountProfile: { ...(pages.account?.profile || {}) },
+    accountProfile: {
+      ...(pages.account?.profile || {}),
+      ...(storedMobileAccount
+        ? {
+            nickname:
+              storedMobileAccount.nickname ||
+              pages.account?.profile?.nickname,
+            accountId:
+              storedMobileAccount.accountId ||
+              pages.account?.profile?.accountId,
+            phone: maskedMobilePhone || pages.account?.profile?.phone,
+          }
+        : {}),
+    },
   };
   const COMPOSE_ACTIONS = [
     ["图片", "从相册选择", "image"],
@@ -1552,6 +1577,19 @@
     state.dialog = null;
     renderPhone();
     updateIcons();
+  }
+
+  function redirectToMobileLogin() {
+    for (const storage of [window.localStorage, window.sessionStorage]) {
+      try {
+        storage.removeItem("qianbian-mobile-auth");
+        storage.removeItem("qianbian-mobile-profile");
+      } catch {}
+    }
+    const next = new URL(window.location.href);
+    next.searchParams.set("auth", "1");
+    next.hash = "/login";
+    window.location.replace(next.href);
   }
 
   function completeSkillPublish() {
@@ -8235,14 +8273,13 @@ export async function run(input, context) {
         if (dialogAction === "publish-skill") {
           completeSkillPublish();
         } else if (dialogAction === "logout") {
-          const finishLogout = () => {
-            localStorage.removeItem("qianbian-mobile-auth");
-            window.location.reload();
-          };
           if (api && state.backendConnected) {
-            api.logout().then(finishLogout, finishLogout);
+            api
+              .logout()
+              .catch(() => {})
+              .finally(redirectToMobileLogin);
           } else {
-            finishLogout();
+            redirectToMobileLogin();
           }
         } else {
           closeDialog();
@@ -8458,13 +8495,9 @@ export async function run(input, context) {
           api
             .logout()
             .catch(() => {})
-            .finally(() => {
-              localStorage.removeItem("qianbian-mobile-auth");
-              window.location.reload();
-            });
+            .finally(redirectToMobileLogin);
         } else {
-          localStorage.removeItem("qianbian-mobile-auth");
-          window.location.reload();
+          redirectToMobileLogin();
         }
       } else if (action === "restart") {
         showDialog("重启引擎？", "运行中的回复会中断，已完成的内容会保留。", "重启", action);
