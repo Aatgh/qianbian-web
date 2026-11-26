@@ -263,6 +263,14 @@
     location(signal) {
       return request("/location", { signal });
     },
+    ui(signal) {
+      return request("/ui", { signal });
+    },
+    uiData(widgetId, signal) {
+      return request(`/ui/widgets/${encodeURIComponent(widgetId)}/data`, {
+        signal,
+      });
+    },
     startSession(payload, signal) {
       return request("/session/start", {
         method: "POST",

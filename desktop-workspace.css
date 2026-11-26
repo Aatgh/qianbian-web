@@ -78,6 +78,26 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   border-top: 1px solid var(--line);
 }
 
+.desktop-reference .sidebar-widget-nav {
+  display: grid;
+  width: 100%;
+  max-height: min(36vh, 260px);
+  flex: none;
+  gap: 5px;
+  padding: 8px 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+  scrollbar-width: none;
+}
+
+.desktop-reference .sidebar-widget-nav[hidden] {
+  display: none;
+}
+
+.desktop-reference .sidebar-widget-nav::-webkit-scrollbar {
+  display: none;
+}
+
 .sidebar-environment {
   position: relative;
   display: grid;
@@ -1272,6 +1292,187 @@ body.desktop-reference.workspace-panel-open .history-sidebar {
   color: var(--danger);
   font-size: var(--adaptive-small);
   font-weight: 650;
+}
+
+.ui-widget-panel {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.ui-widget-toolbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--faint);
+  font-size: var(--adaptive-small);
+}
+
+.ui-widget-toolbar .icon-button {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+
+.ui-widget-state {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 22px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.ui-widget-state > svg {
+  width: 24px;
+  height: 24px;
+  color: var(--accent-ink);
+}
+
+.ui-widget-state strong {
+  color: var(--ink);
+  font-size: var(--adaptive-body);
+}
+
+.ui-widget-state span {
+  max-width: 300px;
+  font-size: var(--adaptive-small);
+  line-height: 1.55;
+}
+
+.ui-widget-state button,
+.ui-widget-inline-error button {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: var(--adaptive-small);
+}
+
+.ui-widget-inline-error {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 20%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 5%, var(--surface));
+  color: var(--danger);
+  font-size: var(--adaptive-small);
+}
+
+.ui-widget-inline-error > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ui-widget-feed-list {
+  display: grid;
+  min-width: 0;
+}
+
+.ui-widget-feed-item {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 12px 3px;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+.ui-widget-feed-item:visited {
+  color: inherit;
+}
+
+.ui-widget-feed-item:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.ui-widget-feed-copy {
+  min-width: 0;
+}
+
+.ui-widget-feed-copy strong,
+.ui-widget-feed-copy > span {
+  display: block;
+}
+
+.ui-widget-feed-copy strong {
+  color: var(--ink);
+  font-size: var(--adaptive-body);
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.ui-widget-feed-copy > span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: var(--adaptive-small);
+  line-height: 1.6;
+}
+
+.ui-widget-feed-meta {
+  display: grid;
+  align-content: start;
+  justify-items: end;
+  gap: 4px;
+  color: var(--faint);
+  font-size: var(--adaptive-caption);
+  white-space: nowrap;
+}
+
+.ui-widget-markdown {
+  color: var(--ink-soft);
+  font-size: var(--adaptive-body);
+  line-height: 1.7;
+}
+
+.ui-widget-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ui-widget-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--adaptive-small);
+}
+
+.ui-widget-table th,
+.ui-widget-table td {
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.ui-widget-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: ui-widget-spin 700ms linear infinite;
+}
+
+@keyframes ui-widget-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .skill-market-launcher {

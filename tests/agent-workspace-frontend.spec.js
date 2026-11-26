@@ -98,7 +98,7 @@ async function mockAgentWorkspace(page) {
     }
     if (pathname === "/ui/widgets/101/data") {
       calls.data.set(101, (calls.data.get(101) || 0) + 1);
-      await new Promise((resolve) => setTimeout(resolve, 120));
+      await new Promise((resolve) => setTimeout(resolve, 700));
       return route.fulfill({
         headers,
         json: {
@@ -198,14 +198,18 @@ test("desktop renders generic agent workspace widgets and feed states", async ({
   await unlockDesktop(page);
 
   const host = page.locator("#desktop-ui-widget-host");
-  await expect(host.locator("[data-ui-widget-id]")).toHaveCount(4);
-  await host.locator('[data-ui-widget-id="101"]').click();
+  await expect(host.locator("[data-ui-widget-open]")).toHaveCount(4);
+  await host.locator('[data-ui-widget-open="101"]').click();
 
   await expect(page.locator(".ui-widget-loading")).toBeVisible();
   await expect(page.locator(".ui-widget-feed-item")).toHaveCount(2);
   await expect(page.locator(".ui-widget-panel")).toContainText(
     "第一条通用动态",
   );
+  await page.screenshot({
+    path: "test-results/agent-workspace-desktop.png",
+    fullPage: true,
+  });
 
   const beforeRefresh = calls.data.get(101) || 0;
   await page.locator("[data-ui-widget-refresh]").click();
@@ -213,8 +217,8 @@ test("desktop renders generic agent workspace widgets and feed states", async ({
     beforeRefresh,
   );
 
-  await page.locator("[data-close-rail-dialog]").first().click();
-  await host.locator('[data-ui-widget-id="102"]').click();
+  await page.locator(".rail-dialog-close").click();
+  await host.locator('[data-ui-widget-open="102"]').click();
   await expect(page.locator(".ui-widget-error")).toContainText(
     "数据源暂时不可用",
   );
@@ -224,12 +228,12 @@ test("desktop renders generic agent workspace widgets and feed states", async ({
     beforeRetry,
   );
 
-  await page.locator("[data-close-rail-dialog]").first().click();
-  await host.locator('[data-ui-widget-id="103"]').click();
+  await page.locator(".rail-dialog-close").click();
+  await host.locator('[data-ui-widget-open="103"]').click();
   await expect(page.locator(".ui-widget-empty")).toBeVisible();
 
-  await page.locator("[data-close-rail-dialog]").first().click();
-  await host.locator('[data-ui-widget-id="104"]').click();
+  await page.locator(".rail-dialog-close").click();
+  await host.locator('[data-ui-widget-open="104"]').click();
   await expect(page.locator(".ui-widget-unsupported")).toContainText(
     "暂不支持的类型",
   );
@@ -255,11 +259,15 @@ test("mobile renders generic widget navigation in a full-screen drawer", async (
     .click();
 
   const host = page.locator("#mobile-ui-widget-host");
-  await expect(host.locator("[data-ui-widget-id]")).toHaveCount(4);
-  await host.locator('[data-ui-widget-id="101"]').click();
+  await expect(host.locator("[data-ui-widget-open]")).toHaveCount(4);
+  await host.locator('[data-ui-widget-open="101"]').click();
 
   await expect(page.locator(".mobile-ui-widget-layer")).toBeVisible();
   await expect(page.locator(".ui-widget-feed-item")).toHaveCount(2);
+  await page.screenshot({
+    path: "test-results/agent-workspace-mobile.png",
+    fullPage: true,
+  });
   const beforeRefresh = calls.data.get(101) || 0;
   await page.locator("[data-ui-widget-refresh]").click();
   await expect.poll(() => calls.data.get(101) || 0).toBeGreaterThan(
@@ -271,7 +279,7 @@ test("mobile renders generic widget navigation in a full-screen drawer", async (
   await page
     .locator('.conversation-nav-action[data-action="open-main-nav"]')
     .click();
-  await host.locator('[data-ui-widget-id="102"]').click();
+  await host.locator('[data-ui-widget-open="102"]').click();
   await expect(page.locator(".ui-widget-error")).toContainText(
     "数据源暂时不可用",
   );

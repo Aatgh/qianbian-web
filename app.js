@@ -201,6 +201,12 @@
     catalogOpen: false,
     inspectorOpen: false,
     mainNavOpen: false,
+    uiWidgets: [],
+    uiWidgetsStatus: "idle",
+    uiWidgetsError: "",
+    uiWidgetData: new Map(),
+    uiWidgetRefreshTimers: new Map(),
+    uiWidgetActiveId: null,
     publishStep: 1,
     skillModal: null,
     skillDetail: null,
@@ -1118,6 +1124,7 @@
       updateIcons();
       refreshMobileSessions();
       refreshMobileAffinity();
+      refreshMobileUiWidgets({ silent: true });
       return;
     }
     if (method === "device/status") {
@@ -1181,6 +1188,203 @@
       renderPhone();
       updateIcons();
     } catch {}
+  }
+
+  function getMobileUiWidget(widgetId) {
+    return state.uiWidgets.find(
+      (widget) => String(widget.id) === String(widgetId),
+    );
+  }
+
+  async function refreshMobileUiWidgets({ silent = false } = {}) {
+    if (!api || !state.backendConnected) {
+      state.uiWidgets = [];
+      state.uiWidgetsStatus = "unavailable";
+      state.uiWidgetsError = "";
+      if (state.mainNavOpen || state.uiWidgetActiveId) renderPhone();
+      return;
+    }
+    if (!silent) {
+      state.uiWidgetsStatus = "loading";
+      if (state.mainNavOpen) renderPhone();
+    }
+    try {
+      const renderer = window.QianbianAgentWorkspace;
+      state.uiWidgets = renderer
+        ? renderer.normalizeWidgetList(await api.ui())
+        : [];
+      state.uiWidgetsStatus = "ready";
+      state.uiWidgetsError = "";
+      if (
+        state.uiWidgetActiveId &&
+        !getMobileUiWidget(state.uiWidgetActiveId)
+      ) {
+        state.uiWidgetActiveId = null;
+        stopMobileUiWidgetRefresh();
+      }
+    } catch (error) {
+      state.uiWidgetsStatus = "error";
+      state.uiWidgetsError = error.message || "模块读取失败";
+    }
+    if (state.mainNavOpen || state.uiWidgetActiveId) renderPhone();
+  }
+
+  function stopMobileUiWidgetRefresh(widgetId = state.uiWidgetActiveId) {
+    if (widgetId == null) return;
+    const key = String(widgetId);
+    const timer = state.uiWidgetRefreshTimers.get(key);
+    if (timer) window.clearTimeout(timer);
+    state.uiWidgetRefreshTimers.delete(key);
+  }
+
+  function scheduleMobileUiWidgetRefresh(widget) {
+    stopMobileUiWidgetRefresh(widget.id);
+    const minutes = Number(widget.config?.source?.refreshMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) return;
+    const delay = Math.max(60_000, minutes * 60_000);
+    const timer = window.setTimeout(() => {
+      state.uiWidgetRefreshTimers.delete(String(widget.id));
+      if (
+        document.visibilityState === "visible" &&
+        String(state.uiWidgetActiveId) === String(widget.id)
+      ) {
+        loadMobileUiWidgetData(widget.id, { force: true, silent: true });
+      } else {
+        scheduleMobileUiWidgetRefresh(widget);
+      }
+    }, delay);
+    state.uiWidgetRefreshTimers.set(String(widget.id), timer);
+  }
+
+  async function loadMobileUiWidgetData(
+    widgetId,
+    { force = false, silent = false } = {},
+  ) {
+    const widget = getMobileUiWidget(widgetId);
+    if (!widget) return;
+    const key = String(widget.id);
+    const previous = state.uiWidgetData.get(key);
+    stopMobileUiWidgetRefresh(widget.id);
+    state.uiWidgetData.set(key, {
+      ...(previous || {}),
+      status: previous?.payload && !force ? "ready" : "loading",
+      error: "",
+    });
+    if (!silent) renderPhone();
+    if (!api || !state.backendConnected) {
+      state.uiWidgetData.set(key, {
+        status: "error",
+        error: "服务未连接，暂时无法读取模块数据",
+      });
+      renderPhone();
+      return;
+    }
+    try {
+      const renderer = window.QianbianAgentWorkspace;
+      const payload = renderer
+        ? renderer.normalizeData(await api.uiData(widget.id))
+        : await api.uiData(widget.id);
+      state.uiWidgetData.set(key, {
+        status: payload?.error && !payload?.items?.length ? "error" : "ready",
+        payload,
+        error: payload?.error || "",
+      });
+      scheduleMobileUiWidgetRefresh(widget);
+    } catch (error) {
+      state.uiWidgetData.set(key, {
+        status: "error",
+        error: error.message || "模块数据读取失败",
+      });
+    }
+    renderPhone();
+  }
+
+  function openMobileUiWidget(widgetId) {
+    const widget = getMobileUiWidget(widgetId);
+    if (!widget) return;
+    state.uiWidgetActiveId = String(widget.id);
+    state.mainNavOpen = false;
+    renderPhone();
+    updateIcons();
+    loadMobileUiWidgetData(widget.id);
+  }
+
+  function closeMobileUiWidget() {
+    stopMobileUiWidgetRefresh();
+    state.uiWidgetActiveId = null;
+    renderPhone();
+    updateIcons();
+  }
+
+  function renderMobileUiWidgetNav() {
+    const widgets = state.uiWidgets.filter(
+      (widget) => widget.slot === "sidebar" && widget.enabled,
+    );
+    if (!widgets.length) return "";
+    return `
+      <section class="mobile-ui-widget-nav" id="mobile-ui-widget-host" aria-label="Agent 工作区模块">
+        <div class="mobile-ui-widget-nav-head">
+          <strong>工作区模块</strong>
+          <span>${widgets.length} 个</span>
+        </div>
+        <div class="mobile-ui-widget-list">
+          ${widgets
+            .map(
+              (widget) => `
+                <button class="mobile-ui-widget-entry" data-ui-widget-open="${escapeHtml(
+                  widget.id,
+                )}" type="button">
+                  <span class="mobile-ui-widget-entry-icon">${icon(
+                    widget.icon,
+                  )}</span>
+                  <span>${escapeHtml(widget.title)}</span>
+                  ${icon("chevron-right")}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderMobileUiWidgetOverlay() {
+    const widget = getMobileUiWidget(state.uiWidgetActiveId);
+    if (!widget) return "";
+    const dataState =
+      state.uiWidgetData.get(String(widget.id)) || { status: "loading" };
+    const renderer = window.QianbianAgentWorkspace;
+    const payload = dataState.payload || {};
+    return `
+      <section class="mobile-ui-widget-layer" role="dialog" aria-modal="true" aria-label="${escapeHtml(
+        widget.title,
+      )}">
+        <header class="mobile-ui-widget-head">
+          <button class="phone-icon-button ghost" data-close-ui-widget type="button" aria-label="关闭模块">${icon(
+            "chevron-left",
+          )}</button>
+          <div>
+            <h2>${escapeHtml(widget.title)}</h2>
+            <span>${payload.updatedAt ? "更新于 " + escapeHtml(renderer?.formatPublishedAt(payload.updatedAt) || "") : "Agent 工作区模块"}</span>
+          </div>
+          <button class="phone-icon-button ghost" data-ui-widget-refresh type="button" aria-label="刷新模块">${icon(
+            "refresh-cw",
+          )}</button>
+        </header>
+        <div class="mobile-ui-widget-body">
+          ${
+            renderer
+              ? renderer.renderWidgetBody(widget, dataState, {
+                  escapeHtml,
+                  icon,
+                })
+              : `<div class="ui-widget-state ui-widget-error">${icon(
+                  "circle-alert",
+                )}<strong>模块渲染器未加载</strong></div>`
+          }
+        </div>
+      </section>
+    `;
   }
 
   async function initializeMobileBackend() {
@@ -1266,6 +1470,7 @@
           renderPhone();
         },
       });
+      refreshMobileUiWidgets({ silent: true });
     } catch {
       state.backendConnected = false;
       state.network = "offline";
@@ -3685,6 +3890,7 @@
           </div>
           <span class="main-nav-hero-action">${icon("settings-2")}</span>
         </button>
+        ${renderMobileUiWidgetNav()}
         <div class="skill-hub-actions is-single">
           <button
             class="skill-hub-entry is-text-only"
@@ -7233,6 +7439,7 @@ export async function run(input, context) {
     if (state.skillModal || state.skillDetail) html += renderSkillModalOverlay();
     if (state.historyOpen) html += renderHistoryOverlay();
     if (state.devicesOpen) html += renderMobileDevicesOverlay();
+    if (state.uiWidgetActiveId) html += renderMobileUiWidgetOverlay();
     if (state.dialog) html += renderDialog();
     if (state.toast) {
       html += `<div class="phone-toast">${icon(state.toast.icon)}${escapeHtml(state.toast.message)}</div>`;
@@ -7675,6 +7882,31 @@ export async function run(input, context) {
 
   function handleDocumentClick(event) {
     if (event.target.closest("#mobile-login-gate")) return;
+    const uiWidgetOpen = event.target.closest("[data-ui-widget-open]");
+    if (uiWidgetOpen) {
+      event.preventDefault();
+      openMobileUiWidget(uiWidgetOpen.dataset.uiWidgetOpen);
+      return;
+    }
+    if (event.target.closest("[data-ui-widget-refresh]")) {
+      event.preventDefault();
+      if (state.uiWidgetActiveId) {
+        loadMobileUiWidgetData(state.uiWidgetActiveId, { force: true });
+      }
+      return;
+    }
+    if (event.target.closest("[data-ui-widget-retry]")) {
+      event.preventDefault();
+      if (state.uiWidgetActiveId) {
+        loadMobileUiWidgetData(state.uiWidgetActiveId, { force: true });
+      }
+      return;
+    }
+    if (event.target.closest("[data-close-ui-widget]")) {
+      event.preventDefault();
+      closeMobileUiWidget();
+      return;
+    }
     const openMainNavTarget = event.target.closest('[data-action="open-main-nav"]');
     if (openMainNavTarget) {
       event.preventDefault();
@@ -8739,6 +8971,18 @@ export async function run(input, context) {
         }
       }
       swipeStart = null;
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!state.uiWidgetActiveId) return;
+      if (document.visibilityState === "hidden") {
+        stopMobileUiWidgetRefresh();
+        return;
+      }
+      loadMobileUiWidgetData(state.uiWidgetActiveId, {
+        force: true,
+        silent: true,
+      });
     });
 
     window.addEventListener("resize", fitDevice);

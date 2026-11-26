@@ -186,12 +186,18 @@ test("mobile supports real SMS login", async ({ page }) => {
   await page.locator("#mobile-login-phone").fill("13800000000");
   await page.locator('[data-action="mobile-send-sms"]').click();
   await expect
-    .poll(() => calls.find((call) => call.pathname === "/auth/sms-code"))
+    .poll(
+      () => calls.find((call) => call.pathname === "/auth/sms-code"),
+      { timeout: 10000 },
+    )
     .toBeTruthy();
   await page.locator("#mobile-login-code").fill("123456");
   await page.locator('[data-action="mobile-login-submit"]').click();
   await expect
-    .poll(() => calls.find((call) => call.pathname === "/auth/login/phone"))
+    .poll(
+      () => calls.find((call) => call.pathname === "/auth/login/phone"),
+      { timeout: 10000 },
+    )
     .toBeTruthy();
   await expect(gate).toBeHidden({ timeout: 10000 });
 

@@ -25,6 +25,7 @@
   const accountDialogHost = document.getElementById("account-dialog-host");
   const workspaceSwitcher = document.getElementById("workspace-switcher");
   const workspaceList = document.getElementById("workspace-list");
+  const desktopUiWidgetHost = document.getElementById("desktop-ui-widget-host");
   const affinityRing = document.getElementById("context-affinity-ring");
   const affinityValue = document.getElementById("context-affinity-value");
   const insightPanelContent = document.getElementById("insight-panel-content");
@@ -1035,6 +1036,12 @@
     deviceTasksError: "",
     sessionLoading: false,
     activeTurnId: null,
+    uiWidgets: [],
+    uiWidgetsStatus: "idle",
+    uiWidgetsError: "",
+    uiWidgetData: new Map(),
+    uiWidgetRefreshTimers: new Map(),
+    uiWidgetActiveId: null,
     pendingApprovals: [],
     pendingInputs: [],
     backendAutomations: [],
@@ -2268,6 +2275,7 @@
       state.activeTurnId = null;
       render();
       refreshBackendSessions();
+      refreshUiWidgets({ silent: true });
       if (api) {
         api
           .affinity()
@@ -2339,6 +2347,7 @@
       state.apiAvailable = true;
       if (engineLabel) engineLabel.textContent = "后端已连接";
       refreshAccountLocation();
+      refreshUiWidgets({ silent: true });
     } catch (error) {
       state.apiAvailable = false;
       state.apiStatus = { connected: false, error: error.message };
@@ -4030,6 +4039,16 @@ export const skill = {
       }
       return info;
     }
+    if (state.railDialog.root === "ui-widget") {
+      const widget = getUiWidget(state.railDialog.widgetId);
+      return {
+        title: widget?.title || "工作区模块",
+        description:
+          widget?.kind === "feed"
+            ? "通用数据流模块"
+            : "由当前账号工作区提供的通用模块",
+      };
+    }
     if (state.railDialog.root === "skill-market") {
       if (state.detail) return null;
       if (state.skillMarketTab === "publish") {
@@ -4245,6 +4264,7 @@ export const skill = {
     if (state.railDialog?.root === "right-detail") {
       return renderRightDetail();
     }
+    if (state.railDialog?.root === "ui-widget") return renderUiWidgetPanel();
     if (state.railDialog?.root === "skills") return renderSkillsView();
     if (state.railDialog?.root === "skill-market") {
       return renderSkillMarketDialog();
@@ -5096,6 +5116,8 @@ export const skill = {
   function closeRailDialog() {
     const restoreTarget = document.activeElement;
     skillMarketEntering = false;
+    if (state.railDialog?.root === "ui-widget") stopUiWidgetRefresh();
+    state.uiWidgetActiveId = null;
     state.railDialog = null;
     state.detail = null;
     render();
@@ -6000,6 +6022,177 @@ export const skill = {
     updateIcons(documentsPanelHost);
   }
 
+  function getUiWidget(widgetId) {
+    return state.uiWidgets.find(
+      (widget) => String(widget.id) === String(widgetId),
+    );
+  }
+
+  function renderUiWidgetNav() {
+    if (!desktopUiWidgetHost) return;
+    const widgets = state.uiWidgets.filter(
+      (widget) => widget.slot === "sidebar" && widget.enabled,
+    );
+    desktopUiWidgetHost.hidden = !widgets.length;
+    desktopUiWidgetHost.innerHTML = widgets
+      .map(
+        (widget) => `
+          <button class="nav-item rail-expand ui-widget-nav-button" data-ui-widget-open="${escapeHtml(
+            widget.id,
+          )}" data-tooltip="${escapeHtml(widget.title)}" type="button">
+            ${icon(widget.icon)}
+            <span>${escapeHtml(widget.title)}</span>
+          </button>
+        `,
+      )
+      .join("");
+    updateIcons(desktopUiWidgetHost);
+  }
+
+  async function refreshUiWidgets({ silent = false } = {}) {
+    if (!api || !state.apiAvailable) {
+      state.uiWidgets = [];
+      state.uiWidgetsStatus = state.apiAvailable ? "ready" : "unavailable";
+      state.uiWidgetsError = "";
+      renderUiWidgetNav();
+      return;
+    }
+    if (!silent) {
+      state.uiWidgetsStatus = "loading";
+      renderUiWidgetNav();
+    }
+    try {
+      const renderer = window.QianbianAgentWorkspace;
+      const payload = await api.ui();
+      state.uiWidgets = renderer
+        ? renderer.normalizeWidgetList(payload)
+        : Array.isArray(payload?.widgets)
+          ? payload.widgets
+          : [];
+      state.uiWidgetsStatus = "ready";
+      state.uiWidgetsError = "";
+      if (
+        state.railDialog?.root === "ui-widget" &&
+        !getUiWidget(state.railDialog.widgetId)
+      ) {
+        state.railDialog = null;
+        stopUiWidgetRefresh();
+      }
+    } catch (error) {
+      state.uiWidgetsStatus = "error";
+      state.uiWidgetsError = error.message || "模块读取失败";
+    }
+    renderUiWidgetNav();
+    if (state.railDialog?.root === "ui-widget") renderRailDialog();
+  }
+
+  function stopUiWidgetRefresh(widgetId = state.uiWidgetActiveId) {
+    if (widgetId == null) return;
+    const key = String(widgetId);
+    const timer = state.uiWidgetRefreshTimers.get(key);
+    if (timer) window.clearTimeout(timer);
+    state.uiWidgetRefreshTimers.delete(key);
+  }
+
+  function scheduleUiWidgetRefresh(widget) {
+    stopUiWidgetRefresh(widget.id);
+    const minutes = Number(widget.config?.source?.refreshMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) return;
+    const delay = Math.max(60_000, minutes * 60_000);
+    const timer = window.setTimeout(() => {
+      state.uiWidgetRefreshTimers.delete(String(widget.id));
+      if (
+        document.visibilityState === "visible" &&
+        state.railDialog?.root === "ui-widget" &&
+        String(state.railDialog.widgetId) === String(widget.id)
+      ) {
+        loadUiWidgetData(widget.id, { force: true, silent: true });
+      } else {
+        scheduleUiWidgetRefresh(widget);
+      }
+    }, delay);
+    state.uiWidgetRefreshTimers.set(String(widget.id), timer);
+  }
+
+  async function loadUiWidgetData(widgetId, { force = false, silent = false } = {}) {
+    const widget = getUiWidget(widgetId);
+    if (!widget) return;
+    const key = String(widget.id);
+    const previous = state.uiWidgetData.get(key);
+    stopUiWidgetRefresh(widget.id);
+    state.uiWidgetData.set(key, {
+      ...(previous || {}),
+      status: previous?.payload && !force ? "ready" : "loading",
+      error: "",
+    });
+    if (!silent) render();
+    if (!api || !state.apiAvailable) {
+      state.uiWidgetData.set(key, {
+        status: "error",
+        error: "服务未连接，暂时无法读取模块数据",
+      });
+      render();
+      return;
+    }
+    try {
+      const renderer = window.QianbianAgentWorkspace;
+      const payload = renderer
+        ? renderer.normalizeData(await api.uiData(widget.id))
+        : await api.uiData(widget.id);
+      const status = payload?.error && !payload?.items?.length ? "error" : "ready";
+      state.uiWidgetData.set(key, {
+        status,
+        payload,
+        error: payload?.error || "",
+      });
+      scheduleUiWidgetRefresh(widget);
+    } catch (error) {
+      state.uiWidgetData.set(key, {
+        status: "error",
+        error: error.message || "模块数据读取失败",
+      });
+    }
+    render();
+  }
+
+  function openUiWidget(widgetId) {
+    const widget = getUiWidget(widgetId);
+    if (!widget) return;
+    state.railDialog = { root: "ui-widget", widgetId: String(widget.id) };
+    state.detail = null;
+    state.uiWidgetActiveId = String(widget.id);
+    render();
+    loadUiWidgetData(widget.id);
+  }
+
+  function renderUiWidgetPanel() {
+    const widget = getUiWidget(state.railDialog?.widgetId);
+    if (!widget) return "";
+    const dataState =
+      state.uiWidgetData.get(String(widget.id)) || { status: "loading" };
+    const renderer = window.QianbianAgentWorkspace;
+    const data = dataState.payload || {};
+    return `
+      <section class="ui-widget-panel" data-ui-widget-panel="${escapeHtml(
+        widget.id,
+      )}">
+        <div class="ui-widget-toolbar">
+          <span>${data.updatedAt ? "更新于 " + escapeHtml(renderer?.formatPublishedAt(data.updatedAt) || "") : "通用模块"}</span>
+          <button class="icon-button" data-ui-widget-refresh type="button" aria-label="刷新模块">${icon(
+            "refresh-cw",
+          )}</button>
+        </div>
+        ${
+          renderer
+            ? renderer.renderWidgetBody(widget, dataState, { escapeHtml, icon })
+            : `<div class="ui-widget-state ui-widget-error">${icon(
+                "circle-alert",
+              )}<strong>模块渲染器未加载</strong></div>`
+        }
+      </section>
+    `;
+  }
+
   function renderSidePanel() {
     document.querySelectorAll("[data-side-panel-view]").forEach((view) => {
       view.hidden = view.dataset.sidePanelView !== state.sidePanel;
@@ -6096,6 +6289,7 @@ export const skill = {
     syncChrome();
     renderWorkspaceSwitcher();
     renderSessions();
+    renderUiWidgetNav();
     renderSidePanel();
     renderView();
     renderComposer();
@@ -7461,6 +7655,23 @@ export const skill = {
       closeDetail();
       return;
     }
+    const uiWidgetOpen = event.target.closest("[data-ui-widget-open]");
+    if (uiWidgetOpen) {
+      openUiWidget(uiWidgetOpen.dataset.uiWidgetOpen);
+      return;
+    }
+    if (event.target.closest("[data-ui-widget-refresh]")) {
+      if (state.uiWidgetActiveId) {
+        loadUiWidgetData(state.uiWidgetActiveId, { force: true });
+      }
+      return;
+    }
+    if (event.target.closest("[data-ui-widget-retry]")) {
+      if (state.uiWidgetActiveId) {
+        loadUiWidgetData(state.uiWidgetActiveId, { force: true });
+      }
+      return;
+    }
     if (event.target.closest("[data-close-rail-dialog]")) {
       closeRailDialog();
       return;
@@ -8120,6 +8331,17 @@ export const skill = {
     persistAccountProfile();
     renderAccountDialog();
     render();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (state.railDialog?.root !== "ui-widget") return;
+    if (document.visibilityState === "hidden") {
+      stopUiWidgetRefresh();
+      return;
+    }
+    if (state.uiWidgetActiveId) {
+      loadUiWidgetData(state.uiWidgetActiveId, { force: true, silent: true });
+    }
   });
 
   handleViewportChange();
