@@ -804,7 +804,9 @@ test("desktop restores active session and right panel after reload", async ({
     .locator('[data-session="design-system"]')
     .first()
     .dispatchEvent("click");
-  await page.locator('[data-insight-tab="task-activity"]').click();
+  await expect(page.locator("#insight-panel-content")).toContainText(
+    "技能配置",
+  );
 
   await page.reload();
   await unlockDesktop(page);
@@ -812,8 +814,8 @@ test("desktop restores active session and right panel after reload", async ({
   await expect(
     page.locator('[data-session="design-system"]').first(),
   ).toHaveClass(/is-active/);
-  await expect(page.locator('[data-insight-tab="task-activity"]')).toHaveClass(
-    /is-active/,
+  await expect(page.locator("#insight-panel-content")).toContainText(
+    "技能配置",
   );
   await expect(page.locator("#message-thread")).toContainText(
     "可以先建立三栏工作区",
@@ -1069,9 +1071,11 @@ test("desktop skill delete control aligns with card toggles", async ({
 
   const skillDelete = page.locator("[data-toggle-skill-delete]");
   await expect(skillDelete).toBeVisible();
-  await expect(page.locator(".insight-icon-grid .insight-icon-button")).toHaveCount(
-    4,
+  await expect(page.locator("#insight-panel-content")).toContainText(
+    "技能配置",
   );
+  // 无后端的任务动态/提醒/记忆 Tab 已删除，右栏只保留技能配置
+  await expect(page.locator(".insight-icon-grid")).toHaveCount(0);
   await expect(page.locator("#context-close")).toHaveCount(0);
   await expect(
     page.locator(".right-feature-title-row [data-toggle-skill-delete]"),
