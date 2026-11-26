@@ -493,6 +493,60 @@ test("mobile message copy and quote use real state, and share is removed", async
   ).toBe(true);
 });
 
+test("mobile ignores backend events from another session", async ({ page }) => {
+  const calls = [];
+  await mockBackend(page, calls, { resumeItems: [] });
+  await page.goto(mobileUrl);
+  await waitForMobileBackend(page);
+  await page.locator('[data-action="open-history"]').click();
+  await page.locator('[data-session-id="23"]').click();
+  await expect
+    .poll(() => calls.find((call) => call.pathname === "/session/resume"))
+    .toBeTruthy();
+
+  await page.evaluate(() => {
+    const handle = window.__qianbianMobileBackend.handleEvent;
+    handle("turn/started", { sessionId: "99", turnId: "foreign-turn" });
+    handle("item/completed", {
+      sessionId: "99",
+      item: {
+        itemId: "foreign-answer",
+        turnId: "foreign-turn",
+        kind: "agentMessage",
+        text: "其他会话的内容不应出现",
+        status: "completed",
+        done: true,
+      },
+    });
+    handle("approval/requested", {
+      sessionId: "99",
+      approvalId: "foreign-approval",
+      toolName: "write_file",
+      subject: { summary: "其他会话的审批" },
+    });
+  });
+
+  await expect(page.getByText("其他会话的内容不应出现")).toHaveCount(0);
+  await expect(page.locator(".mobile-backend-approval")).toHaveCount(0);
+
+  await page.evaluate(() => {
+    const handle = window.__qianbianMobileBackend.handleEvent;
+    handle("turn/started", { sessionId: "23", turnId: "current-turn" });
+    handle("item/completed", {
+      sessionId: "23",
+      item: {
+        itemId: "current-answer",
+        turnId: "current-turn",
+        kind: "agentMessage",
+        text: "当前会话的内容正常出现",
+        status: "completed",
+        done: true,
+      },
+    });
+  });
+  await expect(page.getByText("当前会话的内容正常出现")).toBeVisible();
+});
+
 test("mobile renders backend approvals and user questions", async ({ page }) => {
   const calls = [];
   await mockBackend(page, calls);

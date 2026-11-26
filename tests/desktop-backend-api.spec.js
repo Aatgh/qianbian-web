@@ -707,6 +707,60 @@ test("desktop message copy and quote use real state, and share is removed", asyn
   ).toBe(true);
 });
 
+test("desktop ignores backend events from another session", async ({ page }) => {
+  await page.goto(desktopUrl);
+  await unlockDesktop(page);
+  await page
+    .locator('[data-session="design-system"]')
+    .first()
+    .dispatchEvent("click");
+
+  await page.evaluate(() => {
+    const handle = window.__qianbianBackend.handleEvent;
+    handle("turn/started", { sessionId: "99", turnId: "foreign-turn" });
+    handle("item/completed", {
+      sessionId: "99",
+      item: {
+        itemId: "foreign-answer",
+        turnId: "foreign-turn",
+        kind: "agentMessage",
+        text: "其他会话的内容不应出现",
+        status: "completed",
+        done: true,
+      },
+    });
+    handle("approval/requested", {
+      sessionId: "99",
+      approvalId: "foreign-approval",
+      toolName: "write_file",
+      subject: { summary: "其他会话的审批" },
+    });
+  });
+
+  await expect(page.getByText("其他会话的内容不应出现")).toHaveCount(0);
+  await expect(page.locator(".backend-prompt-card")).toHaveCount(0);
+
+  await page.evaluate(() => {
+    const handle = window.__qianbianBackend.handleEvent;
+    handle("turn/started", {
+      sessionId: "design-system",
+      turnId: "current-turn",
+    });
+    handle("item/completed", {
+      sessionId: "design-system",
+      item: {
+        itemId: "current-answer",
+        turnId: "current-turn",
+        kind: "agentMessage",
+        text: "当前会话的内容正常出现",
+        status: "completed",
+        done: true,
+      },
+    });
+  });
+  await expect(page.getByText("当前会话的内容正常出现")).toBeVisible();
+});
+
 test("desktop renders fenced markdown replies instead of code blocks", async ({
   page,
 }) => {
