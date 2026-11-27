@@ -966,6 +966,12 @@
     selectedSkills: new Set(),
     settingsTab:
       localStorage.getItem("qianbian-desktop-settings-tab") || "appearance",
+    carePrefs: null,
+    careEvents: [],
+    careSignal: null,
+    careLoaded: false,
+    careLoading: false,
+    careMessage: "",
     settingsSheetOpen: false,
     insightTab: initialInsightTab,
     skillMarketQuery: "",
@@ -1108,6 +1114,7 @@
       "notifications",
       "privacy",
       "advanced",
+      "care",
     ].includes(state.settingsTab)
   ) {
     state.settingsTab = "appearance";
@@ -2890,7 +2897,148 @@
     `;
   }
 
+  async function loadDesktopCare() {
+    if (!api || state.careLoading) return;
+    state.careLoading = true;
+    try {
+      const [prefs, signal, events] = await Promise.all([
+        api.carePreferences(),
+        api.careSignal().catch(() => null),
+        api.careEvents({ limit: 12 }).catch(() => []),
+      ]);
+      state.carePrefs = prefs;
+      state.careSignal = signal;
+      state.careEvents = Array.isArray(events) ? events : [];
+      state.careLoaded = true;
+    } catch (error) {
+      state.careLoaded = true;
+      showToast(error.message || "关心设置加载失败", "circle-alert");
+    } finally {
+      state.careLoading = false;
+      render();
+    }
+  }
+
+  async function saveDesktopCare(patch) {
+    if (!api) return;
+    const current = state.carePrefs || {};
+    const next = { ...current, ...patch };
+    state.carePrefs = next;
+    render();
+    try {
+      state.carePrefs = await api.updateCarePreferences({
+        enabled: next.enabled,
+        mode: next.mode || "normal",
+        quietStart: String(next.quietStart || "23:00").slice(0, 5),
+        quietEnd: String(next.quietEnd || "08:00").slice(0, 5),
+        maxPerDay: Number(next.maxPerDay) || 1,
+        topics: next.topics || ["本地新闻"],
+      });
+      state.careLoaded = true;
+      showToast("关心设置已保存", "check");
+    } catch (error) {
+      showToast(error.message || "保存失败", "circle-alert");
+    }
+    render();
+  }
+
+  async function useDesktopLocationForCare() {
+    if (!api) return;
+    try {
+      const place = await api.location();
+      if (!place?.city) {
+        showToast("暂时无法解析当前位置", "circle-alert");
+        return;
+      }
+      state.careSignal = await api.mockCareSignal({
+        city: place.city,
+        region: place.region || place.city,
+        stepsTotal: 0,
+        stepsDelta2h: 0,
+      });
+      showToast(`已使用${place.city}作为本地新闻位置`, "map-pin");
+      render();
+    } catch (error) {
+      showToast(error.message || "定位失败", "circle-alert");
+    }
+  }
+
+  async function testDesktopCare() {
+    if (!api) return;
+    try {
+      showToast("正在找一条适合你的本地消息…", "sparkles");
+      const result = await api.triggerCare({ force: true });
+      if (result?.sent) {
+        state.careMessage = result.message || "";
+        state.careEvents = await api.careEvents({ limit: 12 }).catch(() => state.careEvents);
+        showToast("已发到「千变的关心」", "heart");
+      } else {
+        state.careMessage = `这次没有发送：${result?.reason || "暂无合适内容"}`;
+      }
+      render();
+    } catch (error) {
+      showToast(error.message || "试发失败", "circle-alert");
+    }
+  }
+
+  function renderDesktopCareContent() {
+    if (!state.careLoaded && !state.careLoading) {
+      setTimeout(loadDesktopCare, 0);
+    }
+    const prefs = state.carePrefs || {
+      enabled: false,
+      maxPerDay: 1,
+      quietStart: "23:00",
+      quietEnd: "08:00",
+    };
+    const signal = state.careSignal || {};
+    const events = state.careEvents || [];
+    const quietOptions = (selected) =>
+      ["22:00", "23:00", "00:00", "07:00", "08:00", "09:00"]
+        .map((value) => `<option ${value === selected ? "selected" : ""}>${value}</option>`)
+        .join("");
+    return `
+      <div class="settings-section">
+        <div class="settings-row">
+          <div class="settings-copy"><strong>主动关心</strong><small>本地新闻、天气和作息提醒，默认关闭；每天最多 1–2 条，23:00–08:00 静默。</small></div>
+          <button class="switch ${prefs.enabled ? "is-on" : ""}" data-care-toggle type="button" aria-label="切换主动关心" aria-pressed="${Boolean(prefs.enabled)}"></button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-copy"><strong>每日上限</strong><small>最多主动发几条</small></div>
+          <select data-care-frequency>
+            <option value="1" ${Number(prefs.maxPerDay) === 1 ? "selected" : ""}>1 条</option>
+            <option value="2" ${Number(prefs.maxPerDay) === 2 ? "selected" : ""}>2 条</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <div class="settings-copy"><strong>免打扰</strong><small>这个时间段不发主动消息</small></div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select data-care-quiet-start>${quietOptions(String(prefs.quietStart || "23:00").slice(0, 5))}</select>
+            <span>—</span>
+            <select data-care-quiet-end>${quietOptions(String(prefs.quietEnd || "08:00").slice(0, 5))}</select>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-copy"><strong>本地新闻位置</strong><small>${signal.city ? `${escapeHtml(signal.region || "")} ${escapeHtml(signal.city)}` : "尚未获取，使用 IP 或等待 App 上报"}</small></div>
+          <button class="secondary-button" data-care-locate type="button">使用当前定位</button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-copy"><strong>试一条</strong><small>立即触发一次本地关心，用于验收</small></div>
+          <button class="secondary-button" data-care-test type="button">试一条关心</button>
+        </div>
+        ${state.careMessage ? `<div class="settings-row"><div class="settings-copy"><strong>最近一次结果</strong><small>${escapeHtml(state.careMessage)}</small></div></div>` : ""}
+      </div>
+      <div class="settings-section">
+        <div class="settings-row"><div class="settings-copy"><strong>最近的关心</strong><small>只显示已发送的消息</small></div></div>
+        ${events.length ? events.map((item) => `<div class="settings-row"><div class="settings-copy"><strong>${escapeHtml(item.careType === "local_news" ? "本地新闻" : item.careType || "关心")}</strong><small>${escapeHtml(item.message || "")}</small></div><span class="soft-tag">${escapeHtml(String(item.sentAt || item.createdAt || "").slice(0, 10))}</span></div>`).join("") : `<div class="settings-row"><div class="settings-copy"><strong>还没有关心记录</strong><small>开启后这里会显示发过的消息</small></div></div>`}
+      </div>
+    `;
+  }
+
   function renderSettingsContent() {
+    if (state.settingsTab === "care") {
+      return renderDesktopCareContent();
+    }
     if (state.settingsTab === "general") {
       return `
         <div class="settings-section">
@@ -3028,6 +3176,7 @@
               ["general", "通用"],
               ["appearance", "外观"],
               ["skills", "技能"],
+              ["care", "主动关心"],
               ["notifications", "通知"],
               ["privacy", "隐私"],
               ["advanced", "高级"],
@@ -8013,6 +8162,19 @@ export const skill = {
       render();
       return;
     }
+    const careToggle = event.target.closest("[data-care-toggle]");
+    if (careToggle) {
+      saveDesktopCare({ enabled: !state.carePrefs?.enabled });
+      return;
+    }
+    if (event.target.closest("[data-care-test]")) {
+      testDesktopCare();
+      return;
+    }
+    if (event.target.closest("[data-care-locate]")) {
+      useDesktopLocationForCare();
+      return;
+    }
     const settingToggle = event.target.closest("[data-setting-toggle]");
     if (settingToggle) {
       const key = settingToggle.dataset.settingToggle;
@@ -8209,6 +8371,18 @@ export const skill = {
     const skillSelect = event.target.closest("[data-skill-select]");
     if (skillSelect) {
       toggleSkillSelection(skillSelect.dataset.skillSelect, skillSelect.checked);
+      return;
+    }
+    if (event.target.matches("[data-care-frequency]")) {
+      saveDesktopCare({ maxPerDay: Number(event.target.value) || 1 });
+      return;
+    }
+    if (event.target.matches("[data-care-quiet-start]")) {
+      saveDesktopCare({ quietStart: event.target.value });
+      return;
+    }
+    if (event.target.matches("[data-care-quiet-end]")) {
+      saveDesktopCare({ quietEnd: event.target.value });
       return;
     }
     const select = event.target.closest("[data-setting-select]");

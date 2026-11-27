@@ -266,6 +266,36 @@
     ui(signal) {
       return request("/ui", { signal });
     },
+    carePreferences(signal) {
+      return request("/care/preferences", { signal });
+    },
+    updateCarePreferences(payload, signal) {
+      return request("/care/preferences", {
+        method: "PUT",
+        body: payload,
+        signal,
+      });
+    },
+    careSignal(signal) {
+      return request("/care/signal", { signal });
+    },
+    mockCareSignal(payload, signal) {
+      return request("/care/signals/mock", {
+        method: "POST",
+        body: payload,
+        signal,
+      });
+    },
+    triggerCare(payload = {}, signal) {
+      return request("/care/trigger", {
+        method: "POST",
+        body: payload,
+        signal,
+      });
+    },
+    careEvents(params = {}, signal) {
+      return request(`/care/events${query(params)}`, { signal });
+    },
     uiData(widgetId, signal) {
       return request(`/ui/widgets/${encodeURIComponent(widgetId)}/data`, {
         signal,

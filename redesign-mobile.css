@@ -669,3 +669,26 @@
 #mobile-login-gate select {
   font-size: max(16px, 1em);
 }
+
+/* 主动关心设置 */
+.care-page .care-actions {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+.care-page .care-actions .phone-primary-button {
+  width: 100%;
+  justify-content: center;
+}
+.care-page .care-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.care-page .care-quiet .phone-row-select {
+  max-width: 78px;
+}
+.care-page .care-event .phone-row-description {
+  white-space: normal;
+  line-height: 1.5;
+}

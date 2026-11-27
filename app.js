@@ -183,6 +183,12 @@
     backendTyping: false,
     backendModelId: null,
     backendModelLabel: "",
+    carePrefs: null,
+    careEvents: [],
+    careSignal: null,
+    careLoaded: false,
+    careLoading: false,
+    careMessage: "",
     lastActivityAt: null,
     devices: [],
     devicesLoaded: false,
@@ -2339,6 +2345,198 @@
         </div>
       </div>
     `;
+  }
+
+  function renderCareSettings(page) {
+    if (!state.careLoaded && !state.careLoading && api && state.backendConnected) {
+      setTimeout(() => loadCareSettings(), 0);
+    }
+    const prefs = state.carePrefs || {
+      enabled: false,
+      mode: "normal",
+      quietStart: "23:00",
+      quietEnd: "08:00",
+      maxPerDay: 1,
+      careSessionId: null,
+    };
+    const enabled = Boolean(prefs.enabled);
+    const quietStart = String(prefs.quietStart || "23:00").slice(0, 5);
+    const quietEnd = String(prefs.quietEnd || "08:00").slice(0, 5);
+    const signal = state.careSignal || {};
+    const locationText = signal.city
+      ? `${signal.region || ""}${signal.region && signal.region !== signal.city ? " · " : ""}${signal.city}`
+      : "尚未获取，使用「当前定位」或等待 App 上报";
+    const events = state.careEvents || [];
+    const quietOptions = (selected) =>
+      ["22:00", "23:00", "00:00", "07:00", "08:00", "09:00"]
+        .map((value) => `<option value="${value}" ${value === selected ? "selected" : ""}>${value}</option>`)
+        .join("");
+    return `
+      <div class="phone-page settings-page care-page">
+        ${statusBar()}
+        ${phonePageHeader(page, { hideSubtitle: true })}
+        <div class="phone-scroll">
+          <div class="phone-body">
+            <div class="phone-notice">${icon("heart-handshake")}<span>千变会在合适的时候，基于你所在的城市和最近状态，发来一条关心。默认每天最多 1 条，23:00–08:00 不打扰。位置只用于本地新闻和天气，不做轨迹追踪。</span></div>
+          </div>
+          <div class="phone-list" style="margin:0 14px 14px">
+            <div class="phone-row">
+              <span class="row-glyph">${icon("sparkles")}</span>
+              <span class="phone-row-main">
+                <span class="phone-row-label">主动关心</span>
+                <span class="phone-row-description">${enabled ? "已开启，千变会主动来找你" : "默认关闭，需要你手动开启"}</span>
+              </span>
+              <span class="phone-row-trailing">
+                <button class="phone-toggle ${enabled ? "is-on" : ""}" data-action="care-toggle" type="button" aria-label="主动关心" aria-pressed="${enabled}"><span></span></button>
+              </span>
+            </div>
+            <div class="phone-row">
+              <span class="row-glyph">${icon("activity")}</span>
+              <span class="phone-row-main">
+                <span class="phone-row-label">每日上限</span>
+                <span class="phone-row-description">最多主动发几条</span>
+              </span>
+              <span class="phone-row-trailing">
+                <select class="phone-row-select" data-care-frequency aria-label="每日上限">
+                  <option value="1" ${prefs.maxPerDay === 1 ? "selected" : ""}>1 条</option>
+                  <option value="2" ${prefs.maxPerDay === 2 ? "selected" : ""}>2 条</option>
+                </select>
+              </span>
+            </div>
+            <div class="phone-row">
+              <span class="row-glyph">${icon("moon")}</span>
+              <span class="phone-row-main">
+                <span class="phone-row-label">免打扰</span>
+                <span class="phone-row-description">这个时间段不发主动消息</span>
+              </span>
+              <span class="phone-row-trailing care-quiet">
+                <select class="phone-row-select" data-care-quiet-start aria-label="免打扰开始">${quietOptions(quietStart)}</select>
+                <span>—</span>
+                <select class="phone-row-select" data-care-quiet-end aria-label="免打扰结束">${quietOptions(quietEnd)}</select>
+              </span>
+            </div>
+          </div>
+          <div class="phone-body">
+            <div class="phone-notice">${icon("map-pin")}<span>当前定位：${escapeHtml(locationText)}</span></div>
+          </div>
+          <div class="care-actions">
+            <button class="phone-primary-button" data-action="care-locate" type="button">${icon("map-pin")}使用当前定位</button>
+            <button class="phone-primary-button" data-action="care-test" type="button">${icon("sparkles")}试一条关心</button>
+          </div>
+          ${state.careMessage ? `<div class="phone-body"><div class="phone-notice">${icon("message-circle")}<span>${escapeHtml(state.careMessage)}</span></div></div>` : ""}
+          <div class="account-section-heading">最近的关心</div>
+          <div class="phone-list" style="margin:0 14px 14px">
+            ${events.length ? events.map((item) => `
+              <div class="phone-row care-event">
+                <span class="row-glyph">${icon("heart")}</span>
+                <span class="phone-row-main">
+                  <span class="phone-row-label">${escapeHtml(item.careType === "local_news" ? "本地新闻" : item.careType || "关心")}</span>
+                  <span class="phone-row-description">${escapeHtml(item.message || "")}</span>
+                </span>
+                <span class="phone-row-trailing"><span class="phone-row-value">${escapeHtml(formatCareTime(item.sentAt || item.createdAt))}</span></span>
+              </div>
+            `).join("") : `<div class="phone-row"><span class="row-glyph">${icon("clock")}</span><span class="phone-row-main"><span class="phone-row-label">还没有关心记录</span><span class="phone-row-description">开启后会在这里看到发过的消息</span></span></div>`}
+          </div>
+          <div style="height:20px"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function formatCareTime(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  async function loadCareSettings() {
+    if (!api || state.careLoading) return;
+    state.careLoading = true;
+    try {
+      const [prefs, signal, events] = await Promise.all([
+        api.carePreferences(),
+        api.careSignal().catch(() => null),
+        api.careEvents({ limit: 10 }).catch(() => []),
+      ]);
+      state.carePrefs = prefs;
+      state.careSignal = signal;
+      state.careEvents = Array.isArray(events) ? events : [];
+      state.careLoaded = true;
+    } catch (error) {
+      showToast(error.message || "关心设置加载失败", "circle-alert");
+    } finally {
+      state.careLoading = false;
+      state.careLoaded = true;
+      renderPhone();
+      updateIcons();
+    }
+  }
+
+  async function saveCareSettings(patch) {
+    if (!api) return;
+    const current = state.carePrefs || {};
+    const next = { ...current, ...patch };
+    state.carePrefs = next;
+    renderPhone();
+    updateIcons();
+    try {
+      state.carePrefs = await api.updateCarePreferences({
+        enabled: next.enabled,
+        mode: next.mode || "normal",
+        quietStart: String(next.quietStart || "23:00").slice(0, 5),
+        quietEnd: String(next.quietEnd || "08:00").slice(0, 5),
+        maxPerDay: Number(next.maxPerDay) || 1,
+        topics: next.topics || ["本地新闻"],
+      });
+      state.careLoaded = true;
+      showToast("关心设置已保存", "check");
+    } catch (error) {
+      showToast(error.message || "保存失败", "circle-alert");
+    }
+    renderPhone();
+    updateIcons();
+  }
+
+  async function useCurrentLocationForCare() {
+    if (!api) return;
+    try {
+      const place = await api.location();
+      if (!place?.city) {
+        showToast("暂时无法解析当前位置", "circle-alert");
+        return;
+      }
+      state.careSignal = await api.mockCareSignal({
+        city: place.city,
+        region: place.region || place.city,
+        stepsTotal: 0,
+        stepsDelta2h: 0,
+      });
+      showToast(`已使用${place.city}作为本地新闻位置`, "map-pin");
+      renderPhone();
+      updateIcons();
+    } catch (error) {
+      showToast(error.message || "定位失败", "circle-alert");
+    }
+  }
+
+  async function testCare() {
+    if (!api) return;
+    try {
+      showToast("正在找一条适合你的本地消息…", "sparkles");
+      const result = await api.triggerCare({ force: true });
+      if (result?.sent) {
+        state.careMessage = result.message || "已经发到「千变的关心」";
+        state.careEvents = await api.careEvents({ limit: 10 }).catch(() => state.careEvents);
+        showToast("已发到「千变的关心」", "heart");
+      } else {
+        state.careMessage = `这次没有发送：${result?.reason || "暂无合适内容"}`;
+      }
+      renderPhone();
+      updateIcons();
+    } catch (error) {
+      showToast(error.message || "试发失败", "circle-alert");
+    }
   }
 
   function renderAccount(page) {
@@ -7354,6 +7552,8 @@ export async function run(input, context) {
         return renderQuickPanel(page);
       case "account":
         return renderAccount(page);
+      case "care-settings":
+        return renderCareSettings(page);
       case "settings":
         return renderSettings(page);
       case "all-features":
@@ -7564,6 +7764,21 @@ export async function run(input, context) {
       select.addEventListener("change", () => {
         const key = segmentKey(select.dataset.rowPage || "", select.dataset.rowLabel || "");
         state.segments[key] = select.selectedIndex;
+      });
+    });
+    document.querySelectorAll("[data-care-frequency]").forEach((select) => {
+      select.addEventListener("change", () => {
+        saveCareSettings({ maxPerDay: Number(select.value) || 1 });
+      });
+    });
+    document.querySelectorAll("[data-care-quiet-start]").forEach((select) => {
+      select.addEventListener("change", () => {
+        saveCareSettings({ quietStart: select.value });
+      });
+    });
+    document.querySelectorAll("[data-care-quiet-end]").forEach((select) => {
+      select.addEventListener("change", () => {
+        saveCareSettings({ quietEnd: select.value });
       });
     });
     const chatInput = document.getElementById("chat-input");
@@ -8235,6 +8450,9 @@ export async function run(input, context) {
       if (action === "back") back();
       else if (action === "close-sheet") closeSheet();
       else if (action === "open-affinity") showAffinityDialog();
+      else if (action === "care-toggle") saveCareSettings({ enabled: !state.carePrefs?.enabled });
+      else if (action === "care-test") testCare();
+      else if (action === "care-locate") useCurrentLocationForCare();
       else if (action === "close-dialog") closeDialog();
       else if (action === "new-chat") {
         resetBackendChat();

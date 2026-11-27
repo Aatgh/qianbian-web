@@ -3060,6 +3060,14 @@
           nav: "account",
         }),
       ]),
+      section("Agent", [
+        row("主动关心", {
+          icon: "heart-handshake",
+          description: "本地新闻、天气和作息提醒，默认关闭。",
+          value: "设置",
+          nav: "care-settings",
+        }),
+      ]),
       section("技能", [
         row("技能空间", {
           icon: "puzzle",
@@ -3111,6 +3119,16 @@
       icon: "settings-2",
       summary: "账号、技能、外观与通用设置。",
       path: ["设置"],
+    })
+  );
+
+  addPage(
+    hosts,
+    generic("care-settings", "主动关心", {
+      kind: "care-settings",
+      icon: "heart-handshake",
+      summary: "本地新闻、天气和作息提醒。",
+      path: ["设置", "主动关心"],
     })
   );
 
