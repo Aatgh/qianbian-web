@@ -682,13 +682,26 @@
 }
 .care-page .care-quiet {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: 4px;
 }
 .care-page .care-quiet .phone-row-select {
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 78px;
 }
 .care-page .care-event .phone-row-description {
+  display: block;
+  overflow: visible;
   white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: none;
   line-height: 1.5;
+}
+.care-page .phone-notice-error {
+  color: var(--phone-danger, #b42318);
+}
+.care-page .phone-toggle.is-loading {
+  opacity: 0.45;
 }

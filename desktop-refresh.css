@@ -3954,3 +3954,28 @@ html[data-theme="dark"] .desktop-reference {
     width: 244px;
   }
 }
+
+.care-quiet-controls {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  width: max-content;
+  max-width: 100%;
+}
+
+.care-quiet-controls select {
+  min-width: 104px;
+  flex: 0 0 112px;
+}
+
+.care-event-row .settings-copy small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.settings-row .switch.is-loading {
+  opacity: 0.45;
+}
