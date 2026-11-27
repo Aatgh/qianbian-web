@@ -971,6 +971,8 @@
     careSignal: null,
     careLoaded: false,
     careLoading: false,
+    careTesting: false,
+    careError: "",
     careMessage: "",
     settingsSheetOpen: false,
     insightTab: initialInsightTab,
@@ -2900,6 +2902,7 @@
   async function loadDesktopCare() {
     if (!api || state.careLoading) return;
     state.careLoading = true;
+    state.careError = "";
     try {
       const [prefs, signal, events] = await Promise.all([
         api.carePreferences(),
@@ -2911,18 +2914,38 @@
       state.careEvents = Array.isArray(events) ? events : [];
       state.careLoaded = true;
     } catch (error) {
-      state.careLoaded = true;
-      showToast(error.message || "关心设置加载失败", "circle-alert");
+      state.careError = error.message || "关心设置加载失败";
+      showToast(state.careError, "circle-alert");
     } finally {
       state.careLoading = false;
       render();
     }
   }
 
+  function retryDesktopCare() {
+    state.careError = "";
+    state.careLoaded = false;
+    loadDesktopCare();
+  }
+
+  function careReasonText(reason) {
+    const labels = {
+      care_disabled: "主动关心还没开启",
+      quiet_hours: "当前在免打扰时段，这次先不打扰",
+      daily_limit: "今天的主动关心已达上限",
+      location_unknown: "还没有获取到所在城市",
+      worker_disabled: "关心服务暂时不可用",
+      news_unavailable: "本地新闻源暂时不可用，请稍后再试",
+      no_local_news: "今天附近暂时没有合适的本地消息",
+      duplicate: "这条关心今天已经发过了",
+    };
+    return labels[reason] || reason || "暂无合适内容";
+  }
+
   async function saveDesktopCare(patch) {
     if (!api) return;
-    const current = state.carePrefs || {};
-    const next = { ...current, ...patch };
+    const previous = state.carePrefs;
+    const next = { ...(previous || {}), ...patch };
     state.carePrefs = next;
     render();
     try {
@@ -2937,7 +2960,8 @@
       state.careLoaded = true;
       showToast("关心设置已保存", "check");
     } catch (error) {
-      showToast(error.message || "保存失败", "circle-alert");
+      state.carePrefs = previous;
+      showToast(error.message || "保存失败，已恢复原设置", "circle-alert");
     }
     render();
   }
@@ -2964,25 +2988,30 @@
   }
 
   async function testDesktopCare() {
-    if (!api) return;
+    if (!api || state.careTesting) return;
+    state.careTesting = true;
+    state.careMessage = "";
+    render();
     try {
-      showToast("正在找一条适合你的本地消息…", "sparkles");
       const result = await api.triggerCare({ force: true });
       if (result?.sent) {
         state.careMessage = result.message || "";
         state.careEvents = await api.careEvents({ limit: 12 }).catch(() => state.careEvents);
         showToast("已发到「千变的关心」", "heart");
       } else {
-        state.careMessage = `这次没有发送：${result?.reason || "暂无合适内容"}`;
+        state.careMessage = `这次没有发送：${careReasonText(result?.reason)}`;
       }
-      render();
     } catch (error) {
+      state.careMessage = `试发失败：${error.message || "请稍后再试"}`;
       showToast(error.message || "试发失败", "circle-alert");
+    } finally {
+      state.careTesting = false;
+      render();
     }
   }
 
   function renderDesktopCareContent() {
-    if (!state.careLoaded && !state.careLoading) {
+    if (!state.careLoaded && !state.careLoading && !state.careError) {
       setTimeout(loadDesktopCare, 0);
     }
     const prefs = state.carePrefs || {
@@ -2991,6 +3020,8 @@
       quietStart: "23:00",
       quietEnd: "08:00",
     };
+    const loading = !state.careLoaded && !state.careError;
+    const disabledAttr = loading || state.careError ? "disabled" : "";
     const signal = state.careSignal || {};
     const events = state.careEvents || [];
     const quietOptions = (selected) =>
@@ -3000,37 +3031,38 @@
     return `
       <div class="settings-section">
         <div class="settings-row">
-          <div class="settings-copy"><strong>主动关心</strong><small>本地新闻、天气和作息提醒，默认关闭；每天最多 1–2 条，23:00–08:00 静默。</small></div>
-          <button class="switch ${prefs.enabled ? "is-on" : ""}" data-care-toggle type="button" aria-label="切换主动关心" aria-pressed="${Boolean(prefs.enabled)}"></button>
+          <div class="settings-copy"><strong>主动关心</strong><small>${loading ? "正在加载设置…" : "本地新闻、天气和作息提醒，默认关闭；每天最多 1–2 条，23:00–08:00 静默。"}</small></div>
+          <button class="switch ${prefs.enabled ? "is-on" : ""} ${loading ? "is-loading" : ""}" data-care-toggle type="button" aria-label="切换主动关心" aria-pressed="${Boolean(prefs.enabled)}" aria-busy="${loading}" ${disabledAttr}></button>
         </div>
         <div class="settings-row">
           <div class="settings-copy"><strong>每日上限</strong><small>最多主动发几条</small></div>
-          <select data-care-frequency>
+          <select data-care-frequency ${disabledAttr}>
             <option value="1" ${Number(prefs.maxPerDay) === 1 ? "selected" : ""}>1 条</option>
             <option value="2" ${Number(prefs.maxPerDay) === 2 ? "selected" : ""}>2 条</option>
           </select>
         </div>
         <div class="settings-row">
           <div class="settings-copy"><strong>免打扰</strong><small>这个时间段不发主动消息</small></div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <select data-care-quiet-start>${quietOptions(String(prefs.quietStart || "23:00").slice(0, 5))}</select>
+          <div class="care-quiet-controls">
+            <select data-care-quiet-start ${disabledAttr}>${quietOptions(String(prefs.quietStart || "23:00").slice(0, 5))}</select>
             <span>—</span>
-            <select data-care-quiet-end>${quietOptions(String(prefs.quietEnd || "08:00").slice(0, 5))}</select>
+            <select data-care-quiet-end ${disabledAttr}>${quietOptions(String(prefs.quietEnd || "08:00").slice(0, 5))}</select>
           </div>
         </div>
         <div class="settings-row">
-          <div class="settings-copy"><strong>本地新闻位置</strong><small>${signal.city ? `${escapeHtml(signal.region || "")} ${escapeHtml(signal.city)}` : "尚未获取，使用 IP 或等待 App 上报"}</small></div>
-          <button class="secondary-button" data-care-locate type="button">使用当前定位</button>
+          <div class="settings-copy"><strong>本地新闻位置</strong><small>${loading ? "正在获取…" : signal.city ? `${escapeHtml(signal.region || "")} ${escapeHtml(signal.city)}` : "尚未获取，使用 IP 或等待 App 上报"}</small></div>
+          <button class="secondary-button" data-care-locate type="button" ${disabledAttr}>使用当前定位</button>
         </div>
         <div class="settings-row">
           <div class="settings-copy"><strong>试一条</strong><small>立即触发一次本地关心，用于验收</small></div>
-          <button class="secondary-button" data-care-test type="button">试一条关心</button>
+          <button class="secondary-button" data-care-test type="button" ${disabledAttr || (state.careTesting ? "disabled" : "")}>${state.careTesting ? "正在找附近的消息…" : "试一条关心"}</button>
         </div>
+        ${state.careError ? `<div class="settings-row"><div class="settings-copy"><strong>加载失败</strong><small>${escapeHtml(state.careError)}</small></div><button class="secondary-button" data-care-retry type="button">重新加载</button></div>` : ""}
         ${state.careMessage ? `<div class="settings-row"><div class="settings-copy"><strong>最近一次结果</strong><small>${escapeHtml(state.careMessage)}</small></div></div>` : ""}
       </div>
       <div class="settings-section">
         <div class="settings-row"><div class="settings-copy"><strong>最近的关心</strong><small>只显示已发送的消息</small></div></div>
-        ${events.length ? events.map((item) => `<div class="settings-row"><div class="settings-copy"><strong>${escapeHtml(item.careType === "local_news" ? "本地新闻" : item.careType || "关心")}</strong><small>${escapeHtml(item.message || "")}</small></div><span class="soft-tag">${escapeHtml(String(item.sentAt || item.createdAt || "").slice(0, 10))}</span></div>`).join("") : `<div class="settings-row"><div class="settings-copy"><strong>还没有关心记录</strong><small>开启后这里会显示发过的消息</small></div></div>`}
+        ${events.length ? events.map((item) => `<div class="settings-row care-event-row"><div class="settings-copy"><strong>${escapeHtml(item.careType === "local_news" ? "本地新闻" : item.careType || "关心")}</strong><small>${escapeHtml(item.message || "")}</small></div><span class="soft-tag">${escapeHtml(String(item.sentAt || item.createdAt || "").slice(0, 10))}</span></div>`).join("") : `<div class="settings-row"><div class="settings-copy"><strong>${loading ? "正在加载最近的关心…" : state.careError ? "加载失败" : "还没有关心记录"}</strong><small>${loading ? "请稍候" : state.careError ? "请点击上方「重新加载」" : "开启后这里会显示发过的消息"}</small></div></div>`}
       </div>
     `;
   }
@@ -8173,6 +8205,10 @@ export const skill = {
     }
     if (event.target.closest("[data-care-locate]")) {
       useDesktopLocationForCare();
+      return;
+    }
+    if (event.target.closest("[data-care-retry]")) {
+      retryDesktopCare();
       return;
     }
     const settingToggle = event.target.closest("[data-setting-toggle]");

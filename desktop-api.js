@@ -73,6 +73,7 @@
       headers = {},
       responseType = "json",
       signal,
+      timeoutMs = 0,
     } = options;
     const requestHeaders = { ...headers };
     let requestBody = body;
@@ -85,14 +86,42 @@
       requestHeaders["Content-Type"] = "application/json";
       requestBody = JSON.stringify(body);
     }
-    const response = await fetch(apiUrl(path), {
-      method,
-      body: requestBody,
-      headers: requestHeaders,
-      signal,
-      credentials: "same-origin",
-    });
-    return parseResponse(response, responseType);
+    let timer = null;
+    let controller = null;
+    let timedOut = false;
+    let finalSignal = signal;
+    if (timeoutMs > 0) {
+      controller = new AbortController();
+      timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, timeoutMs);
+      if (signal) {
+        if (signal.aborted) {
+          controller.abort();
+        } else {
+          signal.addEventListener("abort", () => controller.abort(), { once: true });
+        }
+      }
+      finalSignal = controller.signal;
+    }
+    try {
+      const response = await fetch(apiUrl(path), {
+        method,
+        body: requestBody,
+        headers: requestHeaders,
+        signal: finalSignal,
+        credentials: "same-origin",
+      });
+      return await parseResponse(response, responseType);
+    } catch (error) {
+      if (timedOut) {
+        throw new Error("请求超时，请稍后再试");
+      }
+      throw error;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   function query(params) {
@@ -267,34 +296,38 @@
       return request("/ui", { signal });
     },
     carePreferences(signal) {
-      return request("/care/preferences", { signal });
+      return request("/care/preferences", { signal, timeoutMs: 20000 });
     },
     updateCarePreferences(payload, signal) {
       return request("/care/preferences", {
         method: "PUT",
         body: payload,
         signal,
+        timeoutMs: 20000,
       });
     },
     careSignal(signal) {
-      return request("/care/signal", { signal });
+      return request("/care/signal", { signal, timeoutMs: 20000 });
     },
     mockCareSignal(payload, signal) {
       return request("/care/signals/mock", {
         method: "POST",
         body: payload,
         signal,
+        timeoutMs: 20000,
       });
     },
     triggerCare(payload = {}, signal) {
+      // worker 首次执行要装依赖/检索城市，可能 20–30 秒；给足 120 秒。
       return request("/care/trigger", {
         method: "POST",
         body: payload,
         signal,
+        timeoutMs: 120000,
       });
     },
     careEvents(params = {}, signal) {
-      return request(`/care/events${query(params)}`, { signal });
+      return request(`/care/events${query(params)}`, { signal, timeoutMs: 20000 });
     },
     uiData(widgetId, signal) {
       return request(`/ui/widgets/${encodeURIComponent(widgetId)}/data`, {

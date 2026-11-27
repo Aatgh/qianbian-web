@@ -188,6 +188,8 @@
     careSignal: null,
     careLoaded: false,
     careLoading: false,
+    careTesting: false,
+    careError: "",
     careMessage: "",
     lastActivityAt: null,
     devices: [],
@@ -2348,7 +2350,7 @@
   }
 
   function renderCareSettings(page) {
-    if (!state.careLoaded && !state.careLoading && api && state.backendConnected) {
+    if (!state.careLoaded && !state.careLoading && !state.careError && api && state.backendConnected) {
       setTimeout(() => loadCareSettings(), 0);
     }
     const prefs = state.carePrefs || {
@@ -2359,13 +2361,17 @@
       maxPerDay: 1,
       careSessionId: null,
     };
+    const loading = !state.careLoaded && !state.careError;
+    const disabledAttr = loading || state.careError ? "disabled" : "";
     const enabled = Boolean(prefs.enabled);
     const quietStart = String(prefs.quietStart || "23:00").slice(0, 5);
     const quietEnd = String(prefs.quietEnd || "08:00").slice(0, 5);
     const signal = state.careSignal || {};
-    const locationText = signal.city
-      ? `${signal.region || ""}${signal.region && signal.region !== signal.city ? " · " : ""}${signal.city}`
-      : "尚未获取，使用「当前定位」或等待 App 上报";
+    const locationText = loading
+      ? "正在获取…"
+      : signal.city
+        ? `${signal.region || ""}${signal.region && signal.region !== signal.city ? " · " : ""}${signal.city}`
+        : "尚未获取，使用「当前定位」或等待 App 上报";
     const events = state.careEvents || [];
     const quietOptions = (selected) =>
       ["22:00", "23:00", "00:00", "07:00", "08:00", "09:00"]
@@ -2384,10 +2390,10 @@
               <span class="row-glyph">${icon("sparkles")}</span>
               <span class="phone-row-main">
                 <span class="phone-row-label">主动关心</span>
-                <span class="phone-row-description">${enabled ? "已开启，千变会主动来找你" : "默认关闭，需要你手动开启"}</span>
+                <span class="phone-row-description">${loading ? "正在加载设置…" : enabled ? "已开启，千变会主动来找你" : "默认关闭，需要你手动开启"}</span>
               </span>
               <span class="phone-row-trailing">
-                <button class="phone-toggle ${enabled ? "is-on" : ""}" data-action="care-toggle" type="button" aria-label="主动关心" aria-pressed="${enabled}"><span></span></button>
+                <button class="phone-toggle ${enabled ? "is-on" : ""} ${loading ? "is-loading" : ""}" data-action="care-toggle" type="button" aria-label="主动关心" aria-pressed="${enabled}" aria-busy="${loading}" ${disabledAttr}><span></span></button>
               </span>
             </div>
             <div class="phone-row">
@@ -2397,7 +2403,7 @@
                 <span class="phone-row-description">最多主动发几条</span>
               </span>
               <span class="phone-row-trailing">
-                <select class="phone-row-select" data-care-frequency aria-label="每日上限">
+                <select class="phone-row-select" data-care-frequency aria-label="每日上限" ${disabledAttr}>
                   <option value="1" ${prefs.maxPerDay === 1 ? "selected" : ""}>1 条</option>
                   <option value="2" ${prefs.maxPerDay === 2 ? "selected" : ""}>2 条</option>
                 </select>
@@ -2410,18 +2416,22 @@
                 <span class="phone-row-description">这个时间段不发主动消息</span>
               </span>
               <span class="phone-row-trailing care-quiet">
-                <select class="phone-row-select" data-care-quiet-start aria-label="免打扰开始">${quietOptions(quietStart)}</select>
+                <select class="phone-row-select" data-care-quiet-start aria-label="免打扰开始" ${disabledAttr}>${quietOptions(quietStart)}</select>
                 <span>—</span>
-                <select class="phone-row-select" data-care-quiet-end aria-label="免打扰结束">${quietOptions(quietEnd)}</select>
+                <select class="phone-row-select" data-care-quiet-end aria-label="免打扰结束" ${disabledAttr}>${quietOptions(quietEnd)}</select>
               </span>
             </div>
           </div>
           <div class="phone-body">
             <div class="phone-notice">${icon("map-pin")}<span>当前定位：${escapeHtml(locationText)}</span></div>
+            ${state.careError ? `
+              <div class="phone-notice phone-notice-error">${icon("circle-alert")}<span>${escapeHtml(state.careError)}</span></div>
+              <div class="care-actions"><button class="phone-primary-button" data-action="care-retry" type="button">重新加载</button></div>
+            ` : ""}
           </div>
           <div class="care-actions">
-            <button class="phone-primary-button" data-action="care-locate" type="button">${icon("map-pin")}使用当前定位</button>
-            <button class="phone-primary-button" data-action="care-test" type="button">${icon("sparkles")}试一条关心</button>
+            <button class="phone-primary-button" data-action="care-locate" type="button" ${disabledAttr}>${icon("map-pin")}使用当前定位</button>
+            <button class="phone-primary-button" data-action="care-test" type="button" ${disabledAttr || (state.careTesting ? "disabled" : "")}>${icon("sparkles")}${state.careTesting ? "正在找附近的消息…" : "试一条关心"}</button>
           </div>
           ${state.careMessage ? `<div class="phone-body"><div class="phone-notice">${icon("message-circle")}<span>${escapeHtml(state.careMessage)}</span></div></div>` : ""}
           <div class="account-section-heading">最近的关心</div>
@@ -2435,7 +2445,7 @@
                 </span>
                 <span class="phone-row-trailing"><span class="phone-row-value">${escapeHtml(formatCareTime(item.sentAt || item.createdAt))}</span></span>
               </div>
-            `).join("") : `<div class="phone-row"><span class="row-glyph">${icon("clock")}</span><span class="phone-row-main"><span class="phone-row-label">还没有关心记录</span><span class="phone-row-description">开启后会在这里看到发过的消息</span></span></div>`}
+            `).join("") : `<div class="phone-row"><span class="row-glyph">${icon("clock")}</span><span class="phone-row-main"><span class="phone-row-label">${loading ? "正在加载最近的关心…" : state.careError ? "加载失败" : "还没有关心记录"}</span><span class="phone-row-description">${loading ? "请稍候" : state.careError ? "请点击上方「重新加载」" : "开启后会在这里看到发过的消息"}</span></span></div>`}
           </div>
           <div style="height:20px"></div>
         </div>
@@ -2453,6 +2463,7 @@
   async function loadCareSettings() {
     if (!api || state.careLoading) return;
     state.careLoading = true;
+    state.careError = "";
     try {
       const [prefs, signal, events] = await Promise.all([
         api.carePreferences(),
@@ -2464,19 +2475,39 @@
       state.careEvents = Array.isArray(events) ? events : [];
       state.careLoaded = true;
     } catch (error) {
-      showToast(error.message || "关心设置加载失败", "circle-alert");
+      state.careError = error.message || "关心设置加载失败";
+      showToast(state.careError, "circle-alert");
     } finally {
       state.careLoading = false;
-      state.careLoaded = true;
       renderPhone();
       updateIcons();
     }
   }
 
+  function retryCareSettings() {
+    state.careError = "";
+    state.careLoaded = false;
+    loadCareSettings();
+  }
+
+  function careReasonText(reason) {
+    const labels = {
+      care_disabled: "主动关心还没开启",
+      quiet_hours: "当前在免打扰时段，这次先不打扰",
+      daily_limit: "今天的主动关心已达上限",
+      location_unknown: "还没有获取到所在城市",
+      worker_disabled: "关心服务暂时不可用",
+      news_unavailable: "本地新闻源暂时不可用，请稍后再试",
+      no_local_news: "今天附近暂时没有合适的本地消息",
+      duplicate: "这条关心今天已经发过了",
+    };
+    return labels[reason] || reason || "暂无合适内容";
+  }
+
   async function saveCareSettings(patch) {
     if (!api) return;
-    const current = state.carePrefs || {};
-    const next = { ...current, ...patch };
+    const previous = state.carePrefs;
+    const next = { ...(previous || {}), ...patch };
     state.carePrefs = next;
     renderPhone();
     updateIcons();
@@ -2492,7 +2523,8 @@
       state.careLoaded = true;
       showToast("关心设置已保存", "check");
     } catch (error) {
-      showToast(error.message || "保存失败", "circle-alert");
+      state.carePrefs = previous;
+      showToast(error.message || "保存失败，已恢复原设置", "circle-alert");
     }
     renderPhone();
     updateIcons();
@@ -2521,21 +2553,27 @@
   }
 
   async function testCare() {
-    if (!api) return;
+    if (!api || state.careTesting) return;
+    state.careTesting = true;
+    state.careMessage = "";
+    renderPhone();
+    updateIcons();
     try {
-      showToast("正在找一条适合你的本地消息…", "sparkles");
       const result = await api.triggerCare({ force: true });
       if (result?.sent) {
         state.careMessage = result.message || "已经发到「千变的关心」";
         state.careEvents = await api.careEvents({ limit: 10 }).catch(() => state.careEvents);
         showToast("已发到「千变的关心」", "heart");
       } else {
-        state.careMessage = `这次没有发送：${result?.reason || "暂无合适内容"}`;
+        state.careMessage = `这次没有发送：${careReasonText(result?.reason)}`;
       }
+    } catch (error) {
+      state.careMessage = `试发失败：${error.message || "请稍后再试"}`;
+      showToast(error.message || "试发失败", "circle-alert");
+    } finally {
+      state.careTesting = false;
       renderPhone();
       updateIcons();
-    } catch (error) {
-      showToast(error.message || "试发失败", "circle-alert");
     }
   }
 
@@ -8453,6 +8491,7 @@ export async function run(input, context) {
       else if (action === "care-toggle") saveCareSettings({ enabled: !state.carePrefs?.enabled });
       else if (action === "care-test") testCare();
       else if (action === "care-locate") useCurrentLocationForCare();
+      else if (action === "care-retry") retryCareSettings();
       else if (action === "close-dialog") closeDialog();
       else if (action === "new-chat") {
         resetBackendChat();
